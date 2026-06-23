@@ -20,6 +20,6 @@ setInterval(() => {
   last = now;
   if (game.phase === 'battle' && game.speed > 0) {
     tickBattle(game, dt);
-    renderApp(app, game, commit);
+    if (!window.__MAOU_MAP_DRAGGING__) renderApp(app, game, commit);
   }
 }, 100);

@@ -49,7 +49,7 @@ export function moveUnit(unit, targetRoom, dt) {
   const dx = destination.x - unit.x;
   const dy = destination.y - unit.y;
   const dist = Math.hypot(dx, dy);
-  const speed = Math.max(5, (unit.spd || 0.7) * 18) / (unit.carrying ? 1.65 : 1);
+  const speed = Math.max(28, (unit.spd || 0.7) * 78) / (unit.carrying ? 1.65 : 1);
   const travel = speed * dt;
 
   if (dist <= travel) {

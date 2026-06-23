@@ -1,6 +1,7 @@
 import { allyTemplates } from '../data/units.js';
 import { chips } from '../data/chips.js';
 import { currentStage, addLog, resetToSetup } from '../game/state.js';
+import { roomById } from '../data/rooms.js';
 
 export function consumeCaptured(game, capturedUid, mode, targetUid) {
   const captured = game.captured.find((item) => item.uid === capturedUid);
@@ -25,8 +26,8 @@ export function consumeCaptured(game, capturedUid, mode, targetUid) {
         range: template.stats.range,
         traits: [...template.traits],
         room: 'atrium',
-        x: 43,
-        y: 16,
+        x: roomById.atrium.x,
+        y: roomById.atrium.y,
         movingTo: null,
         chips: [],
         moveClock: 0,

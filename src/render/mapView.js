@@ -1,4 +1,4 @@
-import { rooms } from '../data/rooms.js';
+import { rooms, worldSize } from '../data/rooms.js';
 
 const corridors = [
   ['entrance', 'hallA'], ['hallA', 'storage'], ['hallA', 'atrium'],
@@ -10,38 +10,40 @@ function sprite(entity, className = '', index = 0) {
   const hp = entity.maxHp ? `<span class="mini-hp" style="--hp:${Math.max(0, entity.hp / entity.maxHp)}"></span>` : '';
   const carry = entity.carrying ? '<b class="badge carry">⛓</b>' : '';
   const known = entity.knowsThrone ? '<b class="badge warn">!</b>' : '';
-  const offsetX = ((index % 3) - 1) * 2.2;
-  const offsetY = (Math.floor(index / 3) - 0.5) * 2.2;
-  return `<div class="actor ${className}" title="${entity.name}" style="left:${(entity.x ?? 0) + offsetX}%;top:${(entity.y ?? 0) + offsetY}%">
+  const offsetX = ((index % 3) - 1) * 12;
+  const offsetY = (Math.floor(index / 3) - 0.5) * 12;
+  const type = entity.type === 'enemy' ? 'enemy' : entity.type === 'boss' ? 'lord' : 'ally';
+  return `<button class="actor ${className}" data-select-type="${type}" data-select-id="${entity.uid ?? entity.id}" title="${entity.name}" style="left:${(entity.x ?? 0) + offsetX}px;top:${(entity.y ?? 0) + offsetY}px">
     <img src="${entity.sprite}" alt="${entity.name}" />
     ${hp}${carry}${known}
-  </div>`;
+  </button>`;
 }
 
 function bodySprite(body, index = 0) {
-  const offsetX = ((index % 3) - 1) * 2.2;
-  const offsetY = (Math.floor(index / 3) - 0.5) * 2.2;
-  return `<div class="actor downed" title="${body.name} 残り${Math.ceil(body.ttl)}秒" style="left:${(body.x ?? 0) + offsetX}%;top:${(body.y ?? 0) + offsetY}%">
+  const offsetX = ((index % 3) - 1) * 12;
+  const offsetY = (Math.floor(index / 3) - 0.5) * 12;
+  return `<button class="actor downed" data-select-type="downed" data-select-id="${body.uid}" title="${body.name} 残り${Math.ceil(body.ttl)}秒" style="left:${(body.x ?? 0) + offsetX}px;top:${(body.y ?? 0) + offsetY}px">
     <img src="${body.sprite}" alt="${body.name}" />
     <span class="down-timer">${Math.ceil(body.ttl)}</span>
-  </div>`;
+  </button>`;
 }
 
 export function renderMap(game, mode = 'setup') {
   const camera = game.camera ?? { zoom: 1, x: 0, y: 0 };
   const roomById = Object.fromEntries(rooms.map((room) => [room.id, room]));
   const actors = [];
-  game.allies.forEach((ally, index) => actors.push(sprite(ally, ally.uid === game.selectedUnitId ? 'selected ally' : 'ally', index)));
+  const selected = game.selectedEntity ?? { type: 'ally', id: game.selectedUnitId };
+  game.allies.forEach((ally, index) => actors.push(sprite(ally, selected.type === 'ally' && selected.id === ally.uid ? 'selected ally' : 'ally', index)));
   if (game.phase === 'battle') {
-    game.enemies.forEach((enemy, index) => actors.push(sprite(enemy, 'enemy', index)));
+    game.enemies.forEach((enemy, index) => actors.push(sprite(enemy, selected.type === 'enemy' && selected.id === enemy.uid ? 'selected enemy' : 'enemy', index)));
     game.downed.forEach((body, index) => actors.push(bodySprite(body, index)));
   }
-  actors.push(sprite(game.demonLord, 'lord', 0));
+  actors.push(sprite(game.demonLord, selected.type === 'lord' ? 'selected lord' : 'lord', 0));
 
   const nodes = rooms.map((room) => {
     const discovered = game.partyKnowledge?.visited?.has?.(room.id) || mode !== 'battle' || room.id === 'entrance';
     const selected = room.id === game.selectedRoomId ? 'selected-room' : '';
-    return `<button class="room ${room.type} ${selected} ${discovered ? '' : 'fog'}" data-room="${room.id}" style="left:${room.x}%;top:${room.y}%">
+    return `<button class="room ${room.type} ${selected} ${discovered ? '' : 'fog'}" data-room="${room.id}" style="left:${room.x - room.w / 2}px;top:${room.y - room.h / 2}px;width:${room.w}px;height:${room.h}px">
       <span class="room-name">${room.name}</span>
     </button>`;
   }).join('');
@@ -55,13 +57,13 @@ export function renderMap(game, mode = 'setup') {
   const effects = game.effects.map((effect) => {
     const room = rooms.find((item) => item.id === effect.room);
     if (!room) return '';
-    return `<span class="fx ${effect.type}" style="left:${room.x + 6}%;top:${room.y + 4}%">${effect.label ?? ''}</span>`;
+    return `<span class="fx ${effect.type}" style="left:${room.x + 36}px;top:${room.y + 28}px">${effect.label ?? ''}</span>`;
   }).join('');
 
   return `<section class="map-shell" data-map-shell aria-label="ダンジョン">
     <div class="map-board">
-      <div class="map-world" style="transform: translate(${camera.x}%, ${camera.y}%) scale(${camera.zoom})">
-        <svg class="corridors" viewBox="0 0 100 50" preserveAspectRatio="none" aria-hidden="true">${lines}</svg>
+      <div class="map-world" style="width:${worldSize.width}px;height:${worldSize.height}px;transform: translate(${camera.x}px, ${camera.y}px) scale(${camera.zoom})">
+        <svg class="corridors" viewBox="0 0 ${worldSize.width} ${worldSize.height}" aria-hidden="true">${lines}</svg>
         ${nodes}<div class="actor-layer">${actors.join('')}</div>${effects}
       </div>
       <div class="map-controls" aria-label="マップ操作">
