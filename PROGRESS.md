@@ -45,12 +45,18 @@
 ### 検証結果
 
 - `npm run build`: 成功
+- `npm run build:pages`: 成功
 - `npm run test:smoke`: 6件成功
+- GitHub Pages deploy: 成功
+- 公開URL HTTP確認: `200`
+- 公開URL Playwright確認: PC/スマホ幅で表示、画面全体スクロールなし
 - スクリーンショット:
   - `screenshots/desktop-setup-v2.png`
   - `screenshots/mobile-setup-v2.png`
   - `screenshots/desktop-battle-v4.png`
   - `screenshots/mobile-battle-v3.png`
+  - `screenshots/pages-desktop.png`
+  - `screenshots/pages-mobile.png`
 
 ### 仕様調整
 
@@ -64,3 +70,9 @@
 - チップ「戻る」系は動くが、役割の違いをもっと強める余地あり。
 - 敵探索の視覚フィードバックは最低限。探索済み/未踏の見せ方は改善余地あり。
 - 本格的なドット絵/アニメーションは未着手。
+
+### URL
+
+- 実装場所：`C:\Users\kota\Documents\maou-gambit`
+- GitHub：https://github.com/kotayamanaka/maou-gambit
+- 公開URL：https://kotayamanaka.github.io/maou-gambit/

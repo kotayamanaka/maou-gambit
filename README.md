@@ -13,6 +13,10 @@
 
 ## 起動
 
+公開URL：
+
+- https://kotayamanaka.github.io/maou-gambit/
+
 ```powershell
 npm install
 npm run dev -- --host 0.0.0.0 --port 5177
@@ -30,6 +34,10 @@ npm run build
 ```
 
 静的成果物は `dist/` に出る。GitHub Pages/Vercel/Netlify などへそのまま配置できる。
+
+GitHubリポジトリ：
+
+- https://github.com/kotayamanaka/maou-gambit
 
 GitHub Pages 用ビルド：
 
