@@ -5,7 +5,7 @@ export const allyTemplates = {
     type: 'ally',
     role: 'balanced',
     sprite: 'assets/sprites/goblin.png',
-    stats: { hp: 30, atk: 6, spd: 1.0, int: 2, carry: 1, range: 1 },
+    stats: { hp: 42, atk: 9, spd: 1.05, int: 2, carry: 1, range: 1 },
     traits: ['運搬可', '初期主力']
   },
   slime: {
@@ -14,7 +14,7 @@ export const allyTemplates = {
     type: 'ally',
     role: 'tank',
     sprite: 'assets/sprites/slime.png',
-    stats: { hp: 45, atk: 3, spd: 0.6, int: 1, carry: 1, range: 1 },
+    stats: { hp: 68, atk: 5, spd: 0.65, int: 1, carry: 1, range: 1 },
     traits: ['運搬可', '鈍足付与']
   },
   bat: {
@@ -23,7 +23,7 @@ export const allyTemplates = {
     type: 'ally',
     role: 'scout',
     sprite: 'assets/sprites/bat.png',
-    stats: { hp: 18, atk: 4, spd: 1.8, int: 1, carry: 0, range: 1 },
+    stats: { hp: 36, atk: 6, spd: 1.85, int: 1, carry: 0, range: 1 },
     traits: ['高速', '運搬不可']
   },
   fallenWarrior: {
@@ -61,7 +61,7 @@ export const enemyTemplates = {
     name: '戦士',
     type: 'enemy',
     sprite: 'assets/sprites/warrior.png',
-    stats: { hp: 42, atk: 7, spd: 0.8, range: 1 },
+    stats: { hp: 34, atk: 5, spd: 0.72, range: 1 },
     convertTo: 'fallenWarrior'
   },
   rogue: {
@@ -69,7 +69,7 @@ export const enemyTemplates = {
     name: '盗賊',
     type: 'enemy',
     sprite: 'assets/sprites/rogue.png',
-    stats: { hp: 24, atk: 4, spd: 1.5, range: 1 },
+    stats: { hp: 22, atk: 3, spd: 1.2, range: 1 },
     convertTo: 'shadeRunner'
   },
   mage: {
@@ -77,7 +77,7 @@ export const enemyTemplates = {
     name: '魔法使い',
     type: 'enemy',
     sprite: 'assets/sprites/mage.png',
-    stats: { hp: 22, atk: 6, spd: 0.7, range: 3 },
+    stats: { hp: 20, atk: 4, spd: 0.62, range: 3 },
     convertTo: 'darkMage'
   }
 };
@@ -87,5 +87,5 @@ export const demonLord = {
   name: '魔王',
   type: 'boss',
   sprite: 'assets/sprites/demon-lord.png',
-  stats: { hp: 120, atk: 8, spd: 0, int: 0, carry: 0, range: 2 }
+  stats: { hp: 100, atk: 0, spd: 0, int: 0, carry: 0, range: 0 }
 };

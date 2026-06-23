@@ -28,6 +28,23 @@ test('stage runs and reaches result screen', async ({ page }) => {
   await assertNoDocumentScroll(page);
 });
 
+test('allies intercept before enemies reach the demon lord', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: /侵入開始/ }).click();
+  await page.getByRole('button', { name: /×2/ }).click();
+  await page.waitForFunction(() => window.__MAOU_GAME__?.elapsed > 12);
+  const snapshot = await page.evaluate(() => ({
+    lordHp: window.__MAOU_GAME__.demonLord.hp,
+    maxLordHp: window.__MAOU_GAME__.demonLord.maxHp,
+    throneEnemies: window.__MAOU_GAME__.enemies.filter((enemy) => enemy.room === 'throne').length,
+    allyRooms: window.__MAOU_GAME__.allies.map((ally) => ally.room)
+  }));
+  expect(snapshot.lordHp).toBe(snapshot.maxLordHp);
+  expect(snapshot.throneEnemies).toBe(0);
+  expect(snapshot.allyRooms).not.toEqual(['atrium', 'hallB', 'hallA']);
+  await assertNoDocumentScroll(page);
+});
+
 test('result can continue into upgrade flow after a win', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: /侵入開始/ }).click();

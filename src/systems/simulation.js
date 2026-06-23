@@ -31,6 +31,10 @@ export function tickBattle(game, dt) {
       attack(enemy, sameRoomAlly, game, '打');
       continue;
     }
+    if (enemy.searchClock > 0) {
+      enemy.searchClock -= step;
+      continue;
+    }
     if (enemy.room === 'throne' && enemy.attackClock <= 0) {
       attack(enemy, game.demonLord, game, '魔王');
       if (game.demonLord.hp <= 0) {
@@ -45,6 +49,7 @@ export function tickBattle(game, dt) {
     if (action.type === 'move') {
       const moved = moveUnit(enemy, action.targetRoom, step);
       if (moved) {
+        enemy.searchClock = enemy.knowsThrone ? 0.25 : 0.85;
         game.effects.push({ id: crypto.randomUUID(), type: 'question', room: enemy.room, ttl: 0.45, label: enemy.knowsThrone ? '!' : '?' });
       }
     }

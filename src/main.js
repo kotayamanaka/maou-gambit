@@ -5,6 +5,7 @@ import { tickBattle } from './systems/simulation.js';
 
 const app = document.querySelector('#app');
 const game = createGame();
+window.__MAOU_GAME__ = game;
 
 function commit(mutator) {
   mutator(game);

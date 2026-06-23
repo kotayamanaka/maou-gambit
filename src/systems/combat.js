@@ -11,6 +11,7 @@ export function spawnDueEnemies(game) {
       uid: `enemy-${spawn.id}-${Math.round(game.elapsed * 10)}`,
       templateId: template.id,
       name: template.name,
+      type: template.type,
       sprite: template.sprite,
       maxHp: template.stats.hp,
       hp: template.stats.hp,
@@ -24,6 +25,7 @@ export function spawnDueEnemies(game) {
       movingTo: null,
       moveClock: 0,
       attackClock: 0,
+      searchClock: 0.45,
       knowsThrone: false
     });
     spawn.spawned = true;
@@ -31,8 +33,13 @@ export function spawnDueEnemies(game) {
   }
 }
 
+export function canAttack(attacker, target) {
+  const roomDistance = distanceRooms(attacker.room, target.room);
+  return attacker.range > 1 ? roomDistance <= attacker.range : roomDistance === 0;
+}
+
 export function attack(attacker, target, game, label) {
-  if (distanceRooms(attacker.room, target.room) > attacker.range) return false;
+  if (!canAttack(attacker, target)) return false;
   target.hp = Math.max(0, target.hp - attacker.atk);
   attacker.attackClock = 1.05;
   game.effects.push({ id: crypto.randomUUID(), type: 'hit', room: target.room, ttl: 0.45, label });
@@ -49,7 +56,8 @@ export function moveUnit(unit, targetRoom, dt) {
   const dx = destination.x - unit.x;
   const dy = destination.y - unit.y;
   const dist = Math.hypot(dx, dy);
-  const speed = Math.max(28, (unit.spd || 0.7) * 78) / (unit.carrying ? 1.65 : 1);
+  const base = unit.type === 'enemy' ? 56 : 86;
+  const speed = Math.max(28, (unit.spd || 0.7) * base) / (unit.carrying ? 1.65 : 1);
   const travel = speed * dt;
 
   if (dist <= travel) {

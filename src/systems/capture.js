@@ -10,7 +10,7 @@ export function createDownedEnemy(enemy) {
     room: enemy.room,
     x: enemy.x,
     y: enemy.y,
-    ttl: 14,
+    ttl: 20,
     carriedBy: null
   };
 }
@@ -26,7 +26,6 @@ export function pickupDowned(unit, downed, game) {
 
 export function resolveCaptures(game, dt) {
   for (const body of game.downed) {
-    body.ttl -= dt;
     if (body.carriedBy) {
       const carrier = game.allies.find((unit) => unit.uid === body.carriedBy);
       if (carrier) {
@@ -34,6 +33,8 @@ export function resolveCaptures(game, dt) {
         body.x = carrier.x;
         body.y = carrier.y;
       }
+    } else {
+      body.ttl -= dt;
     }
   }
 
@@ -52,6 +53,10 @@ export function resolveCaptures(game, dt) {
   }
 
   const expired = game.downed.filter((body) => body.ttl <= 0);
+  for (const body of expired) {
+    const carrier = game.allies.find((unit) => unit.carrying === body.uid);
+    if (carrier) carrier.carrying = null;
+  }
   if (expired.length) addLog(game, `${expired.length}体のダウン敵が消滅。`);
   game.downed = game.downed.filter((body) => body.ttl > 0);
 }
