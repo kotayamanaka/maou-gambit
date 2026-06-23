@@ -1,0 +1,57 @@
+import { addLog } from '../game/state.js';
+
+export function createDownedEnemy(enemy) {
+  return {
+    uid: `downed-${enemy.uid}`,
+    templateId: enemy.templateId,
+    name: enemy.name,
+    sprite: enemy.sprite,
+    convertTo: enemy.convertTo,
+    room: enemy.room,
+    x: enemy.x,
+    y: enemy.y,
+    ttl: 14,
+    carriedBy: null
+  };
+}
+
+export function pickupDowned(unit, downed, game) {
+  if (!downed || downed.carriedBy || unit.carry <= 0) return false;
+  if (unit.room !== downed.room) return false;
+  unit.carrying = downed.uid;
+  downed.carriedBy = unit.uid;
+  addLog(game, `${unit.name}が${downed.name}を担いだ。`);
+  return true;
+}
+
+export function resolveCaptures(game, dt) {
+  for (const body of game.downed) {
+    body.ttl -= dt;
+    if (body.carriedBy) {
+      const carrier = game.allies.find((unit) => unit.uid === body.carriedBy);
+      if (carrier) {
+        body.room = carrier.room;
+        body.x = carrier.x;
+        body.y = carrier.y;
+      }
+    }
+  }
+
+  for (const unit of game.allies) {
+    if (!unit.carrying || unit.room !== 'jail') continue;
+    const body = game.downed.find((item) => item.uid === unit.carrying);
+    if (!body) {
+      unit.carrying = null;
+      continue;
+    }
+    game.captured.push({ ...body, capturedAt: game.elapsed });
+    game.downed = game.downed.filter((item) => item.uid !== body.uid);
+    unit.carrying = null;
+    addLog(game, `${body.name}を牢屋に捕獲。`);
+    game.effects.push({ id: crypto.randomUUID(), type: 'capture', room: 'jail', ttl: 1.0, label: '捕獲' });
+  }
+
+  const expired = game.downed.filter((body) => body.ttl <= 0);
+  if (expired.length) addLog(game, `${expired.length}体のダウン敵が消滅。`);
+  game.downed = game.downed.filter((body) => body.ttl > 0);
+}
