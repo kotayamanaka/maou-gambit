@@ -25,8 +25,7 @@ img { image-rendering: pixelated; }
   height: 100dvh;
   padding: max(10px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
   display: grid;
-  grid-template-rows: 48px minmax(0, 1fr);
-  gap: 10px;
+  grid-template-rows: minmax(0, 1fr);
   overflow: hidden;
 }
 
@@ -48,15 +47,14 @@ img { image-rendering: pixelated; }
 
 .playfield {
   min-height: 0;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) clamp(280px, 30vw, 420px);
-  gap: 10px;
+  position: relative;
+  display: block;
+  overflow: hidden;
 }
 
 .map-shell {
-  min-width: 0;
-  min-height: 0;
-  position: relative;
+  position: absolute;
+  inset: 0;
   border: 1px solid var(--line);
   background:
     linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px),
@@ -228,15 +226,24 @@ img { image-rendering: pixelated; }
 .fx.found, .fx.question { color: var(--gold); }
 
 .panel {
+  position: absolute;
+  right: 12px;
+  top: 12px;
+  bottom: auto;
+  width: min(390px, calc(100vw - 24px));
+  max-height: calc(100% - 24px);
   min-width: 0;
   min-height: 0;
   overflow: hidden;
   border: 1px solid var(--line);
-  background: var(--panel);
+  background: rgba(20, 17, 15, 0.76);
+  backdrop-filter: blur(7px);
   padding: 10px;
   display: flex;
   flex-direction: column;
   gap: 9px;
+  z-index: 10;
+  box-shadow: 0 18px 42px rgba(0,0,0,.36);
 }
 
 .panel-head {
@@ -253,7 +260,7 @@ img { image-rendering: pixelated; }
   font-weight: 900;
 }
 
-.stage-pill, .boss-box, .detail-card, .room-picker, .chips-box, .log, .empty {
+.stage-pill, .boss-box, .detail-card, .unit-picker, .room-picker, .chips-box, .log, .empty {
   border: 1px solid var(--line);
   background: rgba(0,0,0,.18);
   padding: 8px;
@@ -261,35 +268,47 @@ img { image-rendering: pixelated; }
 
 .unit-list {
   min-height: 0;
-  display: grid;
-  grid-template-columns: 1fr;
+  display: flex;
   gap: 6px;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  padding-bottom: 2px;
 }
-.setup-panel .unit-list { grid-template-columns: repeat(3, 1fr); }
+.setup-panel {
+  gap: 8px;
+}
+.setup-panel .stage-pill,
+.setup-panel .detail-card,
+.setup-panel .unit-picker,
+.setup-panel .room-picker,
+.setup-panel .chips-box {
+  padding: 6px;
+}
 
 .unit-card {
-  min-height: 48px;
+  flex: 0 0 118px;
+  min-height: 64px;
   display: grid;
-  grid-template-columns: 34px minmax(0, 1fr);
+  grid-template-columns: 32px minmax(0, 1fr);
   align-items: center;
-  gap: 8px;
-  padding: 6px;
+  gap: 7px;
+  padding: 5px;
   background: var(--panel-2);
   border: 1px solid transparent;
 }
 .unit-card.on { border-color: var(--gold); }
-.unit-card img, .detail-title img { width: 34px; height: 34px; object-fit: contain; image-rendering: pixelated; }
+.unit-card img, .detail-title img { width: 30px; height: 30px; object-fit: contain; image-rendering: pixelated; }
 .unit-card b, .unit-card small, .detail-title b, .detail-title small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .unit-card small, .detail-title small { color: #cbb99c; font-size: 11px; }
-.unit-card em { grid-column: 1 / 3; font-style: normal; letter-spacing: 1px; line-height: 1; }
+.unit-card em { display: block; font-style: normal; letter-spacing: 1px; line-height: 1; font-size: 12px; margin-top: 3px; }
 
 .detail-title { display: flex; gap: 8px; align-items: center; }
 .stats {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: 5px;
-  margin-top: 7px;
+  margin-top: 5px;
 }
 .stats span, .battle-stats span, .result-grid span {
   background: rgba(255,255,255,.06);
@@ -304,12 +323,27 @@ img { image-rendering: pixelated; }
   gap: 6px;
   margin-top: 6px;
 }
-.room-picker div { grid-template-columns: repeat(2, 1fr); }
-.chip-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.setup-panel .chip-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.scroll-rail {
+  display: flex !important;
+  gap: 6px;
+  margin-top: 0 !important;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  padding-bottom: 2px;
+}
+.room-picker .mini {
+  flex: 0 0 88px;
+}
+.chip-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.setup-panel .chip-grid {
+  display: flex;
+}
 
 .mini, .chip, .upgrade-actions button, .panel button {
-  min-height: 38px;
+  min-height: 34px;
   background: rgba(255,255,255,.07);
   border: 1px solid var(--line);
   padding: 6px 8px;
@@ -327,7 +361,8 @@ img { image-rendering: pixelated; }
 .chip small { color: #cbb99c; font-size: 10px; }
 .chip:disabled { opacity: .42; cursor: not-allowed; }
 .setup-panel .chip {
-  min-height: 44px;
+  flex: 0 0 76px;
+  min-height: 52px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -337,6 +372,24 @@ img { image-rendering: pixelated; }
 }
 .setup-panel .chip span { font-size: 10px; max-width: 100%; }
 .setup-panel .chip small { font-size: 9px; }
+.chips-box {
+  position: relative;
+}
+.chip-meter {
+  position: absolute;
+  right: 8px;
+  top: 6px;
+  min-width: 30px;
+  text-align: center;
+  font-weight: 900;
+  font-size: 12px;
+  color: #111;
+  background: var(--gold);
+  padding: 2px 5px;
+}
+.chips-box .scroll-rail {
+  padding-right: 34px;
+}
 
 .bar {
   display: block;
@@ -362,22 +415,22 @@ img { image-rendering: pixelated; }
   font-size: 12px;
   color: #d9c8ad;
 }
-.command-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 6px;
-  margin-top: 8px;
+.battle-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 7px;
 }
-.hint {
-  display: block;
-  color: #b9aa91;
+.battle-chips span {
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,.06);
+  padding: 4px 6px;
   font-size: 11px;
-  margin-top: 6px;
 }
 .result-grid b { display: block; font-size: 22px; color: var(--gold); }
 .log {
   min-height: 0;
-  flex: 1;
+  max-height: min(34dvh, 260px);
   overflow: hidden;
 }
 .log p { margin: 0 0 7px; font-size: 12px; color: #d9c8ad; }
@@ -390,18 +443,10 @@ img { image-rendering: pixelated; }
 
 @media (max-width: 720px) {
   .app {
-    grid-template-rows: 42px minmax(0, 1fr);
-    gap: 7px;
     padding: max(7px, env(safe-area-inset-top)) max(7px, env(safe-area-inset-right)) max(7px, env(safe-area-inset-bottom)) max(7px, env(safe-area-inset-left));
   }
-  .topbar { padding: 6px 8px; }
-  .topbar b { font-size: 15px; }
-  .topbar span { font-size: 10px; }
-  .top-status span { padding: 4px 5px; }
   .playfield {
-    grid-template-columns: 1fr;
-    grid-template-rows: minmax(230px, 42dvh) minmax(0, 1fr);
-    gap: 7px;
+    display: block;
   }
   .room {
     padding: 4px;
@@ -410,21 +455,30 @@ img { image-rendering: pixelated; }
   .actor { width: 24px; height: 24px; }
   .actor-layer .actor { margin-left: -12px; margin-top: -12px; }
   .actor img { width: 21px; height: 21px; }
-  .panel { padding: 7px; gap: 6px; }
-  .setup-panel .stage-pill { display: none; }
-  .unit-list { grid-template-columns: repeat(3, 1fr); }
+  .panel {
+    left: 7px;
+    right: 7px;
+    top: auto;
+    bottom: 7px;
+    width: auto;
+    height: min(45dvh, 360px);
+    padding: 7px;
+    gap: 6px;
+  }
+  .map-controls {
+    top: 8px;
+    bottom: auto;
+  }
+  .unit-picker { padding: 5px; }
   .unit-card {
-    min-height: 42px;
+    flex-basis: 108px;
+    min-height: 54px;
     grid-template-columns: 28px minmax(0, 1fr);
     gap: 5px;
   }
   .unit-card img, .detail-title img { width: 28px; height: 28px; }
-  .unit-card em { display: none; }
   .unit-card small { font-size: 10px; }
-  .detail-card { display: none; }
   .stats { grid-template-columns: repeat(6, 1fr); }
-  .room-picker div { grid-template-columns: repeat(3, 1fr); }
-  .chip-grid { grid-template-columns: repeat(4, 1fr); }
   .chip {
     min-height: 42px;
     display: flex;
@@ -440,15 +494,28 @@ img { image-rendering: pixelated; }
 }
 
 @media (max-width: 430px) {
-  .topbar > div:first-child span { display: none; }
-  .top-status span:last-child { display: none; }
-  .playfield { grid-template-rows: minmax(220px, 39dvh) minmax(0, 1fr); }
   .room { padding: 4px; }
   .room-name { font-size: 9px; }
   .actor { width: 21px; height: 21px; }
   .actor-layer .actor { margin-left: -10px; margin-top: -10px; }
   .actor img { width: 18px; height: 18px; }
   .panel-head { font-size: 13px; }
-  .stage-pill, .boss-box, .detail-card, .room-picker, .chips-box, .log, .empty { padding: 6px; }
+  .stage-pill, .boss-box, .detail-card, .unit-picker, .room-picker, .chips-box, .log, .empty { padding: 6px; }
   .mini, .chip, .upgrade-actions button, .panel button { min-height: 34px; }
+  .room-picker .mini { flex-basis: 76px; }
+  .setup-panel .chip { flex-basis: 68px; }
+}
+
+@media (max-width: 430px) and (max-height: 760px) {
+  .panel { height: min(50dvh, 350px); }
+  .panel { gap: 5px; }
+  .unit-card {
+    flex-basis: 104px;
+    min-height: 48px;
+    padding: 4px;
+  }
+  .unit-card img, .detail-title img { width: 26px; height: 26px; }
+  .room-picker div, .chip-grid { gap: 5px; }
+  .mini, .chip, .upgrade-actions button, .panel button { min-height: 31px; }
+  .setup-panel .chip { min-height: 38px; flex-basis: 64px; }
 }

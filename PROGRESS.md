@@ -133,3 +133,43 @@
 - スクリーンショット:
   - `screenshots/desktop-intercept-fix.png`
   - `screenshots/mobile-intercept-fix.png`
+
+## 2026-06-24 編成操作/戦闘中指示の修正
+
+### ユーザー指摘
+
+- 編成画面でモンスター選択やチップ変更ができない。
+- 戦闘中に直接指示できるのは、チップ采配で自動行動させるゲーム性に反している。
+
+### 修正
+
+- マップ上のモンスタータップを、マップドラッグではなく選択として優先するように変更。
+- 編成画面で、モンスター選択・配置変更・チップ着脱が通ることをテスト化。
+- 戦闘中の「広間へ」「牢屋へ」「魔王前へ」「自動に戻す」指示ボタンを削除。
+- 戦闘中の部屋クリックによる手動移動指示を削除。
+- AI側に残っていた手動移動フックも削除し、戦闘は装備チップによる自動行動だけに戻した。
+- 戦闘中の選択パネルは、直接指示ではなく装備チップ確認として表示。
+- 編成画面のユニットカードを `配下` セクションとして明示し、スマホでも縮んで消えないよう固定。
+- 短いスマホ画面ではマップ領域を圧縮し、`配下`、`配置`、`チップ` が同時に見えるよう調整。
+- その後、マップを常時フルスクリーン表示に変更し、編成/戦闘メニューは透過ドックとしてマップ上に重ねる構成へ変更。
+- 部屋候補とチップ候補は、画面全体ではなくドック内レーンだけ横スクロールする設計に変更。
+- スマホで二本指ピンチズームを追加。一本指ドラッグ/ホイール/ボタン操作も維持。
+- スマホでは操作ドックが下に重なるため、マップ操作ボタンを上側に移動。
+
+### 追加検証
+
+- `npm run build`: 成功
+- `npm run build:pages`: 成功
+- `npm run test:smoke`: 16件成功
+- 追加テスト：編成中のモンスター選択、配置変更、チップ編集。戦闘中に直接指示ボタンが存在しないこと。
+- 追加テスト：短いスマホ画面でも `配下` セクションとユニットカードが表示されること。
+- 追加テスト：ピンチズームでマップのズーム値が変化し、画面全体スクロールが発生しないこと。
+- スクリーンショット:
+  - `screenshots/desktop-setup-edit-fix.png`
+  - `screenshots/mobile-setup-edit-fix.png`
+  - `screenshots/desktop-battle-no-command-fix.png`
+  - `screenshots/mobile-battle-no-command-fix.png`
+  - `screenshots/mobileShort-unit-picker-fix.png`
+  - `screenshots/desktop-fullscreen-map-dock.png`
+  - `screenshots/mobile-fullscreen-map-dock.png`
+  - `screenshots/mobileShort-fullscreen-map-dock.png`

@@ -34,8 +34,7 @@ function hpBar(current, max) {
 function unitCard(unit, game) {
   return `<button class="unit-card ${unit.uid === game.selectedUnitId ? 'on' : ''}" data-unit="${unit.uid}">
     <img src="${unit.sprite}" alt="${unit.name}" />
-    <span><b>${unit.name}</b><small>HP${unit.maxHp} ATK${unit.atk} INT${unit.int}</small></span>
-    <em>${unit.chips.map((id) => chips[id]?.icon ?? '□').join('')}</em>
+    <span><b>${unit.name}</b><small>HP${unit.maxHp} ATK${unit.atk} INT${unit.int}</small><em>${unit.chips.map((id) => chips[id]?.icon ?? '□').join('')}</em></span>
   </button>`;
 }
 
@@ -54,30 +53,24 @@ function setupPanel(game) {
   const unit = selectedUnit(game);
   return `<aside class="panel setup-panel">
     <header class="panel-head">
-      <span>編成</span>
-      <button class="primary" data-action="start">▶ 侵入開始</button>
+      <span>${currentStage(game).id}/3 ${currentStage(game).name}</span>
+      <button class="primary" data-action="start" title="侵入開始">▶</button>
     </header>
-    <div class="stage-pill">Stage ${currentStage(game).id} / 3 ${currentStage(game).name}</div>
-    <div class="unit-list">${game.allies.map((ally) => unitCard(ally, game)).join('')}</div>
-    <div class="detail-card">
-      <div class="detail-title">
-        <img src="${unit.sprite}" alt="${unit.name}" />
-        <div><b>${unit.name}</b><small>${unit.traits.join(' / ') || '眷属'}</small></div>
-      </div>
-      <div class="stats">
-        <span>HP ${unit.maxHp}</span><span>ATK ${unit.atk}</span><span>SPD ${unit.spd}</span>
-        <span class="core">INT ${unit.int}</span><span>CARRY ${unit.carry}</span><span>RANGE ${unit.range}</span>
-      </div>
+    <div class="unit-picker" aria-label="配下選択">
+      <div class="unit-list">${game.allies.map((ally) => unitCard(ally, game)).join('')}</div>
     </div>
-    <div class="room-picker">
-      <b>配置</b>
-      <div>${rooms.filter((room) => room.type !== 'spawn' && room.type !== 'throne').map((room) =>
+    <div class="stats setup-stats" aria-label="${unit.name}の能力">
+      <span>HP ${unit.maxHp}</span><span>ATK ${unit.atk}</span><span>SPD ${unit.spd}</span>
+      <span class="core">INT ${unit.int}</span><span>CRY ${unit.carry}</span><span>RNG ${unit.range}</span>
+    </div>
+    <div class="room-picker" aria-label="配置先">
+      <div class="scroll-rail">${rooms.filter((room) => room.type !== 'spawn' && room.type !== 'throne').map((room) =>
         `<button class="mini ${unit.room === room.id ? 'on' : ''}" data-place="${room.id}">${room.name}</button>`
       ).join('')}</div>
     </div>
-    <div class="chips-box">
-      <b>チップ ${unit.chips.length}/${unit.int}</b>
-      <div class="chip-grid">${Object.keys(chips).map((id) => chipButton(id, unit, game)).join('')}</div>
+    <div class="chips-box" aria-label="チップ">
+      <div class="chip-meter">${unit.chips.length}/${unit.int}</div>
+      <div class="chip-grid scroll-rail">${Object.keys(chips).map((id) => chipButton(id, unit, game)).join('')}</div>
     </div>
   </aside>`;
 }
@@ -106,13 +99,7 @@ function battlePanel(game) {
         <div><b>${entity.name}</b><small>${entity.room ? roomById[entity.room]?.name ?? entity.room : '戦場'}</small></div>
       </div>
       ${entity.maxHp ? `<div class="mini-stat">HP ${entity.hp}/${entity.maxHp}${entity.atk ? ` / ATK ${entity.atk}` : ''}${entity.int != null ? ` / INT ${entity.int}` : ''}</div>${hpBar(entity.hp, entity.maxHp)}` : ''}
-      ${isAlly ? `<div class="command-grid">
-        <button data-command-room="atrium">広間へ</button>
-        <button data-command-room="jail">牢屋へ</button>
-        <button data-command-room="hallB">魔王前へ</button>
-        <button data-command-room="">自動に戻す</button>
-      </div>
-      <small class="hint">味方を選択して部屋を押すと、その地点へ移動指示。</small>` : `<small class="hint">敵/ダウン体は確認のみ。味方を選ぶと指示できます。</small>`}
+      ${isAlly ? `<div class="battle-chips">${entity.chips.map((id) => `<span>${chips[id]?.icon ?? '□'} ${chips[id]?.name ?? id}</span>`).join('')}</div>` : ''}
     </div>` : ''}
     <div class="log">${game.log.map((line) => `<p>${line}</p>`).join('')}</div>
   </aside>`;
@@ -174,10 +161,6 @@ export function renderApp(root, game, commit) {
     : endPanel(game, false);
 
   root.innerHTML = `<main class="app ${phase}">
-    <section class="topbar">
-      <div><b>魔王のガンビット</b><span>INT=チップ数 / 捕獲運搬プロト</span></div>
-      <div class="top-status"><span>Stage ${game.stageIndex + 1}/3</span><span>味方 ${game.allies.length}</span></div>
-    </section>
     <section class="playfield">
       ${renderMap(game, phase)}
       ${panel}
@@ -205,10 +188,6 @@ export function renderApp(root, game, commit) {
       unit.y = roomById[unit.room].y;
       unit.movingTo = null;
     }
-    if (state.phase === 'battle' && state.selectedEntity?.type === 'ally' && !blocked.includes(button.dataset.room)) {
-      const unit = state.allies.find((ally) => ally.uid === state.selectedEntity.id);
-      if (unit) unit.manualTargetRoom = button.dataset.room;
-    }
   })));
   root.querySelectorAll('[data-chip]').forEach((button) => button.addEventListener('click', () => commit((state) => {
     const unit = selectedUnit(state);
@@ -233,12 +212,6 @@ export function renderApp(root, game, commit) {
       if (button.dataset.selectType === 'ally') state.selectedUnitId = button.dataset.selectId;
     });
   }));
-  root.querySelectorAll('[data-command-room]').forEach((button) => button.addEventListener('click', () => commit((state) => {
-    if (state.selectedEntity?.type !== 'ally') return;
-    const unit = state.allies.find((ally) => ally.uid === state.selectedEntity.id);
-    if (!unit) return;
-    unit.manualTargetRoom = button.dataset.commandRoom || null;
-  })));
   root.querySelectorAll('[data-mapaction]').forEach((button) => button.addEventListener('click', () => commit((state) => {
     state.camera ??= { zoom: 1, x: 0, y: 0 };
     if (button.dataset.mapaction === 'zoomIn') state.camera.zoom = Math.min(1.65, +(state.camera.zoom + 0.15).toFixed(2));
@@ -255,10 +228,14 @@ export function renderApp(root, game, commit) {
     let dragging = false;
     let last = null;
     let draftCamera = null;
+    const pointers = new Map();
+    let pinch = null;
     const applyCamera = (camera) => {
       const world = mapShell.querySelector('.map-world');
       if (world) world.style.transform = `translate(${camera.x}px, ${camera.y}px) scale(${camera.zoom})`;
     };
+    const getDistance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+    const getCenter = (a, b) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
     mapShell.addEventListener('wheel', (event) => {
       event.preventDefault();
       const camera = game.camera ?? { zoom: 0.78, x: 16, y: 16 };
@@ -273,14 +250,42 @@ export function renderApp(root, game, commit) {
       });
     }, { passive: false });
     mapShell.addEventListener('pointerdown', (event) => {
-      if (event.target.closest('.room, .map-controls')) return;
+      if (event.target.closest('.room, .actor, .map-controls')) return;
+      pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      try {
+        mapShell.setPointerCapture(event.pointerId);
+      } catch {
+        // Synthetic and some touch events can fail capture; map gestures still work without it.
+      }
+      draftCamera = { ...(game.camera ?? { zoom: 0.78, x: 16, y: 16 }) };
+      if (pointers.size === 2) {
+        const [a, b] = [...pointers.values()];
+        pinch = {
+          distance: getDistance(a, b),
+          center: getCenter(a, b),
+          camera: { ...draftCamera }
+        };
+        dragging = false;
+        last = null;
+        return;
+      }
       dragging = true;
       window.__MAOU_MAP_DRAGGING__ = true;
-      draftCamera = { ...(game.camera ?? { zoom: 0.78, x: 16, y: 16 }) };
       last = { x: event.clientX, y: event.clientY };
-      mapShell.setPointerCapture(event.pointerId);
     });
     mapShell.addEventListener('pointermove', (event) => {
+      if (pointers.has(event.pointerId)) pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      if (pinch && pointers.size >= 2 && draftCamera) {
+        const [a, b] = [...pointers.values()];
+        const center = getCenter(a, b);
+        const distance = Math.max(24, getDistance(a, b));
+        const nextZoom = Math.max(0.42, Math.min(1.9, +(pinch.camera.zoom * (distance / pinch.distance)).toFixed(3)));
+        draftCamera.zoom = nextZoom;
+        draftCamera.x = pinch.camera.x + (center.x - pinch.center.x);
+        draftCamera.y = pinch.camera.y + (center.y - pinch.center.y);
+        applyCamera(draftCamera);
+        return;
+      }
       if (!dragging || !last) return;
       const dx = event.clientX - last.x;
       const dy = event.clientY - last.y;
@@ -289,7 +294,8 @@ export function renderApp(root, game, commit) {
       draftCamera.y += dy;
       applyCamera(draftCamera);
     });
-    mapShell.addEventListener('pointerup', () => {
+    const finishPointer = (event) => {
+      pointers.delete(event.pointerId);
       if (draftCamera) {
         commit((state) => {
           state.camera = { ...draftCamera };
@@ -298,7 +304,10 @@ export function renderApp(root, game, commit) {
       dragging = false;
       window.__MAOU_MAP_DRAGGING__ = false;
       last = null;
+      pinch = null;
       draftCamera = null;
-    });
+    };
+    mapShell.addEventListener('pointerup', finishPointer);
+    mapShell.addEventListener('pointercancel', finishPointer);
   }
 }

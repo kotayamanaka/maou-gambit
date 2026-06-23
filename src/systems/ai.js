@@ -62,13 +62,6 @@ function conditionTarget(game, unit, condition) {
 }
 
 export function decideAllyAction(game, unit) {
-  if (unit.manualTargetRoom && unit.room !== unit.manualTargetRoom) {
-    return { type: 'move', targetRoom: unit.manualTargetRoom, manual: true };
-  }
-  if (unit.manualTargetRoom && unit.room === unit.manualTargetRoom) {
-    unit.manualTargetRoom = null;
-  }
-
   if (unit.carrying) return { type: 'carry', targetRoom: 'jail' };
 
   const enemies = liveEnemies(game);
