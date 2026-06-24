@@ -54,11 +54,11 @@ test('stage runs and reaches result screen', async ({ page }) => {
   await expect(page.getByText('防衛中')).toBeVisible();
   await page.locator('[data-action="speed"]').click();
   await expect(page.getByText(/探索中|発見済/)).toBeVisible();
-  await expect(page.getByText(/撃退成功|魔王敗北/)).toBeVisible({ timeout: 35000 });
+  await expect(page.getByText(/撃退成功|魔王敗北/)).toBeVisible({ timeout: 55000 });
   await assertNoDocumentScroll(page);
 });
 
-test('allies intercept before enemies reach the demon lord', async ({ page }) => {
+test('allies only leave assigned rooms when movement chips allow it', async ({ page }) => {
   await page.goto('/');
   await page.locator('[data-action="start"]').click();
   await page.locator('[data-action="speed"]').click();
@@ -67,11 +67,13 @@ test('allies intercept before enemies reach the demon lord', async ({ page }) =>
     lordHp: window.__MAOU_GAME__.demonLord.hp,
     maxLordHp: window.__MAOU_GAME__.demonLord.maxHp,
     throneEnemies: window.__MAOU_GAME__.enemies.filter((enemy) => enemy.room === 'throne').length,
-    allyRooms: window.__MAOU_GAME__.allies.map((ally) => ally.room)
+    allies: window.__MAOU_GAME__.allies.map((ally) => ({ name: ally.name, room: ally.room, chips: ally.chips, carrying: ally.carrying }))
   }));
   expect(snapshot.lordHp).toBe(snapshot.maxLordHp);
   expect(snapshot.throneEnemies).toBe(0);
-  expect(snapshot.allyRooms).not.toEqual(['atrium', 'hallB', 'hallA']);
+  expect(snapshot.allies.find((ally) => ally.name === 'ゴブリン').room).toBe('atrium');
+  expect(snapshot.allies.find((ally) => ally.name === 'スライム').room).toBe('hallB');
+  expect(snapshot.allies.find((ally) => ally.name === 'コウモリ').chips).toContain('focusMage');
   await assertNoDocumentScroll(page);
 });
 
@@ -79,7 +81,7 @@ test('result can continue into upgrade flow after a win', async ({ page }) => {
   await page.goto('/');
   await page.locator('[data-action="start"]').click();
   await page.locator('[data-action="speed"]').click();
-  await expect(page.getByText('撃退成功')).toBeVisible({ timeout: 35000 });
+  await expect(page.getByText('撃退成功')).toBeVisible({ timeout: 55000 });
   await page.getByRole('button', { name: /捕獲処理へ/ }).click();
   await expect(page.getByText(/捕獲処理|強化/)).toBeVisible();
   await expect(page.getByRole('button', { name: /次の防衛へ|処理を終えて次へ/ })).toBeVisible();

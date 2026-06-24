@@ -18,22 +18,6 @@ function nearestByDistance(unit, enemies) {
   ))[0];
 }
 
-function mostUrgentEnemy(game, unit, enemies = liveEnemies(game)) {
-  return [...enemies].sort((a, b) => {
-    const aThreat = distanceRooms(a.room, 'throne') + (a.knowsThrone ? -1.5 : 0);
-    const bThreat = distanceRooms(b.room, 'throne') + (b.knowsThrone ? -1.5 : 0);
-    return aThreat - bThreat || distanceRooms(unit.room, a.room) - distanceRooms(unit.room, b.room);
-  })[0];
-}
-
-function hasBroadInterceptChip(unit) {
-  return unit.chips.some((chipId) => ['attack', 'chaseNearest', 'focusWeak', 'focusKnower'].includes(chipId));
-}
-
-function isPressureEnemy(enemy, unit) {
-  return enemy.knowsThrone || distanceRooms(enemy.room, 'throne') <= 2 || distanceRooms(unit.room, enemy.room) <= 1;
-}
-
 function conditionTarget(game, unit, condition) {
   const enemies = liveEnemies(game);
   if (condition === 'always') return true;
@@ -68,11 +52,6 @@ export function decideAllyAction(game, unit) {
   const attackable = enemies.find((enemy) => canAttackFrom(unit, enemy));
   if (attackable) return { type: 'attack', target: attackable, priority: 'immediate' };
 
-  const pressureEnemy = mostUrgentEnemy(game, unit, enemies.filter((enemy) => isPressureEnemy(enemy, unit)));
-  if (pressureEnemy && hasBroadInterceptChip(unit)) {
-    return { type: 'move', targetRoom: pressureEnemy.room, target: pressureEnemy, priority: 'intercept' };
-  }
-
   const orderedChips = [...unit.chips].sort((a, b) => {
     const aAction = chips[a]?.action;
     const bAction = chips[b]?.action;
@@ -90,11 +69,6 @@ export function decideAllyAction(game, unit) {
     if (chip.action === 'carryToJail') return { type: 'pickup', target };
     if (chip.action === 'moveAtrium') return { type: 'move', targetRoom: 'atrium' };
     if (chip.action === 'moveHallB') return { type: 'move', targetRoom: 'hallB' };
-  }
-
-  const nearbyEnemy = nearestByDistance(unit, enemies.filter((enemy) => distanceRooms(unit.room, enemy.room) <= 2));
-  if (nearbyEnemy && hasBroadInterceptChip(unit)) {
-    return { type: 'move', targetRoom: nearbyEnemy.room, target: nearbyEnemy, priority: 'patrolIntercept' };
   }
 
   return { type: 'idle' };

@@ -10,7 +10,7 @@ export function createDownedEnemy(enemy) {
     room: enemy.room,
     x: enemy.x,
     y: enemy.y,
-    ttl: 20,
+    ttl: 12,
     carriedBy: null
   };
 }
@@ -28,7 +28,10 @@ export function resolveCaptures(game, dt) {
   for (const body of game.downed) {
     if (body.carriedBy) {
       const carrier = game.allies.find((unit) => unit.uid === body.carriedBy);
-      if (carrier) {
+      if (!carrier || carrier.hp <= 0) {
+        if (carrier) carrier.carrying = null;
+        body.carriedBy = null;
+      } else {
         body.room = carrier.room;
         body.x = carrier.x;
         body.y = carrier.y;
@@ -38,7 +41,7 @@ export function resolveCaptures(game, dt) {
     }
   }
 
-  for (const unit of game.allies) {
+  for (const unit of game.allies.filter((ally) => ally.hp > 0)) {
     if (!unit.carrying || unit.room !== 'jail') continue;
     const body = game.downed.find((item) => item.uid === unit.carrying);
     if (!body) {
