@@ -152,7 +152,7 @@ test('result can continue into upgrade flow after a win', async ({ page }) => {
   await assertNoDocumentScroll(page);
 });
 
-test('feeding a captured enemy levels the selected monster', async ({ page }) => {
+test('feeding a captured enemy applies material exp and growth bias', async ({ page }) => {
   await page.goto('/');
   await page.evaluate(() => {
     window.__MAOU_COMMIT__((game) => {
@@ -161,10 +161,12 @@ test('feeding a captured enemy levels the selected monster', async ({ page }) =>
     });
   });
   await page.locator('[data-unit]').filter({ hasText: 'スライム' }).click();
-  await page.getByRole('button', { name: /スライム LV1→2/ }).click();
+  await page.getByRole('button', { name: /スライム EXP\+6 知\+2 ATK\+1/ }).click();
   const slime = await page.evaluate(() => window.__MAOU_GAME__.allies.find((ally) => ally.name === 'スライム'));
-  expect(slime.level).toBe(2);
-  expect(slime.maxHp).toBe(76);
+  expect(slime.level).toBe(1);
+  expect(slime.exp).toBe(6);
+  expect(slime.intExp).toBe(2);
+  expect(slime.maxHp).toBe(68);
   expect(slime.atk).toBe(6);
   await assertNoDocumentScroll(page);
 });

@@ -17,6 +17,8 @@ function unitFromTemplate(template, room, chips = []) {
     maxHp: template.stats.hp,
     hp: template.stats.hp,
     level: 1,
+    exp: 0,
+    intExp: 0,
     atk: template.stats.atk,
     spd: template.stats.spd,
     int: template.stats.int ?? 0,

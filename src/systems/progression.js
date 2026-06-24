@@ -3,6 +3,7 @@ import { chips } from '../data/chips.js';
 import { currentStage, addLog, resetToSetup } from '../game/state.js';
 import { roomById } from '../data/rooms.js';
 import { firstOpenAllyRoom } from './placement.js';
+import { applyFeedGrowth } from './growth.js';
 
 export function consumeCaptured(game, capturedUid, mode, targetUid) {
   const captured = game.captured.find((item) => item.uid === capturedUid);
@@ -22,6 +23,8 @@ export function consumeCaptured(game, capturedUid, mode, targetUid) {
         maxHp: template.stats.hp,
         hp: template.stats.hp,
         level: 1,
+        exp: 0,
+        intExp: 0,
         atk: template.stats.atk,
         spd: template.stats.spd,
         int: template.stats.int,
@@ -46,12 +49,15 @@ export function consumeCaptured(game, capturedUid, mode, targetUid) {
 
   if (mode === 'feed') {
     const target = game.allies.find((unit) => unit.uid === targetUid) ?? game.allies[0];
-    target.level = (target.level ?? 1) + 1;
-    target.maxHp += 8;
-    target.hp = target.maxHp;
-    target.atk += 1;
-    if (target.int < 4 && captured.templateId === 'mage') target.int += 1;
-    addLog(game, `${captured.name}を養分化し、${target.name}を強化。`);
+    const result = applyFeedGrowth(target, captured);
+    const gains = [`EXP+${result.material.exp}`];
+    if (result.material.intExp) gains.push(`知+${result.material.intExp}`);
+    if (result.levelUps) gains.push(`LV+${result.levelUps}`);
+    if (result.intUps) gains.push(`INT+${result.intUps}`);
+    if (result.diff.maxHp) gains.push(`HP+${result.diff.maxHp}`);
+    if (result.diff.atk) gains.push(`ATK+${result.diff.atk}`);
+    if (result.diff.spd) gains.push(`SPD+${result.diff.spd}`);
+    addLog(game, `${captured.name}を養分化し、${target.name}を強化（${gains.join(' / ') || result.material.label}）。`);
   }
 
   if (mode === 'research') {

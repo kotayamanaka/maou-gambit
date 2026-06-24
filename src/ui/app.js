@@ -5,6 +5,7 @@ import { enemyChips } from '../data/enemyChips.js';
 import { currentStage, startStage } from '../game/state.js';
 import { consumeCaptured, finishUpgrade } from '../systems/progression.js';
 import { allyCountInRoom, canPlaceAlly, roomCapacity } from '../systems/placement.js';
+import { nextIntExp, nextLevelExp, previewFeedGrowth } from '../systems/growth.js';
 import { renderMap } from '../render/mapView.js';
 
 function assignedChipCounts(game, exceptUnitId = null) {
@@ -36,8 +37,20 @@ function hpBar(current, max) {
 function unitCard(unit, game) {
   return `<button class="unit-card ${unit.uid === game.selectedUnitId ? 'on' : ''}" data-unit="${unit.uid}">
     <img src="${unit.sprite}" alt="${unit.name}" />
-    <span><b>${unit.name}</b><small>LV${unit.level ?? 1} HP${unit.maxHp} ATK${unit.atk} INT${unit.int}</small><em>${unit.chips.map((id) => chips[id]?.icon ?? '□').join('')}</em></span>
+    <span><b>${unit.name}</b><small>LV${unit.level ?? 1} E${unit.exp ?? 0}/${nextLevelExp(unit)} 知${unit.intExp ?? 0}/${nextIntExp(unit)} INT${unit.int}</small><em>${unit.chips.map((id) => chips[id]?.icon ?? '□').join('')}</em></span>
   </button>`;
+}
+
+function feedPreviewText(unit, captured) {
+  const preview = previewFeedGrowth(unit, captured);
+  const parts = [`EXP+${preview.material.exp}`];
+  if (preview.material.intExp) parts.push(`知+${preview.material.intExp}`);
+  if (preview.levelUps) parts.push(`LV+${preview.levelUps}`);
+  if (preview.intUps) parts.push(`INT+${preview.intUps}`);
+  if (preview.diff.maxHp) parts.push(`HP+${preview.diff.maxHp}`);
+  if (preview.diff.atk) parts.push(`ATK+${preview.diff.atk}`);
+  if (preview.diff.spd) parts.push(`SPD+${preview.diff.spd}`);
+  return parts.join(' ');
 }
 
 function roomChoice(room, unit, game) {
@@ -76,7 +89,8 @@ function setupPanel(game) {
     </div>
     <div class="stats setup-stats" aria-label="${unit.name}の能力">
       <span>LV ${unit.level ?? 1}</span><span>HP ${unit.maxHp}</span><span>ATK ${unit.atk}</span><span>SPD ${unit.spd}</span>
-      <span class="core">INT ${unit.int}</span><span>CRY ${unit.carry}</span><span>RNG ${unit.range}</span>
+      <span class="core">INT ${unit.int}</span><span>EXP ${unit.exp ?? 0}/${nextLevelExp(unit)}</span><span>知 ${unit.intExp ?? 0}/${nextIntExp(unit)}</span>
+      <span>CRY ${unit.carry}</span><span>RNG ${unit.range}</span>
     </div>
     <div class="room-picker" aria-label="配置先">
       <div class="scroll-rail">${rooms.filter((room) => room.capacity > 0).map((room) =>
@@ -139,6 +153,7 @@ function resultPanel(game) {
 function upgradePanel(game) {
   const captured = game.captured[0];
   const target = selectedUnit(game);
+  const feedText = captured ? feedPreviewText(target, captured) : '';
   if (!captured) {
     return `<aside class="panel upgrade-panel">
       <header class="panel-head"><span>強化</span></header>
@@ -156,7 +171,7 @@ function upgradePanel(game) {
     </div>
     <div class="upgrade-actions">
       <button data-upgrade="convert" data-captured="${captured.uid}">🧠 眷属化</button>
-      <button data-upgrade="feed" data-captured="${captured.uid}" data-target="${target.uid}">🩸 ${target.name} LV${target.level ?? 1}→${(target.level ?? 1) + 1}</button>
+      <button data-upgrade="feed" data-captured="${captured.uid}" data-target="${target.uid}">🩸 ${target.name} ${feedText}</button>
       <button data-upgrade="research" data-captured="${captured.uid}">📜 研究</button>
     </div>
     <button class="wide" data-action="nextStage">処理を終えて次へ</button>
