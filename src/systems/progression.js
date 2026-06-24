@@ -2,6 +2,7 @@ import { allyTemplates } from '../data/units.js';
 import { chips } from '../data/chips.js';
 import { currentStage, addLog, resetToSetup } from '../game/state.js';
 import { roomById } from '../data/rooms.js';
+import { firstOpenAllyRoom } from './placement.js';
 
 export function consumeCaptured(game, capturedUid, mode, targetUid) {
   const captured = game.captured.find((item) => item.uid === capturedUid);
@@ -10,6 +11,7 @@ export function consumeCaptured(game, capturedUid, mode, targetUid) {
   if (mode === 'convert') {
     const template = allyTemplates[captured.convertTo];
     if (template) {
+      const room = firstOpenAllyRoom(game);
       const unit = {
         uid: `${template.id}-${Date.now()}`,
         templateId: template.id,
@@ -19,15 +21,16 @@ export function consumeCaptured(game, capturedUid, mode, targetUid) {
         sprite: template.sprite,
         maxHp: template.stats.hp,
         hp: template.stats.hp,
+        level: 1,
         atk: template.stats.atk,
         spd: template.stats.spd,
         int: template.stats.int,
         carry: template.stats.carry,
         range: template.stats.range,
         traits: [...template.traits],
-        room: 'atrium',
-        x: roomById.atrium.x,
-        y: roomById.atrium.y,
+        room,
+        x: roomById[room].x,
+        y: roomById[room].y,
         movingTo: null,
         chips: [],
         moveClock: 0,
@@ -42,6 +45,7 @@ export function consumeCaptured(game, capturedUid, mode, targetUid) {
 
   if (mode === 'feed') {
     const target = game.allies.find((unit) => unit.uid === targetUid) ?? game.allies[0];
+    target.level = (target.level ?? 1) + 1;
     target.maxHp += 8;
     target.hp = target.maxHp;
     target.atk += 1;

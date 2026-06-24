@@ -11,6 +11,7 @@ function commit(mutator) {
   mutator(game);
   renderApp(app, game, commit);
 }
+window.__MAOU_COMMIT__ = commit;
 
 renderApp(app, game, commit);
 

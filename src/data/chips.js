@@ -1,9 +1,9 @@
 export const chips = {
   chaseNearest: {
     id: 'chaseNearest',
-    name: '近敵追跡',
+    name: '近敵狙い',
     icon: '🎯',
-    description: '一番近い敵へ向かう',
+    description: '同じ部屋で一番近い敵を狙う',
     condition: 'nearestEnemy',
     action: 'moveToTarget'
   },
@@ -19,7 +19,7 @@ export const chips = {
     id: 'focusWeak',
     name: '弱敵狙い',
     icon: '🩸',
-    description: 'HPが低い敵を優先して狙う',
+    description: '同じ部屋でHPが低い敵を優先する',
     condition: 'weakEnemy',
     action: 'moveToTarget'
   },
@@ -27,7 +27,7 @@ export const chips = {
     id: 'focusMage',
     name: '術師狙い',
     icon: '✨',
-    description: '魔法使いを優先して狙う',
+    description: '同じ部屋の魔法使いを優先する',
     condition: 'mageEnemy',
     action: 'moveToTarget'
   },
@@ -35,7 +35,7 @@ export const chips = {
     id: 'focusKnower',
     name: '発見者狙い',
     icon: '❗',
-    description: '魔王部屋を知っている敵を優先する',
+    description: '同じ部屋で魔王部屋を知る敵を優先する',
     condition: 'knowsThroneEnemy',
     action: 'moveToTarget'
   },
@@ -43,7 +43,7 @@ export const chips = {
     id: 'carryDowned',
     name: '牢屋搬送',
     icon: '⛓',
-    description: 'ダウン敵を牢屋へ運ぶ',
+    description: '同じ部屋のダウン敵を牢屋へ運ぶ',
     condition: 'downedEnemy',
     action: 'carryToJail'
   },
@@ -66,12 +66,12 @@ export const chips = {
 };
 
 export const initialChipBag = {
-  chaseNearest: 2,
+  chaseNearest: 0,
   attack: 3,
-  focusWeak: 1,
-  focusMage: 1,
-  focusKnower: 1,
+  focusWeak: 0,
+  focusMage: 0,
+  focusKnower: 0,
   carryDowned: 1,
   returnAtrium: 1,
-  returnThrone: 1
+  returnThrone: 0
 };

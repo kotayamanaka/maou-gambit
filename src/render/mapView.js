@@ -43,8 +43,11 @@ export function renderMap(game, mode = 'setup') {
   const nodes = rooms.map((room) => {
     const discovered = game.partyKnowledge?.visited?.has?.(room.id) || mode !== 'battle' || room.id === 'entrance';
     const selected = room.id === game.selectedRoomId ? 'selected-room' : '';
+    const allyCount = game.allies.filter((ally) => ally.hp > 0 && ally.room === room.id).length;
+    const capacity = room.capacity > 0 ? `<span class="room-cap">${allyCount}/${room.capacity}</span>` : '';
     return `<button class="room ${room.type} ${selected} ${discovered ? '' : 'fog'}" data-room="${room.id}" style="left:${room.x - room.w / 2}px;top:${room.y - room.h / 2}px;width:${room.w}px;height:${room.h}px">
       <span class="room-name">${room.name}</span>
+      ${capacity}
     </button>`;
   }).join('');
 
@@ -57,7 +60,9 @@ export function renderMap(game, mode = 'setup') {
   const effects = game.effects.map((effect) => {
     const room = rooms.find((item) => item.id === effect.room);
     if (!room) return '';
-    return `<span class="fx ${effect.type}" style="left:${room.x + 36}px;top:${room.y + 28}px">${effect.label ?? ''}</span>`;
+    const x = effect.x ?? room.x + 36;
+    const y = effect.y ?? room.y + 28;
+    return `<span class="fx ${effect.type}" style="left:${x}px;top:${y}px">${effect.label ?? ''}</span>`;
   }).join('');
 
   return `<section class="map-shell" data-map-shell aria-label="ダンジョン">

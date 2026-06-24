@@ -42,7 +42,16 @@ export function attack(attacker, target, game, label) {
   if (!canAttack(attacker, target)) return false;
   target.hp = Math.max(0, target.hp - attacker.atk);
   attacker.attackClock = 1.05;
-  game.effects.push({ id: crypto.randomUUID(), type: 'hit', room: target.room, ttl: 0.45, label });
+  const side = attacker.type === 'enemy' ? 'enemy-hit' : 'ally-hit';
+  game.effects.push({
+    id: crypto.randomUUID(),
+    type: `hit ${side}`,
+    room: target.room,
+    x: target.x,
+    y: target.y,
+    ttl: 0.7,
+    label: `${label} -${attacker.atk}`
+  });
   return true;
 }
 
@@ -56,7 +65,7 @@ export function moveUnit(unit, targetRoom, dt) {
   const dx = destination.x - unit.x;
   const dy = destination.y - unit.y;
   const dist = Math.hypot(dx, dy);
-  const base = unit.type === 'enemy' ? 56 : 86;
+  const base = unit.type === 'enemy' ? 34 : 48;
   const speed = Math.max(28, (unit.spd || 0.7) * base) / (unit.carrying ? 1.65 : 1);
   const travel = speed * dt;
 

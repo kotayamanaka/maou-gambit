@@ -3,6 +3,7 @@ import { roomById } from '../data/rooms.js';
 import { chips } from '../data/chips.js';
 import { currentStage, startStage } from '../game/state.js';
 import { consumeCaptured, finishUpgrade } from '../systems/progression.js';
+import { allyCountInRoom, canPlaceAlly, roomCapacity } from '../systems/placement.js';
 import { renderMap } from '../render/mapView.js';
 
 function assignedChipCounts(game, exceptUnitId = null) {
@@ -34,7 +35,16 @@ function hpBar(current, max) {
 function unitCard(unit, game) {
   return `<button class="unit-card ${unit.uid === game.selectedUnitId ? 'on' : ''}" data-unit="${unit.uid}">
     <img src="${unit.sprite}" alt="${unit.name}" />
-    <span><b>${unit.name}</b><small>HP${unit.maxHp} ATK${unit.atk} INT${unit.int}</small><em>${unit.chips.map((id) => chips[id]?.icon ?? '□').join('')}</em></span>
+    <span><b>${unit.name}</b><small>LV${unit.level ?? 1} HP${unit.maxHp} ATK${unit.atk} INT${unit.int}</small><em>${unit.chips.map((id) => chips[id]?.icon ?? '□').join('')}</em></span>
+  </button>`;
+}
+
+function roomChoice(room, unit, game) {
+  const capacity = roomCapacity(room.id);
+  const count = allyCountInRoom(game, room.id, unit.uid);
+  const full = !canPlaceAlly(game, room.id, unit);
+  return `<button class="mini ${unit.room === room.id ? 'on' : ''}" data-place="${room.id}" ${full ? 'disabled' : ''}>
+    ${room.name}<small>${count}/${capacity}</small>
   </button>`;
 }
 
@@ -49,6 +59,10 @@ function chipButton(chipId, unit, game) {
   </button>`;
 }
 
+function visibleChipIds(game, unit) {
+  return Object.keys(chips).filter((id) => unit.chips.includes(id) || (game.chipBag[id] ?? 0) > 0);
+}
+
 function setupPanel(game) {
   const unit = selectedUnit(game);
   return `<aside class="panel setup-panel">
@@ -60,17 +74,17 @@ function setupPanel(game) {
       <div class="unit-list">${game.allies.map((ally) => unitCard(ally, game)).join('')}</div>
     </div>
     <div class="stats setup-stats" aria-label="${unit.name}の能力">
-      <span>HP ${unit.maxHp}</span><span>ATK ${unit.atk}</span><span>SPD ${unit.spd}</span>
+      <span>LV ${unit.level ?? 1}</span><span>HP ${unit.maxHp}</span><span>ATK ${unit.atk}</span><span>SPD ${unit.spd}</span>
       <span class="core">INT ${unit.int}</span><span>CRY ${unit.carry}</span><span>RNG ${unit.range}</span>
     </div>
     <div class="room-picker" aria-label="配置先">
-      <div class="scroll-rail">${rooms.filter((room) => room.type !== 'spawn' && room.type !== 'throne').map((room) =>
-        `<button class="mini ${unit.room === room.id ? 'on' : ''}" data-place="${room.id}">${room.name}</button>`
+      <div class="scroll-rail">${rooms.filter((room) => room.capacity > 0).map((room) =>
+        roomChoice(room, unit, game)
       ).join('')}</div>
     </div>
     <div class="chips-box" aria-label="チップ">
       <div class="chip-meter">${unit.chips.length}/${unit.int}</div>
-      <div class="chip-grid scroll-rail">${Object.keys(chips).map((id) => chipButton(id, unit, game)).join('')}</div>
+      <div class="chip-grid scroll-rail">${visibleChipIds(game, unit).map((id) => chipButton(id, unit, game)).join('')}</div>
     </div>
   </aside>`;
 }
@@ -98,7 +112,7 @@ function battlePanel(game) {
         <img src="${entity.sprite}" alt="${entity.name}" />
         <div><b>${entity.name}</b><small>${entity.room ? roomById[entity.room]?.name ?? entity.room : '戦場'}</small></div>
       </div>
-      ${entity.maxHp ? `<div class="mini-stat">HP ${entity.hp}/${entity.maxHp}${entity.atk ? ` / ATK ${entity.atk}` : ''}${entity.int != null ? ` / INT ${entity.int}` : ''}</div>${hpBar(entity.hp, entity.maxHp)}` : ''}
+      ${entity.maxHp ? `<div class="mini-stat">${entity.level ? `LV ${entity.level} / ` : ''}HP ${entity.hp}/${entity.maxHp}${entity.atk ? ` / ATK ${entity.atk}` : ''}${entity.int != null ? ` / INT ${entity.int}` : ''}</div>${hpBar(entity.hp, entity.maxHp)}` : ''}
       ${isAlly ? `<div class="battle-chips">${entity.chips.map((id) => `<span>${chips[id]?.icon ?? '□'} ${chips[id]?.name ?? id}</span>`).join('')}</div>` : ''}
     </div>` : ''}
     <div class="log">${game.log.map((line) => `<p>${line}</p>`).join('')}</div>
@@ -134,9 +148,12 @@ function upgradePanel(game) {
     <div class="detail-card">
       <div class="detail-title"><img src="${captured.sprite}" alt="${captured.name}" /><div><b>${captured.name}</b><small>牢屋で拘束中</small></div></div>
     </div>
+    <div class="unit-picker feed-targets" aria-label="養分対象">
+      <div class="unit-list">${game.allies.map((ally) => unitCard(ally, game)).join('')}</div>
+    </div>
     <div class="upgrade-actions">
       <button data-upgrade="convert" data-captured="${captured.uid}">🧠 眷属化</button>
-      <button data-upgrade="feed" data-captured="${captured.uid}" data-target="${target.uid}">🩸 ${target.name}の養分</button>
+      <button data-upgrade="feed" data-captured="${captured.uid}" data-target="${target.uid}">🩸 ${target.name} LV${target.level ?? 1}→${(target.level ?? 1) + 1}</button>
       <button data-upgrade="research" data-captured="${captured.uid}">📜 研究</button>
     </div>
     <button class="wide" data-action="nextStage">処理を終えて次へ</button>
@@ -173,6 +190,7 @@ export function renderApp(root, game, commit) {
   })));
   root.querySelectorAll('[data-place]').forEach((button) => button.addEventListener('click', () => commit((state) => {
     const unit = selectedUnit(state);
+    if (!canPlaceAlly(state, button.dataset.place, unit)) return;
     unit.room = button.dataset.place;
     unit.x = roomById[unit.room].x;
     unit.y = roomById[unit.room].y;
@@ -183,6 +201,7 @@ export function renderApp(root, game, commit) {
     const blocked = ['entrance', 'throne'];
     if (state.phase === 'setup' && !blocked.includes(button.dataset.room)) {
       const unit = selectedUnit(state);
+      if (!canPlaceAlly(state, button.dataset.room, unit)) return;
       unit.room = button.dataset.room;
       unit.x = roomById[unit.room].x;
       unit.y = roomById[unit.room].y;

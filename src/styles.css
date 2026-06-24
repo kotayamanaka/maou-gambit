@@ -98,6 +98,18 @@ img { image-rendering: pixelated; }
   color: #f4dfb0;
   text-shadow: 0 1px 0 #000;
 }
+.room-cap {
+  position: absolute;
+  right: 6px;
+  bottom: 5px;
+  min-width: 26px;
+  padding: 2px 4px;
+  text-align: center;
+  font-size: 10px;
+  font-weight: 900;
+  color: #111;
+  background: var(--gold);
+}
 
 .actor {
   position: relative;
@@ -222,6 +234,16 @@ img { image-rendering: pixelated; }
   pointer-events: none;
   animation: pop .45s ease-out both;
 }
+.fx.hit {
+  min-width: 44px;
+  padding: 2px 5px;
+  border: 1px solid rgba(255,255,255,.38);
+  background: rgba(10, 8, 7, .72);
+  font-size: 15px;
+  animation: hitPop .7s ease-out both;
+}
+.fx.ally-hit { color: #ffe29c; }
+.fx.enemy-hit { color: #ff8b8b; }
 .fx.capture { color: var(--green); font-size: 16px; }
 .fx.found, .fx.question { color: var(--gold); }
 
@@ -306,7 +328,7 @@ img { image-rendering: pixelated; }
 .detail-title { display: flex; gap: 8px; align-items: center; }
 .stats {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(46px, 1fr));
   gap: 5px;
   margin-top: 5px;
 }
@@ -334,6 +356,16 @@ img { image-rendering: pixelated; }
 }
 .room-picker .mini {
   flex: 0 0 88px;
+}
+.mini small {
+  display: block;
+  margin-top: 2px;
+  color: #cbb99c;
+  font-size: 10px;
+}
+.mini:disabled {
+  opacity: .42;
+  cursor: not-allowed;
 }
 .chip-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -440,6 +472,11 @@ img { image-rendering: pixelated; }
 @keyframes mapBob { 50% { transform: translateY(-2px); } }
 @keyframes blink { 50% { opacity: .45; } }
 @keyframes pop { from { opacity: 0; transform: translate(-50%, 10px) scale(.8); } to { opacity: 1; transform: translate(-50%, -28px) scale(1); } }
+@keyframes hitPop {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(.78); }
+  22% { opacity: 1; transform: translate(-50%, -80%) scale(1.12); }
+  100% { opacity: 0; transform: translate(-50%, -125%) scale(.92); }
+}
 
 @media (max-width: 720px) {
   .app {
@@ -478,7 +515,7 @@ img { image-rendering: pixelated; }
   }
   .unit-card img, .detail-title img { width: 28px; height: 28px; }
   .unit-card small { font-size: 10px; }
-  .stats { grid-template-columns: repeat(6, 1fr); }
+  .stats { grid-template-columns: repeat(4, 1fr); }
   .chip {
     min-height: 42px;
     display: flex;

@@ -5,7 +5,7 @@ export const allyTemplates = {
     type: 'ally',
     role: 'balanced',
     sprite: 'assets/sprites/goblin.png',
-    stats: { hp: 42, atk: 9, spd: 1.05, int: 2, carry: 1, range: 1 },
+    stats: { hp: 48, atk: 9, spd: 1.0, int: 3, carry: 1, range: 1 },
     traits: ['運搬可', '初期主力']
   },
   slime: {

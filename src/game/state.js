@@ -16,6 +16,7 @@ function unitFromTemplate(template, room, chips = []) {
     sprite: template.sprite,
     maxHp: template.stats.hp,
     hp: template.stats.hp,
+    level: 1,
     atk: template.stats.atk,
     spd: template.stats.spd,
     int: template.stats.int ?? 0,
@@ -37,9 +38,9 @@ function unitFromTemplate(template, room, chips = []) {
 export function createGame() {
   nextId = 1;
   const allies = [
-    unitFromTemplate(allyTemplates.goblin, 'atrium', ['carryDowned', 'attack']),
+    unitFromTemplate(allyTemplates.goblin, 'atrium', ['carryDowned', 'attack', 'returnAtrium']),
     unitFromTemplate(allyTemplates.slime, 'hallB', ['attack']),
-    unitFromTemplate(allyTemplates.bat, 'hallA', ['focusMage'])
+    unitFromTemplate(allyTemplates.bat, 'hallA', ['attack'])
   ];
 
   return {
