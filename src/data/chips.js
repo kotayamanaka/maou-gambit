@@ -43,17 +43,17 @@ export const chips = {
     id: 'carryDowned',
     name: '牢屋搬送',
     icon: '⛓',
-    description: '同じ部屋のダウン敵を牢屋へ運ぶ',
+    description: '同じ部屋のダウン敵を牢屋へ運び、配置部屋へ戻る',
     condition: 'downedEnemy',
     action: 'carryToJail'
   },
-  returnAtrium: {
-    id: 'returnAtrium',
-    name: '広間帰還',
+  returnHome: {
+    id: 'returnHome',
+    name: '配置帰還',
     icon: '↩',
-    description: '対象がなければ広間へ戻る',
+    description: '対象がなければ配置部屋へ戻る',
     condition: 'always',
-    action: 'moveAtrium'
+    action: 'returnHome'
   },
   returnThrone: {
     id: 'returnThrone',
@@ -72,6 +72,6 @@ export const initialChipBag = {
   focusMage: 0,
   focusKnower: 0,
   carryDowned: 1,
-  returnAtrium: 1,
+  returnHome: 0,
   returnThrone: 0
 };

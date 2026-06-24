@@ -62,6 +62,7 @@ export const enemyTemplates = {
     type: 'enemy',
     sprite: 'assets/sprites/warrior.png',
     stats: { hp: 34, atk: 5, spd: 0.72, range: 1 },
+    chips: ['engageGuard', 'exploreUnknown', 'seekThrone'],
     convertTo: 'fallenWarrior'
   },
   rogue: {
@@ -70,6 +71,7 @@ export const enemyTemplates = {
     type: 'enemy',
     sprite: 'assets/sprites/rogue.png',
     stats: { hp: 22, atk: 3, spd: 1.2, range: 1 },
+    chips: ['engageGuard', 'exploreUnknown', 'seekThrone'],
     convertTo: 'shadeRunner'
   },
   mage: {
@@ -78,6 +80,7 @@ export const enemyTemplates = {
     type: 'enemy',
     sprite: 'assets/sprites/mage.png',
     stats: { hp: 20, atk: 4, spd: 0.62, range: 3 },
+    chips: ['focusWeakAlly', 'exploreUnknown', 'seekThrone'],
     convertTo: 'darkMage'
   }
 };

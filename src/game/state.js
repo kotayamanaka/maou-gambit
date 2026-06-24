@@ -24,6 +24,7 @@ function unitFromTemplate(template, room, chips = []) {
     range: template.stats.range,
     traits: [...(template.traits ?? [])],
     room,
+    homeRoom: room,
     x: start.x,
     y: start.y,
     movingTo: null,
@@ -38,7 +39,7 @@ function unitFromTemplate(template, room, chips = []) {
 export function createGame() {
   nextId = 1;
   const allies = [
-    unitFromTemplate(allyTemplates.goblin, 'atrium', ['carryDowned', 'attack', 'returnAtrium']),
+    unitFromTemplate(allyTemplates.goblin, 'atrium', ['carryDowned', 'attack']),
     unitFromTemplate(allyTemplates.slime, 'hallB', ['attack']),
     unitFromTemplate(allyTemplates.bat, 'hallA', ['attack'])
   ];
@@ -103,5 +104,13 @@ export function resetToSetup(game) {
   game.enemies = [];
   game.downed = [];
   game.effects = [];
+  game.allies.forEach((unit) => {
+    const room = unit.homeRoom ?? unit.room;
+    unit.room = room;
+    unit.x = roomById[room].x;
+    unit.y = roomById[room].y;
+    unit.movingTo = null;
+    unit.carrying = null;
+  });
   addLog(game, '次の侵入に備えて再配置。');
 }

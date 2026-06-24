@@ -18,6 +18,7 @@ export function spawnDueEnemies(game) {
       atk: template.stats.atk,
       spd: template.stats.spd,
       range: template.stats.range,
+      chips: [...(template.chips ?? [])],
       convertTo: template.convertTo,
       room: 'entrance',
       x: roomById.entrance.x,

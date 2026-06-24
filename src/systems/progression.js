@@ -29,6 +29,7 @@ export function consumeCaptured(game, capturedUid, mode, targetUid) {
         range: template.stats.range,
         traits: [...template.traits],
         room,
+        homeRoom: room,
         x: roomById[room].x,
         y: roomById[room].y,
         movingTo: null,

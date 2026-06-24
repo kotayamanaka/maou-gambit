@@ -47,11 +47,12 @@ function conditionTarget(game, unit, condition) {
 
 export function decideAllyAction(game, unit) {
   if (unit.carrying) return { type: 'carry', targetRoom: 'jail' };
+  const homeRoom = unit.homeRoom ?? unit.room;
 
   const orderedChips = [...unit.chips].sort((a, b) => {
     const aAction = chips[a]?.action;
     const bAction = chips[b]?.action;
-    const priority = { moveToTarget: 0, attack: 1, carryToJail: 2, moveAtrium: 3, moveHallB: 3 };
+    const priority = { moveToTarget: 0, attack: 1, carryToJail: 2, returnHome: 3, moveHallB: 3 };
     return (priority[aAction] ?? 9) - (priority[bAction] ?? 9);
   });
 
@@ -63,14 +64,35 @@ export function decideAllyAction(game, unit) {
     if (chip.action === 'attack') return { type: 'attack', target };
     if (chip.action === 'moveToTarget') return { type: 'attack', target };
     if (chip.action === 'carryToJail') return { type: 'pickup', target };
-    if (chip.action === 'moveAtrium' && canPlaceAlly(game, 'atrium', unit)) return { type: 'move', targetRoom: 'atrium' };
+    if (chip.action === 'returnHome' && canPlaceAlly(game, homeRoom, unit)) return { type: 'move', targetRoom: homeRoom };
     if (chip.action === 'moveHallB' && canPlaceAlly(game, 'hallB', unit)) return { type: 'move', targetRoom: 'hallB' };
+  }
+
+  if (unit.chips.includes('carryDowned') && unit.room !== homeRoom && canPlaceAlly(game, homeRoom, unit)) {
+    return { type: 'move', targetRoom: homeRoom };
   }
 
   return { type: 'idle' };
 }
 
-export function decideEnemyMove(game, enemy) {
+function sameRoomAllies(game, enemy) {
+  return game.allies.filter((ally) => ally.hp > 0 && ally.room === enemy.room);
+}
+
+function enemyAllyTarget(game, enemy) {
+  const allies = sameRoomAllies(game, enemy);
+  if (!allies.length) return null;
+  if (enemy.chips?.includes('focusWeakAlly')) {
+    return [...allies].sort((a, b) => (a.hp / a.maxHp) - (b.hp / b.maxHp) || a.hp - b.hp)[0];
+  }
+  if (enemy.chips?.includes('engageGuard')) return allies[0];
+  return null;
+}
+
+export function decideEnemyAction(game, enemy) {
+  const allyTarget = enemyAllyTarget(game, enemy);
+  if (allyTarget) return { type: 'attackAlly', target: allyTarget };
+
   if (enemy.room === 'throne') return { type: 'attackLord' };
 
   if (enemy.knowsThrone || game.partyKnowledge.throneKnown) {

@@ -25,13 +25,15 @@ test('setup supports monster selection, placement, and chip editing', async ({ p
   await expect(page.locator('[data-unit]')).toHaveCount(3);
   await page.locator('.actor.ally').first().click();
   await page.locator('[data-place="storage"]').click();
-  await page.locator('[data-chip="returnAtrium"]').click();
+  await page.locator('[data-chip="carryDowned"]').click();
   const state = await page.evaluate(() => {
     const unit = window.__MAOU_GAME__.allies.find((ally) => ally.uid === window.__MAOU_GAME__.selectedUnitId);
-    return { room: unit.room, chips: unit.chips, visibleChips: [...document.querySelectorAll('[data-chip]')].map((el) => el.dataset.chip) };
+    return { room: unit.room, homeRoom: unit.homeRoom, chips: unit.chips, visibleChips: [...document.querySelectorAll('[data-chip]')].map((el) => el.dataset.chip) };
   });
   expect(state.room).toBe('storage');
-  expect(state.chips).not.toContain('returnAtrium');
+  expect(state.homeRoom).toBe('storage');
+  expect(state.chips).not.toContain('carryDowned');
+  expect(state.visibleChips).not.toContain('returnHome');
   expect(state.visibleChips).not.toContain('focusMage');
   await assertNoDocumentScroll(page);
 });
@@ -94,6 +96,47 @@ test('targeting chips do not sense enemies in other rooms', async ({ page }) => 
   expect(snapshot.allies.find((ally) => ally.name === 'スライム').room).toBe('hallB');
   expect(snapshot.allies.find((ally) => ally.name === 'コウモリ').room).toBe('hallA');
   expect(snapshot.allies.find((ally) => ally.name === 'コウモリ').chips).toContain('focusMage');
+  await assertNoDocumentScroll(page);
+});
+
+test('enemies use behavior chips to fight same-room monsters', async ({ page }) => {
+  await page.goto('/');
+  await page.locator('[data-action="start"]').click();
+  await page.locator('[data-action="speed"]').click();
+  await page.evaluate(() => { window.__MAOU_GAME__.speed = 6; });
+  await page.waitForFunction(() => {
+    const game = window.__MAOU_GAME__;
+    const bat = game?.allies.find((ally) => ally.name === 'コウモリ');
+    return game?.enemies.some((enemy) => enemy.chips?.includes('engageGuard')) && bat && bat.hp < bat.maxHp;
+  }, { timeout: 55000 });
+  const snapshot = await page.evaluate(() => {
+    const bat = window.__MAOU_GAME__.allies.find((ally) => ally.name === 'コウモリ');
+    const enemy = window.__MAOU_GAME__.enemies.find((item) => item.chips?.includes('engageGuard'));
+    return { batHp: bat.hp, batMax: bat.maxHp, enemyChips: enemy.chips };
+  });
+  expect(snapshot.batHp).toBeLessThan(snapshot.batMax);
+  expect(snapshot.enemyChips).toContain('engageGuard');
+  await assertNoDocumentScroll(page);
+});
+
+test('carrier returns to assigned room after jail delivery', async ({ page }) => {
+  await page.goto('/');
+  await page.locator('[data-action="start"]').click();
+  await page.locator('[data-action="speed"]').click();
+  await page.evaluate(() => { window.__MAOU_GAME__.speed = 8; });
+  await page.waitForFunction(() => {
+    const game = window.__MAOU_GAME__;
+    const goblin = game?.allies.find((ally) => ally.name === 'ゴブリン');
+    return game?.captured.length > 0 && goblin?.room === goblin?.homeRoom && !goblin?.carrying;
+  }, { timeout: 55000 });
+  const goblin = await page.evaluate(() => {
+    const unit = window.__MAOU_GAME__.allies.find((ally) => ally.name === 'ゴブリン');
+    return { room: unit.room, homeRoom: unit.homeRoom, chips: unit.chips, carrying: unit.carrying };
+  });
+  expect(goblin.room).toBe('atrium');
+  expect(goblin.homeRoom).toBe('atrium');
+  expect(goblin.chips).toContain('carryDowned');
+  expect(goblin.carrying).toBeFalsy();
   await assertNoDocumentScroll(page);
 });
 

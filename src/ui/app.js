@@ -1,6 +1,7 @@
 import { rooms } from '../data/rooms.js';
 import { roomById } from '../data/rooms.js';
 import { chips } from '../data/chips.js';
+import { enemyChips } from '../data/enemyChips.js';
 import { currentStage, startStage } from '../game/state.js';
 import { consumeCaptured, finishUpgrade } from '../systems/progression.js';
 import { allyCountInRoom, canPlaceAlly, roomCapacity } from '../systems/placement.js';
@@ -92,6 +93,7 @@ function setupPanel(game) {
 function battlePanel(game) {
   const entity = selectedEntity(game);
   const isAlly = entity?.type === 'ally';
+  const isEnemy = entity?.type === 'enemy';
   return `<aside class="panel battle-panel">
     <header class="panel-head">
       <span>防衛中</span>
@@ -114,6 +116,7 @@ function battlePanel(game) {
       </div>
       ${entity.maxHp ? `<div class="mini-stat">${entity.level ? `LV ${entity.level} / ` : ''}HP ${entity.hp}/${entity.maxHp}${entity.atk ? ` / ATK ${entity.atk}` : ''}${entity.int != null ? ` / INT ${entity.int}` : ''}</div>${hpBar(entity.hp, entity.maxHp)}` : ''}
       ${isAlly ? `<div class="battle-chips">${entity.chips.map((id) => `<span>${chips[id]?.icon ?? '□'} ${chips[id]?.name ?? id}</span>`).join('')}</div>` : ''}
+      ${isEnemy ? `<div class="battle-chips">${entity.chips.map((id) => `<span>${enemyChips[id]?.icon ?? '□'} ${enemyChips[id]?.name ?? id}</span>`).join('')}</div>` : ''}
     </div>` : ''}
     <div class="log">${game.log.map((line) => `<p>${line}</p>`).join('')}</div>
   </aside>`;
@@ -192,6 +195,7 @@ export function renderApp(root, game, commit) {
     const unit = selectedUnit(state);
     if (!canPlaceAlly(state, button.dataset.place, unit)) return;
     unit.room = button.dataset.place;
+    unit.homeRoom = unit.room;
     unit.x = roomById[unit.room].x;
     unit.y = roomById[unit.room].y;
     unit.movingTo = null;
@@ -203,6 +207,7 @@ export function renderApp(root, game, commit) {
       const unit = selectedUnit(state);
       if (!canPlaceAlly(state, button.dataset.room, unit)) return;
       unit.room = button.dataset.room;
+      unit.homeRoom = unit.room;
       unit.x = roomById[unit.room].x;
       unit.y = roomById[unit.room].y;
       unit.movingTo = null;
