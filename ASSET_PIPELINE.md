@@ -49,6 +49,12 @@ assets/generated/
 - ゲーム参照先: `public/assets/sprites/goblin/`
 - 行は `idle`、`walk`、`attack`、`downed`、列は `front`、`back`、`left`、`right` として扱う。
 - 背景の暗色は透明化する。完全な手修正素材ではないため、後で専用透過・影処理の改善余地あり。
+- スライム系の生成シートは `scripts/slice_slime_family_sheet.py` で、横3種 x 4方向 x 4動作に切り出す。
+- 入力: `assets/generated/characters/slime-family/sheet-v1.png`
+- 対象: `slime`、`poisonSlime`、`darkSlime`
+- 原本切り出し先: `assets/generated/characters/<unit-id>/`
+- ゲーム参照先: `public/assets/sprites/<unit-id>/`
+- 背景の `#ff00ff` は透明化し、ゲーム表示用に半分サイズへ縮小する。
 
 ## キャラ動作
 
@@ -65,8 +71,9 @@ assets/generated/
 ## 実装接続済み
 
 - `goblin` と `goblinChief` は `spriteSet` として `idle`、`walk`、`attack`、`downed` の上下左右スプライトを参照する。
+- `slime`、`poisonSlime`、`darkSlime`、`plagueSlime` は `spriteSet` として生成スライム素材を参照する。`plagueSlime` は暫定で `poisonSlime` と同じ素材を使う。
 - ゲーム中は座標移動の向きから `front/back/left/right` を更新し、移動中は `walk`、攻撃直後は `attack` を表示する。
-- まだ `slime`、`bat`、敵職などは旧仮スプライト参照。
+- まだ `bat`、人型味方、敵職などは旧仮スプライト参照。
 
 ## 初期生成対象
 

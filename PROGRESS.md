@@ -1,5 +1,27 @@
 # PROGRESS
 
+## 2026-06-26 スライム系生成スプライトを接続
+
+### 実装
+
+- 画像生成でスライム、ポイズンスライム、ダークスライムの3種をまとめたモーションシートを作成。
+- 生成原本を `assets/generated/characters/slime-family/sheet-v1.png` に保存。
+- `scripts/slice_slime_family_sheet.py` を追加し、3種それぞれを `idle`、`walk`、`attack`、`downed` x `front/back/left/right` に切り出すようにした。
+- 切り出し先は `assets/generated/characters/<unit-id>/` と `public/assets/sprites/<unit-id>/`。
+- `slime`、`poisonSlime`、`darkSlime`、`plagueSlime` を `spriteSet` 参照へ切り替えた。`plagueSlime` は暫定で毒スライム系の絵を共有する。
+
+### 検証結果
+
+- `npm run build`: 成功
+- `npm test -- --reporter=line`: 48件成功
+- `npm run test:balance`: 成功
+- PC/スマホ幅スクリーンショット確認。3種のスライムがマップ上・ユニットカード上で別色として表示され、画面全体スクロールなし。
+
+### スクリーンショット
+
+- `screenshots/slime-sprites-desktop.png`
+- `screenshots/slime-sprites-mobile.png`
+
 ## 2026-06-26 魔物合成を実装
 
 ### 実装

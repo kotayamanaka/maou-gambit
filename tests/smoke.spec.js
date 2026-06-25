@@ -129,6 +129,56 @@ test('goblin uses generated directional action sprites', async ({ page }) => {
   await assertNoDocumentScroll(page);
 });
 
+test('slime variants use generated directional action sprites', async ({ page }) => {
+  await page.goto('/');
+  await page.evaluate(() => {
+    window.__MAOU_COMMIT__((game) => {
+      game.phase = 'upgrade';
+      game.gold = 300;
+      game.captured = [];
+      game.collections.allies = new Set([
+        'goblin',
+        'poisonSlime',
+        'darkSlime',
+        'bat',
+        'fallenWarrior',
+        'shadeRunner',
+        'darkMage',
+        'boneGuard',
+        'goblinChief',
+        'plagueSlime',
+        'impArcher',
+        'oracleShade'
+      ]);
+    });
+  });
+  await page.locator('[data-research-monster]').click();
+  await page.evaluate(() => {
+    window.__MAOU_COMMIT__((game) => {
+      const slime = game.allies.find((ally) => ally.templateId === 'slime');
+      slime.movingTo = 'hallA';
+      slime.facing = 'right';
+      slime.anim = 'walk';
+      slime.animTtl = 0;
+      game.selectedEntity = { type: 'ally', id: slime.uid };
+    });
+  });
+  await expect(page.locator('.actor.ally.selected img')).toHaveAttribute('src', /slime\/walk-right\.png/);
+
+  await page.evaluate(() => {
+    window.__MAOU_COMMIT__((game) => {
+      const slime = game.allies.find((ally) => ally.templateId === 'slime');
+      slime.movingTo = null;
+      slime.facing = 'front';
+      slime.anim = 'attack';
+      slime.animTtl = 0.3;
+      game.selectedEntity = { type: 'ally', id: slime.uid };
+    });
+  });
+  await expect(page.locator('.actor.ally.selected img')).toHaveAttribute('src', /slime\/attack-front\.png/);
+  await assertNoDocumentScroll(page);
+});
+
 test('stage runs and reaches result screen', async ({ page }) => {
   await page.goto('/');
   await page.locator('[data-action="start"]').click();

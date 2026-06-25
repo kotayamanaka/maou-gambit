@@ -25,6 +25,35 @@ const goblinSpriteSet = {
   }
 };
 
+function spriteSetFor(unitId) {
+  return {
+    idle: {
+      front: `assets/sprites/${unitId}/idle-front.png`,
+      back: `assets/sprites/${unitId}/idle-back.png`,
+      left: `assets/sprites/${unitId}/idle-left.png`,
+      right: `assets/sprites/${unitId}/idle-right.png`
+    },
+    walk: {
+      front: `assets/sprites/${unitId}/walk-front.png`,
+      back: `assets/sprites/${unitId}/walk-back.png`,
+      left: `assets/sprites/${unitId}/walk-left.png`,
+      right: `assets/sprites/${unitId}/walk-right.png`
+    },
+    attack: {
+      front: `assets/sprites/${unitId}/attack-front.png`,
+      back: `assets/sprites/${unitId}/attack-back.png`,
+      left: `assets/sprites/${unitId}/attack-left.png`,
+      right: `assets/sprites/${unitId}/attack-right.png`
+    },
+    downed: {
+      front: `assets/sprites/${unitId}/downed.png`,
+      back: `assets/sprites/${unitId}/downed-back.png`,
+      left: `assets/sprites/${unitId}/downed-left.png`,
+      right: `assets/sprites/${unitId}/downed-right.png`
+    }
+  };
+}
+
 export const allyTemplates = {
   goblin: {
     id: 'goblin',
@@ -43,7 +72,8 @@ export const allyTemplates = {
     name: 'スライム',
     type: 'ally',
     role: 'tank',
-    sprite: 'assets/sprites/slime.png',
+    sprite: 'assets/sprites/slime/idle-front.png',
+    spriteSet: spriteSetFor('slime'),
     stats: { hp: 68, atk: 5, spd: 0.65, int: 1, carry: 1, range: 1 },
     rarity: 'common',
     skills: ['slowTouch'],
@@ -54,7 +84,8 @@ export const allyTemplates = {
     name: 'ポイズンスライム',
     type: 'ally',
     role: 'debuffer',
-    sprite: 'assets/sprites/slime.png',
+    sprite: 'assets/sprites/poisonSlime/idle-front.png',
+    spriteSet: spriteSetFor('poisonSlime'),
     stats: { hp: 60, atk: 4, spd: 0.62, int: 2, carry: 1, range: 1 },
     rarity: 'uncommon',
     skills: ['poisonTouch'],
@@ -65,7 +96,8 @@ export const allyTemplates = {
     name: 'ダークスライム',
     type: 'ally',
     role: 'bruiser',
-    sprite: 'assets/sprites/slime.png',
+    sprite: 'assets/sprites/darkSlime/idle-front.png',
+    spriteSet: spriteSetFor('darkSlime'),
     stats: { hp: 74, atk: 7, spd: 0.58, int: 2, carry: 1, range: 1 },
     rarity: 'rare',
     skills: ['poisonTouch', 'slowTouch'],
@@ -140,7 +172,8 @@ export const allyTemplates = {
     name: '瘴気スライム',
     type: 'ally',
     role: 'tank',
-    sprite: 'assets/sprites/slime.png',
+    sprite: 'assets/sprites/poisonSlime/idle-front.png',
+    spriteSet: spriteSetFor('poisonSlime'),
     stats: { hp: 86, atk: 6, spd: 0.5, int: 1, carry: 1, range: 1 },
     rarity: 'rare',
     skills: ['poisonTouch', 'slowTouch'],
