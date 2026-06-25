@@ -34,6 +34,7 @@ export const allyTemplates = {
     sprite: 'assets/sprites/goblin/idle-front.png',
     spriteSet: goblinSpriteSet,
     stats: { hp: 48, atk: 9, spd: 1.0, int: 3, carry: 1, range: 1 },
+    rarity: 'starter',
     skills: ['hasteOnHit'],
     traits: ['運搬可', '初期主力']
   },
@@ -44,6 +45,7 @@ export const allyTemplates = {
     role: 'tank',
     sprite: 'assets/sprites/slime.png',
     stats: { hp: 68, atk: 5, spd: 0.65, int: 1, carry: 1, range: 1 },
+    rarity: 'common',
     skills: ['slowTouch'],
     traits: ['運搬可', '鈍足付与']
   },
@@ -54,6 +56,7 @@ export const allyTemplates = {
     role: 'debuffer',
     sprite: 'assets/sprites/slime.png',
     stats: { hp: 60, atk: 4, spd: 0.62, int: 2, carry: 1, range: 1 },
+    rarity: 'uncommon',
     skills: ['poisonTouch'],
     traits: ['運搬可', '毒付与', 'スライム亜種']
   },
@@ -64,6 +67,7 @@ export const allyTemplates = {
     role: 'bruiser',
     sprite: 'assets/sprites/slime.png',
     stats: { hp: 74, atk: 7, spd: 0.58, int: 2, carry: 1, range: 1 },
+    rarity: 'rare',
     skills: ['poisonTouch', 'slowTouch'],
     traits: ['運搬可', '毒付与', '鈍足付与', 'スライム亜種']
   },
@@ -74,6 +78,7 @@ export const allyTemplates = {
     role: 'scout',
     sprite: 'assets/sprites/bat.png',
     stats: { hp: 42, atk: 7, spd: 1.85, int: 1, carry: 0, range: 1 },
+    rarity: 'common',
     skills: ['hasteOnHit'],
     traits: ['高速', '運搬不可']
   },
@@ -84,6 +89,7 @@ export const allyTemplates = {
     role: 'bruiser',
     sprite: 'assets/sprites/fallen-warrior.png',
     stats: { hp: 54, atk: 8, spd: 0.75, int: 1, carry: 0, range: 1 },
+    rarity: 'common',
     traits: ['高耐久']
   },
   shadeRunner: {
@@ -93,6 +99,7 @@ export const allyTemplates = {
     role: 'hunter',
     sprite: 'assets/sprites/shade-runner.png',
     stats: { hp: 26, atk: 5, spd: 1.7, int: 2, carry: 1, range: 1 },
+    rarity: 'uncommon',
     traits: ['高速', '捕獲補助']
   },
   darkMage: {
@@ -102,6 +109,7 @@ export const allyTemplates = {
     role: 'caster',
     sprite: 'assets/sprites/dark-mage.png',
     stats: { hp: 24, atk: 6, spd: 0.75, int: 2, carry: 0, range: 3 },
+    rarity: 'uncommon',
     skills: ['poisonTouch'],
     traits: ['遠距離']
   },
@@ -112,6 +120,7 @@ export const allyTemplates = {
     role: 'guard',
     sprite: 'assets/sprites/fallen-warrior.png',
     stats: { hp: 62, atk: 7, spd: 0.58, int: 1, carry: 0, range: 1 },
+    rarity: 'common',
     skills: ['slowTouch'],
     traits: ['高耐久', '足止め']
   },
@@ -123,6 +132,7 @@ export const allyTemplates = {
     sprite: 'assets/sprites/goblin/idle-front.png',
     spriteSet: goblinSpriteSet,
     stats: { hp: 58, atk: 10, spd: 1.05, int: 3, carry: 1, range: 1 },
+    rarity: 'rare',
     traits: ['運搬可', '多チップ']
   },
   plagueSlime: {
@@ -132,6 +142,7 @@ export const allyTemplates = {
     role: 'tank',
     sprite: 'assets/sprites/slime.png',
     stats: { hp: 86, atk: 6, spd: 0.5, int: 1, carry: 1, range: 1 },
+    rarity: 'rare',
     skills: ['poisonTouch', 'slowTouch'],
     traits: ['高HP', '運搬可']
   },
@@ -142,6 +153,7 @@ export const allyTemplates = {
     role: 'ranged',
     sprite: 'assets/sprites/bat.png',
     stats: { hp: 34, atk: 7, spd: 1.35, int: 2, carry: 0, range: 3 },
+    rarity: 'uncommon',
     traits: ['遠距離', '高速']
   },
   oracleShade: {
@@ -151,6 +163,7 @@ export const allyTemplates = {
     role: 'tactician',
     sprite: 'assets/sprites/dark-mage.png',
     stats: { hp: 30, atk: 5, spd: 0.95, int: 4, carry: 0, range: 2 },
+    rarity: 'epic',
     skills: ['inspireOnHit'],
     traits: ['高INT', '支援向き']
   }

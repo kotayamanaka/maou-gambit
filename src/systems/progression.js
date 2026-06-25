@@ -15,6 +15,14 @@ export const CHIP_DEVELOPMENT_BASE_COST = 36;
 export const MONSTER_RESEARCH_COST = 120;
 export const DEMOLISH_ROOM_COST = 90;
 
+export const monsterRarities = {
+  starter: { id: 'starter', name: '初期', icon: '◆', weight: 6 },
+  common: { id: 'common', name: '通常', icon: '○', weight: 52 },
+  uncommon: { id: 'uncommon', name: '変異', icon: '◇', weight: 28 },
+  rare: { id: 'rare', name: '希少', icon: '☆', weight: 12 },
+  epic: { id: 'epic', name: '伝説', icon: '★', weight: 4 }
+};
+
 function createAllyFromTemplate(game, template, sourceLabel = '召喚') {
   const room = firstOpenAllyRoom(game);
   const unit = {
@@ -69,6 +77,45 @@ function spendGold(game, amount) {
   if ((game.gold ?? 0) < amount) return false;
   game.gold -= amount;
   return true;
+}
+
+function monsterResearchCandidates(game) {
+  const known = game.collections?.allies ?? new Set(game.allies.map((ally) => ally.templateId));
+  const unknown = Object.values(allyTemplates).filter((template) => !known.has(template.id));
+  return unknown.length ? unknown : Object.values(allyTemplates);
+}
+
+export function monsterResearchPreview(game) {
+  const pool = monsterResearchCandidates(game);
+  const summary = {};
+  let totalWeight = 0;
+  let rareWeight = 0;
+  for (const template of pool) {
+    const rarity = monsterRarities[template.rarity ?? 'common'] ?? monsterRarities.common;
+    summary[rarity.id] = (summary[rarity.id] ?? 0) + 1;
+    totalWeight += rarity.weight;
+    if (rarity.id === 'rare' || rarity.id === 'epic') rareWeight += rarity.weight;
+  }
+  return {
+    total: pool.length,
+    summary,
+    rareRate: totalWeight ? Math.round((rareWeight / totalWeight) * 100) : 0
+  };
+}
+
+function chooseMonsterResearchTemplate(game) {
+  const pool = monsterResearchCandidates(game);
+  const weighted = pool.map((template) => ({
+    template,
+    weight: (monsterRarities[template.rarity ?? 'common'] ?? monsterRarities.common).weight
+  }));
+  const total = weighted.reduce((sum, item) => sum + item.weight, 0);
+  let roll = Math.random() * total;
+  for (const item of weighted) {
+    roll -= item.weight;
+    if (roll <= 0) return item.template;
+  }
+  return weighted[weighted.length - 1]?.template;
 }
 
 function consumeInventory(game, itemId) {
@@ -260,12 +307,14 @@ export function developKnownChip(game, chipId) {
 export function researchMonster(game) {
   const cost = researchCost(game, MONSTER_RESEARCH_COST, 'monster');
   if (!spendGold(game, cost)) return false;
-  const known = game.collections?.allies ?? new Set(game.allies.map((ally) => ally.templateId));
-  const candidates = Object.values(allyTemplates).filter((template) => !known.has(template.id));
-  const pool = candidates.length ? candidates : Object.values(allyTemplates);
-  const template = pool[Math.floor(Math.random() * pool.length)];
-  createAllyFromTemplate(game, template, '魔物研究');
-  addLog(game, `魔物研究を実行。G-${cost}。`);
+  const template = chooseMonsterResearchTemplate(game);
+  if (!template) {
+    game.gold += cost;
+    return false;
+  }
+  const rarity = monsterRarities[template.rarity ?? 'common'] ?? monsterRarities.common;
+  createAllyFromTemplate(game, template, `${rarity.name}魔物研究`);
+  addLog(game, `魔物研究で${rarity.icon}${template.name}を召喚。G-${cost}。`);
   return true;
 }
 

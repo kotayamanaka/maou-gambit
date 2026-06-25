@@ -21,6 +21,8 @@ import {
   finishUpgrade,
   installRoomObject,
   MONSTER_RESEARCH_COST,
+  monsterRarities,
+  monsterResearchPreview,
   removeRoomObject,
   researchChip,
   researchMonster,
@@ -287,7 +289,7 @@ function roomEffectText(room) {
   const effects = {
     inventoryLimit: `所持上限+${room.effect?.value ?? 0}`,
     researchDiscount: `研究費-${room.effect?.value ?? 0}`,
-    summonDiscount: `魔物召喚費-${room.effect?.value ?? 0}`,
+    summonDiscount: `魔物研究費-${room.effect?.value ?? 0}`,
     allyAtkRoom: '侵入されると敵が武装'
   };
   const risks = {
@@ -302,6 +304,10 @@ function roomEffectText(room) {
 function researchPanel(game) {
   const chipCost = researchCost(game, CHIP_RESEARCH_COST, 'chip');
   const monsterCost = researchCost(game, MONSTER_RESEARCH_COST, 'monster');
+  const monsterPreview = monsterResearchPreview(game);
+  const monsterSummary = Object.entries(monsterPreview.summary)
+    .map(([id, count]) => `${monsterRarities[id]?.icon ?? '?'}${monsterRarities[id]?.name ?? id}x${count}`)
+    .join(' / ') || '候補なし';
   const knownChipButtons = Object.keys(chips)
     .filter((id) => (game.chipBag?.[id] ?? 0) > 0)
     .map((id) => {
@@ -315,8 +321,9 @@ function researchPanel(game) {
     <b>研究</b>
     <div class="scroll-rail">
       <button class="mini" data-research-chip ${(game.gold ?? 0) < chipCost ? 'disabled' : ''}>チップ研究<small>G${chipCost}</small></button>
-      <button class="mini" data-research-monster ${(game.gold ?? 0) < monsterCost ? 'disabled' : ''}>魔物召喚<small>G${monsterCost}</small></button>
+      <button class="mini" data-research-monster ${(game.gold ?? 0) < monsterCost ? 'disabled' : ''}>魔物研究<small>G${monsterCost} 希少${monsterPreview.rareRate}%</small></button>
     </div>
+    <small>魔物候補 ${monsterSummary}</small>
     <div class="scroll-rail">${knownChipButtons || '<span class="empty-inline">開発候補なし</span>'}</div>
   </div>`;
 }

@@ -1,5 +1,29 @@
 # PROGRESS
 
+## 2026-06-26 レア度付き魔物研究を実装
+
+### 実装
+
+- `魔物召喚` を `魔物研究` に寄せ、捕獲以外でも配下を増やせる研究導線として整理した。
+- 味方テンプレートに `starter`、`common`、`uncommon`、`rare`、`epic` のレア度を追加。
+- 魔物研究は未知モンスターを優先し、候補が残っている間は未発見の配下から抽選する。
+- 抽選はレア度ごとの重み付きにし、通常枠は出やすく、希少・伝説枠は低確率にした。
+- 研究パネルに候補のレア度内訳と希少以上の目安確率を表示した。
+- 魔物巣の軽減表記を `魔物研究費` に揃えた。
+
+### 検証結果
+
+- `npm run build`: 成功
+- `npm test -- --reporter=line`: 44件成功
+- `npm run test:balance`: 成功
+- PC/スマホ幅スクリーンショット確認。PC/スマホとも画面全体スクロールなし、研究ボタンと候補表示が確認できる。スマホは強化パネル内スクロールで研究セクションに到達できる。
+
+### スクリーンショット
+
+- `screenshots/monster-research-desktop.png`
+- `screenshots/monster-research-mobile.png`
+- `screenshots/monster-research-mobile-focused.png`
+
 ## 2026-06-26 既知チップの追加開発を実装
 
 ### 実装

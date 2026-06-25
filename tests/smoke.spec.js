@@ -432,6 +432,8 @@ test('upgrade management supports selling, building, room upgrades, and research
   await expect(page.getByText('戦利品')).toBeVisible();
   await expect(page.getByText(/ゴブリン ATK\+1/)).toBeVisible();
   await expect(page.locator('[data-develop-chip="attack"]')).toBeVisible();
+  await expect(page.locator('[data-research-monster]')).toContainText('魔物研究');
+  await expect(page.getByText(/魔物候補/)).toBeVisible();
   await page.locator('[data-use-item-unit="rustyBlade"]').click();
   await page.locator('[data-use-item-unit="manaDust"]').click();
   await page.locator('[data-use-item-room="roomStone"]').click();
@@ -470,6 +472,45 @@ test('upgrade management supports selling, building, room upgrades, and research
   expect(state.attackChips).toBeGreaterThanOrEqual(2);
   expect(state.knownChips).toBeGreaterThan(2);
   expect(state.allyCount).toBeGreaterThan(1);
+  await assertNoDocumentScroll(page);
+});
+
+test('monster research prioritizes unknown monsters with rarity preview', async ({ page }) => {
+  await page.goto('/');
+  await page.evaluate(() => {
+    window.__MAOU_COMMIT__((game) => {
+      game.phase = 'upgrade';
+      game.gold = 300;
+      game.captured = [];
+      game.collections.allies = new Set([
+        'goblin',
+        'slime',
+        'poisonSlime',
+        'darkSlime',
+        'bat',
+        'fallenWarrior',
+        'shadeRunner',
+        'darkMage',
+        'boneGuard',
+        'goblinChief',
+        'plagueSlime',
+        'impArcher'
+      ]);
+    });
+  });
+
+  await expect(page.getByText(/魔物候補 .*伝説x1/)).toBeVisible();
+  await expect(page.getByRole('button', { name: /魔物研究.*希少100%/ })).toBeVisible();
+  await page.locator('[data-research-monster]').click();
+
+  const state = await page.evaluate(() => ({
+    names: window.__MAOU_GAME__.allies.map((ally) => ally.name),
+    gold: window.__MAOU_GAME__.gold,
+    log: window.__MAOU_GAME__.log.join('\n')
+  }));
+  expect(state.names).toContain('影託者');
+  expect(state.gold).toBeLessThan(300);
+  expect(state.log).toContain('伝説');
   await assertNoDocumentScroll(page);
 });
 
