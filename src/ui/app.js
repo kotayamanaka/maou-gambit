@@ -12,8 +12,10 @@ import { currentStage, resetToSetup, startStage } from '../game/state.js';
 import {
   buildRoom,
   capturedSaleValue,
+  chipDevelopmentCost,
   CHIP_RESEARCH_COST,
   consumeCaptured,
+  developKnownChip,
   DEMOLISH_ROOM_COST,
   demolishRoom,
   finishUpgrade,
@@ -300,12 +302,22 @@ function roomEffectText(room) {
 function researchPanel(game) {
   const chipCost = researchCost(game, CHIP_RESEARCH_COST, 'chip');
   const monsterCost = researchCost(game, MONSTER_RESEARCH_COST, 'monster');
+  const knownChipButtons = Object.keys(chips)
+    .filter((id) => (game.chipBag?.[id] ?? 0) > 0)
+    .map((id) => {
+      const cost = chipDevelopmentCost(game, id);
+      return `<button class="mini" data-develop-chip="${id}" ${(game.gold ?? 0) < cost ? 'disabled' : ''}>
+        ${chips[id].icon} ${chips[id].name}<small>x${game.chipBag[id]} 開発G${cost}</small>
+      </button>`;
+    })
+    .join('');
   return `<div class="info-box management-box">
     <b>研究</b>
     <div class="scroll-rail">
       <button class="mini" data-research-chip ${(game.gold ?? 0) < chipCost ? 'disabled' : ''}>チップ研究<small>G${chipCost}</small></button>
       <button class="mini" data-research-monster ${(game.gold ?? 0) < monsterCost ? 'disabled' : ''}>魔物召喚<small>G${monsterCost}</small></button>
     </div>
+    <div class="scroll-rail">${knownChipButtons || '<span class="empty-inline">開発候補なし</span>'}</div>
   </div>`;
 }
 
@@ -636,6 +648,9 @@ export function renderApp(root, game, commit) {
   })));
   root.querySelectorAll('[data-research-chip]').forEach((button) => button.addEventListener('click', () => commit((state) => {
     researchChip(state);
+  })));
+  root.querySelectorAll('[data-develop-chip]').forEach((button) => button.addEventListener('click', () => commit((state) => {
+    developKnownChip(state, button.dataset.developChip);
   })));
   root.querySelectorAll('[data-research-monster]').forEach((button) => button.addEventListener('click', () => commit((state) => {
     researchMonster(state);

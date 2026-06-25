@@ -431,11 +431,13 @@ test('upgrade management supports selling, building, room upgrades, and research
   });
   await expect(page.getByText('戦利品')).toBeVisible();
   await expect(page.getByText(/ゴブリン ATK\+1/)).toBeVisible();
+  await expect(page.locator('[data-develop-chip="attack"]')).toBeVisible();
   await page.locator('[data-use-item-unit="rustyBlade"]').click();
   await page.locator('[data-use-item-unit="manaDust"]').click();
   await page.locator('[data-use-item-room="roomStone"]').click();
   await page.locator('[data-use-item-room="silverChain"]').click();
   await page.locator('[data-sell-item="rustyBlade"]').click();
+  await page.locator('[data-develop-chip="attack"]').click();
   await page.locator('[data-build-anchor="atrium"]').click();
   await page.locator('[data-build-room="treasure"]').click();
   await page.locator('[data-upgrade-room="atrium"]').click();
@@ -452,6 +454,7 @@ test('upgrade management supports selling, building, room upgrades, and research
     atriumCapacity: window.__MAOU_GAME__.roomCapacityBonus.atrium,
     captureTtlBonus: window.__MAOU_GAME__.captureTtlBonus,
     goblin: window.__MAOU_GAME__.allies.find((ally) => ally.name === 'ゴブリン'),
+    attackChips: window.__MAOU_GAME__.chipBag.attack,
     knownChips: window.__MAOU_GAME__.collections.chips.size,
     allyCount: window.__MAOU_GAME__.allies.length
   }));
@@ -464,6 +467,7 @@ test('upgrade management supports selling, building, room upgrades, and research
   expect(state.treasureObject).toBe('savePoint');
   expect(state.atriumCapacity).toBe(2);
   expect(state.captureTtlBonus).toBe(3);
+  expect(state.attackChips).toBeGreaterThanOrEqual(2);
   expect(state.knownChips).toBeGreaterThan(2);
   expect(state.allyCount).toBeGreaterThan(1);
   await assertNoDocumentScroll(page);

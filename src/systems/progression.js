@@ -11,6 +11,7 @@ import { researchCost } from './roomEffects.js';
 import { canConnectRoom } from './path.js';
 
 export const CHIP_RESEARCH_COST = 70;
+export const CHIP_DEVELOPMENT_BASE_COST = 36;
 export const MONSTER_RESEARCH_COST = 120;
 export const DEMOLISH_ROOM_COST = 90;
 
@@ -230,6 +231,29 @@ export function researchChip(game) {
   }
   discoverChip(game, chipId, '研究');
   addLog(game, `チップ研究で${chips[chipId].name}を獲得。G-${cost}。`);
+  return true;
+}
+
+export function chipDevelopmentCost(game, chipId) {
+  const chip = chips[chipId];
+  if (!chip) return Infinity;
+  const owned = game.chipBag?.[chipId] ?? 0;
+  const categoryAdd = {
+    attack: 4,
+    target: 8,
+    move: 10,
+    capture: 12
+  }[chip.category] ?? 8;
+  return researchCost(game, CHIP_DEVELOPMENT_BASE_COST + categoryAdd + owned * 18, 'chip');
+}
+
+export function developKnownChip(game, chipId) {
+  const chip = chips[chipId];
+  if (!chip || (game.chipBag?.[chipId] ?? 0) <= 0) return false;
+  const cost = chipDevelopmentCost(game, chipId);
+  if (!spendGold(game, cost)) return false;
+  discoverChip(game, chipId, '開発');
+  addLog(game, `${chip.name}を追加開発。G-${cost}。`);
   return true;
 }
 
