@@ -40,9 +40,8 @@ function diffStats(before, after) {
   };
 }
 
-export function applyFeedGrowth(unit, captured) {
+export function applyGrowthMaterial(unit, material) {
   const before = statSnapshot(unit);
-  const material = feedMaterials[captured.templateId] ?? feedMaterials.default;
   const profile = growthProfile(unit);
 
   unit.level ??= 1;
@@ -86,12 +85,22 @@ export function applyFeedGrowth(unit, captured) {
   };
 }
 
-export function previewFeedGrowth(unit, captured) {
+export function applyFeedGrowth(unit, captured) {
+  const material = feedMaterials[captured.templateId] ?? feedMaterials.default;
+  return applyGrowthMaterial(unit, material);
+}
+
+export function previewGrowthMaterial(unit, material) {
   const clone = {
     ...unit,
     status: [...(unit.status ?? [])],
     chips: [...(unit.chips ?? [])],
     traits: [...(unit.traits ?? [])]
   };
-  return applyFeedGrowth(clone, captured);
+  return applyGrowthMaterial(clone, material);
+}
+
+export function previewFeedGrowth(unit, captured) {
+  const material = feedMaterials[captured.templateId] ?? feedMaterials.default;
+  return previewGrowthMaterial(unit, material);
 }

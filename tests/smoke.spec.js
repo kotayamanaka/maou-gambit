@@ -343,7 +343,7 @@ test('result can continue into upgrade flow after a win', async ({ page }) => {
   await page.evaluate(() => { window.__MAOU_GAME__.speed = 6; });
   await expect(page.getByText('撃退成功')).toBeVisible({ timeout: 55000 });
   await page.getByRole('button', { name: /捕獲処理へ/ }).click();
-  await expect(page.getByText(/捕獲処理|強化/)).toBeVisible();
+  await expect(page.locator('.panel-head span').filter({ hasText: /捕獲処理|強化/ })).toBeVisible();
   await expect(page.getByRole('button', { name: /次の防衛へ|処理を終えて次へ/ })).toBeVisible();
   await assertNoDocumentScroll(page);
 });
@@ -511,6 +511,72 @@ test('monster research prioritizes unknown monsters with rarity preview', async 
   expect(state.names).toContain('影託者');
   expect(state.gold).toBeLessThan(300);
   expect(state.log).toContain('伝説');
+  await assertNoDocumentScroll(page);
+});
+
+test('monster fusion consumes an ally to grow the selected monster', async ({ page }) => {
+  await page.goto('/');
+  await page.evaluate(() => {
+    window.__MAOU_COMMIT__((game) => {
+      const goblin = game.allies.find((ally) => ally.name === 'ゴブリン');
+      game.phase = 'upgrade';
+      game.captured = [];
+      game.selectedUnitId = goblin.uid;
+      game.allies.push({
+        uid: 'fusion-slime',
+        templateId: 'slime',
+        name: 'スライム',
+        type: 'ally',
+        role: 'tank',
+        sprite: 'assets/sprites/slime.png',
+        maxHp: 68,
+        hp: 68,
+        level: 1,
+        exp: 0,
+        intExp: 0,
+        atk: 5,
+        spd: 0.65,
+        int: 1,
+        carry: 1,
+        range: 1,
+        skills: ['slowTouch'],
+        traits: ['運搬可'],
+        room: 'atrium',
+        homeRoom: 'atrium',
+        x: goblin.x + 18,
+        y: goblin.y,
+        facing: 'front',
+        anim: 'idle',
+        animTtl: 0,
+        movingTo: null,
+        chips: [],
+        moveClock: 0,
+        attackClock: 0,
+        carrying: null,
+        status: []
+      });
+      game.selectedFusionId = 'fusion-slime';
+    });
+  });
+
+  await expect(page.getByText('魔物合成')).toBeVisible();
+  await expect(page.locator('[data-fusion-material="fusion-slime"]')).toContainText('通常素材');
+  await expect(page.locator('[data-fuse-ally="fusion-slime"]')).toContainText('合成実行');
+  await page.locator('[data-fuse-ally="fusion-slime"]').click();
+
+  const state = await page.evaluate(() => {
+    const goblin = window.__MAOU_GAME__.allies.find((ally) => ally.name === 'ゴブリン');
+    return {
+      allyNames: window.__MAOU_GAME__.allies.map((ally) => ally.name),
+      goblin,
+      log: window.__MAOU_GAME__.log[0]
+    };
+  });
+  expect(state.allyNames).toEqual(['ゴブリン']);
+  expect(state.goblin.exp).toBe(12);
+  expect(state.goblin.intExp).toBe(1);
+  expect(state.goblin.maxHp).toBe(50);
+  expect(state.log).toContain('合成素材');
   await assertNoDocumentScroll(page);
 });
 

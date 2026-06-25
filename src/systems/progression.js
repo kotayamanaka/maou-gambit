@@ -6,7 +6,7 @@ import { currentStage, addLog, resetToSetup } from '../game/state.js';
 import { stages } from '../data/stages.js';
 import { rooms, roomById } from '../data/rooms.js';
 import { firstOpenAllyRoom, isRoomBuilt, roomCapacity, roomLevel } from './placement.js';
-import { applyFeedGrowth, nextIntExp, growthProfile } from './growth.js';
+import { applyFeedGrowth, applyGrowthMaterial, nextIntExp, growthProfile } from './growth.js';
 import { researchCost } from './roomEffects.js';
 import { canConnectRoom } from './path.js';
 
@@ -21,6 +21,14 @@ export const monsterRarities = {
   uncommon: { id: 'uncommon', name: '変異', icon: '◇', weight: 28 },
   rare: { id: 'rare', name: '希少', icon: '☆', weight: 12 },
   epic: { id: 'epic', name: '伝説', icon: '★', weight: 4 }
+};
+
+const fusionRarityMaterials = {
+  starter: { exp: 8, intExp: 0, bonuses: { maxHp: 2 } },
+  common: { exp: 12, intExp: 1, bonuses: { maxHp: 2 } },
+  uncommon: { exp: 16, intExp: 2, bonuses: { maxHp: 3 } },
+  rare: { exp: 24, intExp: 3, bonuses: { maxHp: 4, atk: 1 } },
+  epic: { exp: 34, intExp: 5, bonuses: { maxHp: 5, atk: 1, spd: 0.03 } }
 };
 
 function createAllyFromTemplate(game, template, sourceLabel = '召喚') {
@@ -116,6 +124,54 @@ function chooseMonsterResearchTemplate(game) {
     if (roll <= 0) return item.template;
   }
   return weighted[weighted.length - 1]?.template;
+}
+
+export function fusionMaterialForAlly(unit) {
+  const template = allyTemplates[unit.templateId];
+  const rarity = monsterRarities[template?.rarity ?? 'common'] ?? monsterRarities.common;
+  const base = fusionRarityMaterials[rarity.id] ?? fusionRarityMaterials.common;
+  const bonuses = { ...base.bonuses };
+  let intExp = base.intExp;
+  if ((unit.maxHp ?? 0) >= 70) bonuses.maxHp = (bonuses.maxHp ?? 0) + 2;
+  if ((unit.atk ?? 0) >= 8) bonuses.atk = (bonuses.atk ?? 0) + 1;
+  if ((unit.spd ?? 0) >= 1.3) bonuses.spd = Math.round(((bonuses.spd ?? 0) + 0.04) * 100) / 100;
+  if ((unit.int ?? 0) >= 3) intExp += 1;
+  const parts = [`EXP+${base.exp}`, `知+${intExp}`];
+  if (bonuses.maxHp) parts.push(`HP+${bonuses.maxHp}`);
+  if (bonuses.atk) parts.push(`ATK+${bonuses.atk}`);
+  if (bonuses.spd) parts.push(`SPD+${bonuses.spd}`);
+  return {
+    exp: base.exp,
+    intExp,
+    bonuses,
+    label: `${rarity.icon}${rarity.name}素材 ${parts.join(' ')}`
+  };
+}
+
+export function fuseAlly(game, targetUid, materialUid) {
+  if (!targetUid || !materialUid || targetUid === materialUid || game.allies.length <= 1) return false;
+  const target = game.allies.find((unit) => unit.uid === targetUid);
+  const material = game.allies.find((unit) => unit.uid === materialUid);
+  if (!target || !material) return false;
+  const result = applyGrowthMaterial(target, fusionMaterialForAlly(material));
+  const gains = [`EXP+${result.material.exp}`];
+  if (result.material.intExp) gains.push(`知+${result.material.intExp}`);
+  if (result.levelUps) gains.push(`LV+${result.levelUps}`);
+  if (result.intUps) gains.push(`INT+${result.intUps}`);
+  if (result.diff.maxHp) gains.push(`HP+${result.diff.maxHp}`);
+  if (result.diff.atk) gains.push(`ATK+${result.diff.atk}`);
+  if (result.diff.spd) gains.push(`SPD+${result.diff.spd}`);
+  const room = target.homeRoom ?? target.room;
+  target.room = room;
+  target.homeRoom = room;
+  target.x = roomById[room]?.x ?? target.x;
+  target.y = roomById[room]?.y ?? target.y;
+  target.carrying = null;
+  game.allies = game.allies.filter((unit) => unit.uid !== materialUid);
+  game.selectedUnitId = target.uid;
+  game.selectedFusionId = game.allies.find((unit) => unit.uid !== target.uid)?.uid ?? null;
+  addLog(game, `${material.name}を合成素材にし、${target.name}を強化（${gains.join(' / ')}）。`);
+  return true;
 }
 
 function consumeInventory(game, itemId) {

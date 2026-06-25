@@ -19,6 +19,8 @@ import {
   DEMOLISH_ROOM_COST,
   demolishRoom,
   finishUpgrade,
+  fuseAlly,
+  fusionMaterialForAlly,
   installRoomObject,
   MONSTER_RESEARCH_COST,
   monsterRarities,
@@ -32,7 +34,7 @@ import {
   upgradeRoom
 } from '../systems/progression.js';
 import { allyCountInRoom, canPlaceAlly, isRoomBuilt, roomCapacity, roomLevel } from '../systems/placement.js';
-import { growthProfile, nextIntExp, nextLevelExp, previewFeedGrowth } from '../systems/growth.js';
+import { growthProfile, nextIntExp, nextLevelExp, previewFeedGrowth, previewGrowthMaterial } from '../systems/growth.js';
 import { renderMap } from '../render/mapView.js';
 import { statusNameList } from '../systems/status.js';
 import { inventoryLimit, researchCost } from '../systems/roomEffects.js';
@@ -177,6 +179,17 @@ function feedCompare(unit, captured) {
     <span>EXP ${unit.exp ?? 0} -> ${after.exp}</span>
     <span>知 ${unit.intExp ?? 0} -> ${after.intExp}</span>
   </div>`;
+}
+
+function growthPreviewText(preview) {
+  const parts = [`EXP+${preview.material.exp}`];
+  if (preview.material.intExp) parts.push(`知+${preview.material.intExp}`);
+  if (preview.levelUps) parts.push(`LV+${preview.levelUps}`);
+  if (preview.intUps) parts.push(`INT+${preview.intUps}`);
+  if (preview.diff.maxHp) parts.push(`HP+${preview.diff.maxHp}`);
+  if (preview.diff.atk) parts.push(`ATK+${preview.diff.atk}`);
+  if (preview.diff.spd) parts.push(`SPD+${preview.diff.spd}`);
+  return parts.join(' ');
 }
 
 function capturedCard(captured, game) {
@@ -328,6 +341,34 @@ function researchPanel(game) {
   </div>`;
 }
 
+function fusionPanel(game) {
+  const target = selectedUnit(game);
+  const materials = game.allies.filter((unit) => unit.uid !== target.uid);
+  const selected = materials.find((unit) => unit.uid === game.selectedFusionId) ?? materials[0];
+  if (!target || !materials.length) {
+    return `<div class="info-box management-box">
+      <b>魔物合成</b>
+      <small>配下が2体以上になると、1体を素材にして選択中の配下を強化できる。</small>
+    </div>`;
+  }
+  const material = fusionMaterialForAlly(selected);
+  const preview = previewGrowthMaterial(target, material);
+  const materialButtons = materials.map((unit) => {
+    const item = fusionMaterialForAlly(unit);
+    return `<button class="mini ${selected.uid === unit.uid ? 'on' : ''}" data-fusion-material="${unit.uid}">
+      ${unit.name}<small>${item.label}</small>
+    </button>`;
+  }).join('');
+  return `<div class="info-box management-box">
+    <b>魔物合成</b>
+    <small>${selected.name}を素材にして${target.name}を強化: ${growthPreviewText(preview)}</small>
+    <div class="scroll-rail">${materialButtons}</div>
+    <button class="mini danger wide" data-fuse-ally="${selected.uid}" data-fuse-target="${target.uid}">
+      合成実行<small>${selected.name}を消費</small>
+    </button>
+  </div>`;
+}
+
 function objectPanel(game) {
   const roomId = game.selectedRoomId ?? 'atrium';
   const room = roomById[roomId];
@@ -351,7 +392,7 @@ function objectPanel(game) {
 }
 
 function managementPanels(game) {
-  return `${treasuryPanel(game)}${collectionPanel(game)}${inventoryPanel(game)}${researchPanel(game)}${roomManagementPanel(game)}${objectPanel(game)}`;
+  return `${treasuryPanel(game)}${collectionPanel(game)}${inventoryPanel(game)}${researchPanel(game)}${fusionPanel(game)}${roomManagementPanel(game)}${objectPanel(game)}`;
 }
 
 function roomChoice(room, unit, game) {
@@ -661,6 +702,12 @@ export function renderApp(root, game, commit) {
   })));
   root.querySelectorAll('[data-research-monster]').forEach((button) => button.addEventListener('click', () => commit((state) => {
     researchMonster(state);
+  })));
+  root.querySelectorAll('[data-fusion-material]').forEach((button) => button.addEventListener('click', () => commit((state) => {
+    state.selectedFusionId = button.dataset.fusionMaterial;
+  })));
+  root.querySelectorAll('[data-fuse-ally]').forEach((button) => button.addEventListener('click', () => commit((state) => {
+    fuseAlly(state, button.dataset.fuseTarget, button.dataset.fuseAlly);
   })));
   root.querySelectorAll('[data-action]').forEach((button) => button.addEventListener('click', () => commit((state) => {
     if (button.dataset.action === 'start') startStage(state);
