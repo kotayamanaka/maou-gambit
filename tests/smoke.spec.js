@@ -384,6 +384,38 @@ test('upgrade flow supports captured selection and action previews', async ({ pa
   await expect(page.getByText('研究候補')).toBeVisible();
   await page.locator('[data-captured-select="cap-warrior"]').click();
   await expect(page.getByText('堕ちた戦士になる')).toBeVisible();
+  await expect(page.getByRole('button', { name: /身代金 G\+22/ })).toBeVisible();
+  await assertNoDocumentScroll(page);
+});
+
+test('captured enemies can be ransomed for gold', async ({ page }) => {
+  await page.goto('/');
+  await page.evaluate(() => {
+    window.__MAOU_COMMIT__((game) => {
+      game.phase = 'upgrade';
+      game.gold = 10;
+      game.captured = [{
+        uid: 'cap-ransom',
+        templateId: 'mage',
+        name: '魔法使い',
+        sprite: 'assets/sprites/mage.png',
+        convertTo: 'darkMage',
+        capture: { difficulty: 2, ttl: 11 },
+        drop: { gold: 24, items: [] }
+      }];
+      game.selectedCapturedId = 'cap-ransom';
+    });
+  });
+  await expect(page.getByRole('button', { name: /身代金 G\+42/ })).toBeVisible();
+  await page.locator('[data-upgrade="ransom"]').click();
+  const state = await page.evaluate(() => ({
+    gold: window.__MAOU_GAME__.gold,
+    captured: window.__MAOU_GAME__.captured.length,
+    log: window.__MAOU_GAME__.log[0]
+  }));
+  expect(state.gold).toBe(52);
+  expect(state.captured).toBe(0);
+  expect(state.log).toContain('身代金');
   await assertNoDocumentScroll(page);
 });
 

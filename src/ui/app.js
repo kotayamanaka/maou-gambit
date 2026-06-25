@@ -11,6 +11,7 @@ import { feedMaterials } from '../data/growth.js';
 import { currentStage, resetToSetup, startStage } from '../game/state.js';
 import {
   buildRoom,
+  capturedSaleValue,
   CHIP_RESEARCH_COST,
   consumeCaptured,
   DEMOLISH_ROOM_COST,
@@ -515,16 +516,17 @@ function upgradePanel(game) {
     <div class="detail-card">
       <div class="detail-title"><img src="${captured.sprite}" alt="${captured.name}" /><div><b>${captured.name}</b><small>牢屋で拘束中</small>${convertPreview(captured)}</div></div>
     </div>
+    <div class="upgrade-actions">
+      <button data-upgrade="convert" data-captured="${captured.uid}">🧠 眷属化</button>
+      <button data-upgrade="feed" data-captured="${captured.uid}" data-target="${target.uid}">🩸 ${target.name} ${feedText}</button>
+      <button data-upgrade="research" data-captured="${captured.uid}">📜 研究</button>
+      <button data-upgrade="ransom" data-captured="${captured.uid}">💰 身代金 G+${capturedSaleValue(captured)}</button>
+    </div>
     <div class="unit-picker feed-targets" aria-label="養分対象">
       <div class="unit-list">${game.allies.map((ally) => unitCard(ally, game)).join('')}</div>
     </div>
     ${feedCompare(target, captured)}
     <div class="info-box"><b>研究候補</b><small>${researchPreview(game)}</small></div>
-    <div class="upgrade-actions">
-      <button data-upgrade="convert" data-captured="${captured.uid}">🧠 眷属化</button>
-      <button data-upgrade="feed" data-captured="${captured.uid}" data-target="${target.uid}">🩸 ${target.name} ${feedText}</button>
-      <button data-upgrade="research" data-captured="${captured.uid}">📜 研究</button>
-    </div>
     ${managementPanels(game)}
     <button class="wide" data-action="nextStage">処理を終えて次へ</button>
   </aside>`;

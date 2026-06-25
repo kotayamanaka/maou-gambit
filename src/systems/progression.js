@@ -245,6 +245,12 @@ export function researchMonster(game) {
   return true;
 }
 
+export function capturedSaleValue(captured) {
+  const difficulty = captured.capture?.difficulty ?? 1;
+  const dropGold = captured.drop?.gold ?? 0;
+  return Math.max(12, Math.round(10 + difficulty * 12 + dropGold * 0.35));
+}
+
 export function consumeCaptured(game, capturedUid, mode, targetUid) {
   const captured = game.captured.find((item) => item.uid === capturedUid);
   if (!captured) return;
@@ -272,6 +278,12 @@ export function consumeCaptured(game, capturedUid, mode, targetUid) {
     const chipId = candidates[Math.floor(Math.random() * candidates.length)] ?? 'attack';
     discoverChip(game, chipId, '研究');
     addLog(game, `${captured.name}を研究し、${chips[chipId].name}を獲得。`);
+  }
+
+  if (mode === 'ransom' || mode === 'sell') {
+    const value = capturedSaleValue(captured);
+    game.gold = (game.gold ?? 0) + value;
+    addLog(game, `${captured.name}を身代金に換えた。G+${value}。`);
   }
 
   game.captured = game.captured.filter((item) => item.uid !== capturedUid);
