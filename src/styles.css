@@ -165,6 +165,7 @@ img { image-rendering: pixelated; }
   width: 30px;
   height: 30px;
   object-fit: contain;
+  image-rendering: pixelated;
 }
 
 .actor.ally { box-shadow: 0 0 0 1px rgba(99, 194, 124, .35); }

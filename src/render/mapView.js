@@ -3,6 +3,16 @@ import { roomObjects } from '../data/objects.js';
 import { isRoomBuilt, roomCapacity } from '../systems/placement.js';
 import { statusIconList } from '../systems/status.js';
 
+function entitySprite(entity, fallbackPose = 'idle') {
+  const set = entity.spriteSet;
+  if (!set) return entity.sprite;
+  const pose = entity.animTtl > 0 && entity.anim ? entity.anim
+    : entity.movingTo ? 'walk'
+      : fallbackPose;
+  const facing = entity.facing ?? 'front';
+  return set[pose]?.[facing] ?? set[pose]?.front ?? set.idle?.[facing] ?? set.idle?.front ?? entity.sprite;
+}
+
 function sprite(entity, className = '', index = 0) {
   const hp = entity.maxHp ? `<span class="mini-hp" style="--hp:${Math.max(0, entity.hp / entity.maxHp)}"></span>` : '';
   const carry = entity.carrying ? '<b class="badge carry">⛓</b>' : '';
@@ -12,7 +22,7 @@ function sprite(entity, className = '', index = 0) {
   const offsetY = (Math.floor(index / 3) - 0.5) * 12;
   const type = entity.type === 'enemy' ? 'enemy' : entity.type === 'boss' ? 'lord' : 'ally';
   return `<button class="actor ${className}" data-select-type="${type}" data-select-id="${entity.uid ?? entity.id}" title="${entity.name}" style="left:${(entity.x ?? 0) + offsetX}px;top:${(entity.y ?? 0) + offsetY}px">
-    <img src="${entity.sprite}" alt="${entity.name}" />
+    <img src="${entitySprite(entity)}" alt="${entity.name}" />
     ${hp}${carry}${known}${status ? `<span class="status-stack">${status}</span>` : ''}
   </button>`;
 }
@@ -21,7 +31,7 @@ function bodySprite(body, index = 0) {
   const offsetX = ((index % 3) - 1) * 12;
   const offsetY = (Math.floor(index / 3) - 0.5) * 12;
   return `<button class="actor downed" data-select-type="downed" data-select-id="${body.uid}" title="${body.name} 残り${Math.ceil(body.ttl)}秒" style="left:${(body.x ?? 0) + offsetX}px;top:${(body.y ?? 0) + offsetY}px">
-    <img src="${body.sprite}" alt="${body.name}" />
+    <img src="${entitySprite(body, 'downed')}" alt="${body.name}" />
     <span class="down-timer">${Math.ceil(body.ttl)}</span>
   </button>`;
 }

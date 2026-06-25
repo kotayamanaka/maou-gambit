@@ -1,10 +1,38 @@
+const goblinSpriteSet = {
+  idle: {
+    front: 'assets/sprites/goblin/idle-front.png',
+    back: 'assets/sprites/goblin/idle-back.png',
+    left: 'assets/sprites/goblin/idle-left.png',
+    right: 'assets/sprites/goblin/idle-right.png'
+  },
+  walk: {
+    front: 'assets/sprites/goblin/walk-front.png',
+    back: 'assets/sprites/goblin/walk-back.png',
+    left: 'assets/sprites/goblin/walk-left.png',
+    right: 'assets/sprites/goblin/walk-right.png'
+  },
+  attack: {
+    front: 'assets/sprites/goblin/attack-front.png',
+    back: 'assets/sprites/goblin/attack-back.png',
+    left: 'assets/sprites/goblin/attack-left.png',
+    right: 'assets/sprites/goblin/attack-right.png'
+  },
+  downed: {
+    front: 'assets/sprites/goblin/downed.png',
+    back: 'assets/sprites/goblin/downed-back.png',
+    left: 'assets/sprites/goblin/downed-left.png',
+    right: 'assets/sprites/goblin/downed-right.png'
+  }
+};
+
 export const allyTemplates = {
   goblin: {
     id: 'goblin',
     name: 'ゴブリン',
     type: 'ally',
     role: 'balanced',
-    sprite: 'assets/sprites/goblin.png',
+    sprite: 'assets/sprites/goblin/idle-front.png',
+    spriteSet: goblinSpriteSet,
     stats: { hp: 48, atk: 9, spd: 1.0, int: 3, carry: 1, range: 1 },
     skills: ['hasteOnHit'],
     traits: ['運搬可', '初期主力']
@@ -92,7 +120,8 @@ export const allyTemplates = {
     name: 'ゴブリン隊長',
     type: 'ally',
     role: 'commander',
-    sprite: 'assets/sprites/goblin.png',
+    sprite: 'assets/sprites/goblin/idle-front.png',
+    spriteSet: goblinSpriteSet,
     stats: { hp: 58, atk: 10, spd: 1.05, int: 3, carry: 1, range: 1 },
     traits: ['運搬可', '多チップ']
   },

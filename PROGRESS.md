@@ -1,5 +1,28 @@
 # PROGRESS
 
+## 2026-06-26 ゴブリン生成シートの分割とゲーム内接続
+
+### 実装
+
+- `assets/generated/characters/goblin/sheet-v2-cardinal-fft.png` を 4列x4行として切り出す `scripts/slice_goblin_sheet.py` を追加。
+- ゴブリンの `idle`、`walk`、`attack`、`downed` を `front/back/left/right` 別PNGとして書き出し。
+- 原本切り出し先は `assets/generated/characters/goblin/`、ゲーム参照先は `public/assets/sprites/goblin/`。
+- `goblin` と `goblinChief` に `spriteSet` を追加し、ゲーム内描画で動作・向きに応じてスプライトを切り替えるようにした。
+- 移動時に向きを更新し、移動中は `walk`、攻撃直後は `attack` を表示する。
+- ダウン体にも `spriteSet` と向きを引き継ぐようにした。
+
+### 検証結果
+
+- `npm run build:pages`: 成功
+- `npm run test:balance`: 成功
+- `npm run test:smoke -- --reporter=line --workers=1 --timeout=60000 --grep "goblin uses generated|setup supports"`: 4件成功
+
+### 残課題
+
+- 背景透明化は自動しきい値処理。手修正レベルの透明化・影処理は未実施。
+- ゴブリン以外の味方/敵はまだ旧仮スプライト参照。
+- 歩行は1枚絵切替で、複数フレームアニメーションは未実装。
+
 ## 2026-06-26 ダンジョン運営・図鑑・状態異常の土台追加
 
 ### 実装

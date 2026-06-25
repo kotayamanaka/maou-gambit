@@ -28,6 +28,15 @@ function attackCooldown(unit) {
   return Math.max(0.62, Math.min(1.45, 1.05 / Math.sqrt(speed)));
 }
 
+function facingFromDelta(dx, dy) {
+  if (Math.abs(dx) > Math.abs(dy)) return dx >= 0 ? 'right' : 'left';
+  return dy >= 0 ? 'front' : 'back';
+}
+
+function faceToward(unit, target) {
+  unit.facing = facingFromDelta((target.x ?? 0) - (unit.x ?? 0), (target.y ?? 0) - (unit.y ?? 0));
+}
+
 function sameSideUnits(game, unit) {
   if (unit.type === 'enemy') return game.enemies.filter((item) => item.hp > 0 && item.room === unit.room);
   return game.allies.filter((item) => item.hp > 0 && item.room === unit.room);
@@ -71,6 +80,7 @@ export function spawnDueEnemies(game) {
       name: template.name,
       type: template.type,
       sprite: template.sprite,
+      spriteSet: template.spriteSet ? structuredClone(template.spriteSet) : null,
       maxHp: template.stats.hp,
       hp: template.stats.hp,
       atk: template.stats.atk,
@@ -84,6 +94,9 @@ export function spawnDueEnemies(game) {
       room: 'entrance',
       x: roomById.entrance.x,
       y: roomById.entrance.y,
+      facing: 'right',
+      anim: 'idle',
+      animTtl: 0,
       movingTo: null,
       moveClock: 0,
       attackClock: 0,
@@ -109,6 +122,9 @@ export function canAttack(attacker, target) {
 
 export function attack(attacker, target, game, label) {
   if (!canAttack(attacker, target)) return false;
+  faceToward(attacker, target);
+  attacker.anim = 'attack';
+  attacker.animTtl = 0.35;
   const damage = Math.min(target.hp, Math.max(1, Math.round(attacker.atk * attackMultiplier(attacker))));
   target.hp = Math.max(0, target.hp - damage);
   game.metrics ??= { allyDamage: 0, enemyDamage: 0, lordDamage: 0 };
@@ -156,6 +172,8 @@ export function moveUnit(unit, targetRoom, dt, game = null) {
   const dy = destination.y - unit.y;
   const dist = Math.hypot(dx, dy);
   const travel = unitSpeed(unit) * dt;
+  unit.facing = facingFromDelta(dx, dy);
+  unit.anim = 'walk';
 
   if (dist <= travel) {
     unit.x = destination.x;
@@ -178,6 +196,7 @@ export function approachTarget(unit, target, dt, game = null) {
   const dx = (target.x ?? 0) - (unit.x ?? 0);
   const dy = (target.y ?? 0) - (unit.y ?? 0);
   const dist = Math.hypot(dx, dy);
+  unit.facing = facingFromDelta(dx, dy);
   const desired = Math.max(18, attackRadius(unit) * 0.82);
   if (dist <= desired || dist === 0) return false;
 

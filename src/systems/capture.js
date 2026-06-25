@@ -6,6 +6,8 @@ export function createDownedEnemy(enemy) {
     templateId: enemy.templateId,
     name: enemy.name,
     sprite: enemy.sprite,
+    spriteSet: enemy.spriteSet ? structuredClone(enemy.spriteSet) : null,
+    facing: enemy.facing ?? 'front',
     convertTo: enemy.convertTo,
     capture: enemy.capture,
     drop: enemy.drop,

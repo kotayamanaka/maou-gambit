@@ -23,6 +23,7 @@ function unitFromTemplate(template, room, chips = []) {
     type: template.type,
     role: template.role,
     sprite: template.sprite,
+    spriteSet: template.spriteSet ? structuredClone(template.spriteSet) : null,
     maxHp: template.stats.hp,
     hp: template.stats.hp,
     level: 1,
@@ -39,6 +40,9 @@ function unitFromTemplate(template, room, chips = []) {
     homeRoom: room,
     x: start.x,
     y: start.y,
+    facing: 'front',
+    anim: 'idle',
+    animTtl: 0,
     movingTo: null,
     chips,
     moveClock: 0,
@@ -141,6 +145,8 @@ export function resetToSetup(game) {
     unit.room = room;
     unit.x = roomById[room].x;
     unit.y = roomById[room].y;
+    unit.anim = 'idle';
+    unit.animTtl = 0;
     unit.movingTo = null;
     unit.carrying = null;
   });

@@ -41,6 +41,15 @@ assets/generated/
     capture-chain.png
 ```
 
+## 書き出しスクリプト
+
+- ゴブリンの生成シートは `scripts/slice_goblin_sheet.py` で 4列x4行に切り出す。
+- 入力: `assets/generated/characters/goblin/sheet-v2-cardinal-fft.png`
+- 原本切り出し先: `assets/generated/characters/goblin/`
+- ゲーム参照先: `public/assets/sprites/goblin/`
+- 行は `idle`、`walk`、`attack`、`downed`、列は `front`、`back`、`left`、`right` として扱う。
+- 背景の暗色は透明化する。完全な手修正素材ではないため、後で専用透過・影処理の改善余地あり。
+
 ## キャラ動作
 
 - 向きは斜めではなく、上下左右の4方向を基本にする。
@@ -52,6 +61,12 @@ assets/generated/
 - `walk`: 2から4フレーム相当の歩行差分。通路移動で使う。
 - `attack`: 近接は踏み込み、遠距離は射出姿勢。
 - `downed`: 捕獲前の倒れ状態。
+
+## 実装接続済み
+
+- `goblin` と `goblinChief` は `spriteSet` として `idle`、`walk`、`attack`、`downed` の上下左右スプライトを参照する。
+- ゲーム中は座標移動の向きから `front/back/left/right` を更新し、移動中は `walk`、攻撃直後は `attack` を表示する。
+- まだ `slime`、`bat`、敵職などは旧仮スプライト参照。
 
 ## 初期生成対象
 

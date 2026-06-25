@@ -82,6 +82,34 @@ test('setup keeps monster selector visible on a short phone viewport', async ({ 
   await assertNoDocumentScroll(page);
 });
 
+test('goblin uses generated directional action sprites', async ({ page }) => {
+  await page.goto('/');
+  await page.evaluate(() => {
+    window.__MAOU_COMMIT__((game) => {
+      const goblin = game.allies.find((ally) => ally.templateId === 'goblin');
+      goblin.movingTo = 'hallA';
+      goblin.facing = 'left';
+      goblin.anim = 'walk';
+      goblin.animTtl = 0;
+      game.selectedEntity = { type: 'ally', id: goblin.uid };
+    });
+  });
+  await expect(page.locator('.actor.ally.selected img')).toHaveAttribute('src', /goblin\/walk-left\.png/);
+
+  await page.evaluate(() => {
+    window.__MAOU_COMMIT__((game) => {
+      const goblin = game.allies.find((ally) => ally.templateId === 'goblin');
+      goblin.movingTo = null;
+      goblin.facing = 'front';
+      goblin.anim = 'attack';
+      goblin.animTtl = 0.3;
+      game.selectedEntity = { type: 'ally', id: goblin.uid };
+    });
+  });
+  await expect(page.locator('.actor.ally.selected img')).toHaveAttribute('src', /goblin\/attack-front\.png/);
+  await assertNoDocumentScroll(page);
+});
+
 test('stage runs and reaches result screen', async ({ page }) => {
   await page.goto('/');
   await page.locator('[data-action="start"]').click();
