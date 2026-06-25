@@ -1,10 +1,10 @@
 export const chips = {
   chaseNearest: {
     id: 'chaseNearest',
-    name: '近敵狙い',
+    name: '接近',
     icon: '🎯',
     category: 'target',
-    description: '同じ部屋で一番近い敵を狙う',
+    description: '同じ部屋で一番近い敵へ近づく',
     condition: 'nearestEnemy',
     action: 'moveToTarget'
   },
@@ -99,8 +99,8 @@ export const chipCategories = {
 };
 
 export const initialChipBag = {
-  chaseNearest: 0,
-  attack: 3,
+  chaseNearest: 1,
+  attack: 1,
   focusWeak: 0,
   focusMage: 0,
   focusKnower: 0,

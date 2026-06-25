@@ -88,7 +88,8 @@ function setupWarnings(game) {
 function nextEnemyPanel(game) {
   const stage = currentStage(game);
   const rewardParts = [];
-  if (stage.reward?.chip) rewardParts.push(`報酬 ${chipName(stage.reward.chip)}`);
+  const rewardChips = [...(stage.reward?.chips ?? []), ...(stage.reward?.chip ? [stage.reward.chip] : [])];
+  if (rewardChips.length) rewardParts.push(`報酬 ${rewardChips.map(chipName).join(' / ')}`);
   if (stage.reward?.gold) rewardParts.push(`G+${stage.reward.gold}`);
   const reward = rewardParts.join(' / ') || '報酬なし';
   return `<div class="info-box next-enemies">

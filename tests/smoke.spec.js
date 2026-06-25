@@ -22,7 +22,7 @@ test('layout fits without page scroll', async ({ page }) => {
 test('setup supports monster selection, placement, and chip editing', async ({ page }) => {
   await page.goto('/');
   await expect(page.locator('.unit-picker')).toBeVisible();
-  await expect(page.locator('[data-unit]')).toHaveCount(3);
+  await expect(page.locator('[data-unit]')).toHaveCount(1);
   await page.locator('.actor.ally').first().click();
   await page.locator('[data-place="storage"]').click();
   await page.locator('[data-chip="carryDowned"]').click();
@@ -39,6 +39,7 @@ test('setup supports monster selection, placement, and chip editing', async ({ p
   expect(state.room).toBe('storage');
   expect(state.homeRoom).toBe('storage');
   expect(state.chips).not.toContain('carryDowned');
+  expect(state.visibleChips).toContain('chaseNearest');
   expect(state.visibleChips).toContain('returnHome');
   expect(state.lockedChips).toContain('returnHome');
   expect(state.lockedChips).toContain('focusMage');
@@ -47,19 +48,37 @@ test('setup supports monster selection, placement, and chip editing', async ({ p
 
 test('setup enforces room capacity', async ({ page }) => {
   await page.goto('/');
+  await page.evaluate(() => {
+    window.__MAOU_COMMIT__((game) => {
+      const base = game.allies[0];
+      game.allies.push({
+        ...base,
+        uid: 'test-second-ally',
+        name: 'テスト配下',
+        room: 'hallA',
+        homeRoom: 'hallA',
+        x: 390,
+        y: 210,
+        chips: ['attack'],
+        carrying: null,
+        movingTo: null,
+        status: []
+      });
+    });
+  });
   await page.locator('[data-unit]').nth(0).click();
   await page.locator('[data-place="storage"]').click();
   await page.locator('[data-unit]').nth(1).click();
   await expect(page.locator('[data-place="storage"]')).toBeDisabled();
   const rooms = await page.evaluate(() => window.__MAOU_GAME__.allies.map((ally) => ({ name: ally.name, room: ally.room })));
   expect(rooms.find((ally) => ally.name === 'ゴブリン').room).toBe('storage');
-  expect(rooms.find((ally) => ally.name === 'スライム').room).not.toBe('storage');
+  expect(rooms.find((ally) => ally.name === 'テスト配下').room).not.toBe('storage');
   await assertNoDocumentScroll(page);
 });
 
 test('setup shows advice, chip detail, next enemies, and unlock history', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByText(/チップ枠余り|編成チェックOK/)).toBeVisible();
+  await expect(page.getByText(/チップ枠余り|前線が空き|編成チェックOK/)).toBeVisible();
   await page.locator('[data-chip="focusMage"]').click();
   await expect(page.getByText('攻撃対象系 / 未発見')).toBeVisible();
   await expect(page.getByText('????').first()).toBeVisible();
@@ -126,8 +145,8 @@ test('targeting chips do not sense enemies in other rooms', async ({ page }) => 
   await page.evaluate(() => {
     const game = window.__MAOU_GAME__;
     game.chipBag.focusMage = 1;
-    const bat = game.allies.find((ally) => ally.name === 'コウモリ');
-    bat.chips = ['focusMage'];
+    const goblin = game.allies.find((ally) => ally.name === 'ゴブリン');
+    goblin.chips = ['focusMage'];
   });
   await page.locator('[data-action="start"]').click();
   await page.locator('[data-action="speed"]').click();
@@ -142,9 +161,7 @@ test('targeting chips do not sense enemies in other rooms', async ({ page }) => 
   expect(snapshot.lordHp).toBe(snapshot.maxLordHp);
   expect(snapshot.throneEnemies).toBe(0);
   expect(['atrium', 'jail']).toContain(snapshot.allies.find((ally) => ally.name === 'ゴブリン').room);
-  expect(snapshot.allies.find((ally) => ally.name === 'スライム').room).toBe('hallB');
-  expect(snapshot.allies.find((ally) => ally.name === 'コウモリ').room).toBe('hallA');
-  expect(snapshot.allies.find((ally) => ally.name === 'コウモリ').chips).toContain('focusMage');
+  expect(snapshot.allies.find((ally) => ally.name === 'ゴブリン').chips).toContain('focusMage');
   await assertNoDocumentScroll(page);
 });
 
@@ -155,15 +172,15 @@ test('enemies use behavior chips to fight same-room monsters', async ({ page }) 
   await page.evaluate(() => { window.__MAOU_GAME__.speed = 6; });
   await page.waitForFunction(() => {
     const game = window.__MAOU_GAME__;
-    const bat = game?.allies.find((ally) => ally.name === 'コウモリ');
-    return game?.enemies.some((enemy) => enemy.chips?.includes('engageGuard')) && bat && bat.hp < bat.maxHp;
+    const goblin = game?.allies.find((ally) => ally.name === 'ゴブリン');
+    return game?.enemies.some((enemy) => enemy.chips?.includes('engageGuard')) && goblin && goblin.hp < goblin.maxHp;
   }, { timeout: 55000 });
   const snapshot = await page.evaluate(() => {
-    const bat = window.__MAOU_GAME__.allies.find((ally) => ally.name === 'コウモリ');
+    const goblin = window.__MAOU_GAME__.allies.find((ally) => ally.name === 'ゴブリン');
     const enemy = window.__MAOU_GAME__.enemies.find((item) => item.chips?.includes('engageGuard'));
-    return { batHp: bat.hp, batMax: bat.maxHp, enemyChips: enemy.chips };
+    return { goblinHp: goblin.hp, goblinMax: goblin.maxHp, enemyChips: enemy.chips };
   });
-  expect(snapshot.batHp).toBeLessThan(snapshot.batMax);
+  expect(snapshot.goblinHp).toBeLessThan(snapshot.goblinMax);
   expect(snapshot.enemyChips).toContain('engageGuard');
   await assertNoDocumentScroll(page);
 });
@@ -339,14 +356,14 @@ test('feeding a captured enemy applies material exp and growth bias', async ({ p
       game.captured = [{ uid: 'cap-test', templateId: 'mage', name: '魔法使い', sprite: 'assets/sprites/mage.png', convertTo: 'darkMage' }];
     });
   });
-  await page.locator('[data-unit]').filter({ hasText: 'スライム' }).click();
-  await page.getByRole('button', { name: /スライム EXP\+6 知\+2 ATK\+1/ }).click();
-  const slime = await page.evaluate(() => window.__MAOU_GAME__.allies.find((ally) => ally.name === 'スライム'));
-  expect(slime.level).toBe(1);
-  expect(slime.exp).toBe(6);
-  expect(slime.intExp).toBe(2);
-  expect(slime.maxHp).toBe(68);
-  expect(slime.atk).toBe(6);
+  await page.locator('[data-unit]').filter({ hasText: 'ゴブリン' }).click();
+  await page.getByRole('button', { name: /ゴブリン EXP\+6 知\+2 ATK\+1/ }).click();
+  const goblin = await page.evaluate(() => window.__MAOU_GAME__.allies.find((ally) => ally.name === 'ゴブリン'));
+  expect(goblin.level).toBe(1);
+  expect(goblin.exp).toBe(6);
+  expect(goblin.intExp).toBe(2);
+  expect(goblin.maxHp).toBe(48);
+  expect(goblin.atk).toBe(10);
   await assertNoDocumentScroll(page);
 });
 
@@ -406,7 +423,7 @@ test('upgrade management supports selling, building, room upgrades, and research
   expect(state.treasureObject).toBe('savePoint');
   expect(state.atriumCapacity).toBe(1);
   expect(state.knownChips).toBeGreaterThan(2);
-  expect(state.allyCount).toBeGreaterThan(3);
+  expect(state.allyCount).toBeGreaterThan(1);
   await assertNoDocumentScroll(page);
 });
 
@@ -414,12 +431,13 @@ test('skills apply visible status effects for allies and enemies', async ({ page
   await page.goto('/');
   await page.evaluate(() => {
     window.__MAOU_COMMIT__((game) => {
-      const slime = game.allies.find((ally) => ally.name === 'スライム');
-      Object.assign(slime, {
+      const goblin = game.allies.find((ally) => ally.name === 'ゴブリン');
+      Object.assign(goblin, {
         room: 'atrium',
         homeRoom: 'atrium',
         x: 600,
         y: 385,
+        skills: ['slowTouch'],
         chips: ['attack'],
         attackClock: 0,
         movingTo: null

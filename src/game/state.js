@@ -55,9 +55,7 @@ function unitFromTemplate(template, room, chips = []) {
 export function createGame() {
   nextId = 1;
   const allies = [
-    unitFromTemplate(allyTemplates.goblin, 'atrium', ['carryDowned', 'attack']),
-    unitFromTemplate(allyTemplates.slime, 'hallB', ['attack']),
-    unitFromTemplate(allyTemplates.bat, 'hallA', ['attack'])
+    unitFromTemplate(allyTemplates.goblin, 'atrium', ['chaseNearest', 'attack', 'carryDowned'])
   ];
 
   return {
@@ -74,7 +72,7 @@ export function createGame() {
     elapsed: 0,
     log: ['魔王軍、配置待機。'],
     chipBag: { ...initialChipBag },
-    chipUnlocks: ['攻撃 x3', '牢屋搬送 x1'],
+    chipUnlocks: ['接近 x1', '攻撃 x1', '牢屋搬送 x1'],
     collections: {
       allies: new Set(allies.map((ally) => ally.templateId)),
       enemies: new Set(),

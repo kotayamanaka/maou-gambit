@@ -223,8 +223,8 @@ export function consumeCaptured(game, capturedUid, mode, targetUid) {
 
 export function finishUpgrade(game) {
   const reward = currentStage(game).reward ?? {};
-  const rewardChip = reward.chip;
-  if (rewardChip) {
+  const rewardChips = [...(reward.chips ?? []), ...(reward.chip ? [reward.chip] : [])];
+  for (const rewardChip of rewardChips) {
     discoverChip(game, rewardChip, '報酬');
   }
   if (reward.gold) {

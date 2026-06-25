@@ -5,7 +5,7 @@ export const stages = [
     waves: [
       [{ kind: 'warrior', delay: 0 }, { kind: 'rogue', delay: 4 }, { kind: 'mage', delay: 8 }]
     ],
-    reward: { chip: 'focusWeak', gold: 30 }
+    reward: { chips: ['focusWeak', 'chaseNearest', 'attack'], gold: 30 }
   },
   {
     id: 2,
@@ -13,7 +13,7 @@ export const stages = [
     waves: [
       [{ kind: 'rogue', delay: 0 }, { kind: 'rogue', delay: 3 }, { kind: 'warrior', delay: 7 }, { kind: 'mage', delay: 12 }]
     ],
-    reward: { chip: 'focusMage', gold: 36 }
+    reward: { chips: ['focusMage', 'attack'], gold: 36 }
   },
   {
     id: 3,
@@ -160,4 +160,3 @@ export const stages = [
     reward: { chip: 'focusKnower', gold: 300 }
   }
 ];
-

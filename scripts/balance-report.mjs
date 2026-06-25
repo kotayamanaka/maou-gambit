@@ -1,8 +1,10 @@
 import { createGame, startStage } from '../src/game/state.js';
 import { tickBattle } from '../src/systems/simulation.js';
 import { stages } from '../src/data/stages.js';
-import { consumeCaptured, finishUpgrade } from '../src/systems/progression.js';
+import { consumeCaptured, finishUpgrade, researchMonster } from '../src/systems/progression.js';
 import { chips } from '../src/data/chips.js';
+import { roomById } from '../src/data/rooms.js';
+import { canPlaceAlly } from '../src/systems/placement.js';
 
 function runStage(stageIndex) {
   const game = createGame();
@@ -45,24 +47,61 @@ function assignedChipCounts(game) {
   return counts;
 }
 
-function equipIfAvailable(game, unitName, chipId) {
-  const unit = game.allies.find((ally) => ally.name === unitName);
+function equipChipIfAvailable(game, unit, chipId) {
   if (!unit || unit.chips.includes(chipId) || unit.chips.length >= unit.int) return;
   const counts = assignedChipCounts(game);
   if ((game.chipBag[chipId] ?? 0) - (counts[chipId] ?? 0) > 0) unit.chips.push(chipId);
 }
 
+function equipIfAvailable(game, unitName, chipId) {
+  equipChipIfAvailable(game, game.allies.find((ally) => ally.name === unitName), chipId);
+}
+
+function autoEquipAllies(game) {
+  for (const unit of game.allies) {
+    const priorities = [
+      'chaseNearest',
+      'attack',
+      unit.carry > 0 ? 'carryDowned' : null,
+      unit.range > 1 ? 'focusRanged' : 'focusWeak',
+      'focusMage',
+      'returnHome'
+    ].filter(Boolean);
+    for (const chipId of priorities) equipChipIfAvailable(game, unit, chipId);
+  }
+}
+
+function placeCampaignAllies(game) {
+  const preferredRooms = ['atrium', 'hallB', 'hallA', 'storage'];
+  for (const unit of game.allies) {
+    const roomId = preferredRooms.find((room) => canPlaceAlly(game, room, unit));
+    if (!roomId) continue;
+    unit.room = roomId;
+    unit.homeRoom = roomId;
+    unit.x = roomById[roomId].x;
+    unit.y = roomById[roomId].y;
+    unit.movingTo = null;
+  }
+}
+
 function autoUpgrade(game) {
   const goblin = game.allies.find((ally) => ally.name === 'ゴブリン');
   const captured = [...game.captured];
+  const targetRoster = Math.min(4, game.stageIndex + 2);
   captured.forEach((item, index) => {
     if (index === 0 && goblin) consumeCaptured(game, item.uid, 'feed', goblin.uid);
+    else if (game.allies.length < targetRoster && item.convertTo) consumeCaptured(game, item.uid, 'convert', goblin?.uid);
     else consumeCaptured(game, item.uid, 'research', goblin?.uid);
   });
   finishUpgrade(game);
+  while (game.allies.length < Math.min(4, game.stageIndex + 1) && researchMonster(game)) {
+    // Keep the campaign verifier close to an eager player who spends early gold on roster growth.
+  }
   equipIfAvailable(game, 'ゴブリン', 'focusWeak');
   equipIfAvailable(game, 'コウモリ', 'focusMage');
   equipIfAvailable(game, 'スライム', 'focusKnower');
+  autoEquipAllies(game);
+  placeCampaignAllies(game);
 }
 
 function runCampaign() {
