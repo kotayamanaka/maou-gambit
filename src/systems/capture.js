@@ -7,10 +7,12 @@ export function createDownedEnemy(enemy) {
     name: enemy.name,
     sprite: enemy.sprite,
     convertTo: enemy.convertTo,
+    capture: enemy.capture,
+    drop: enemy.drop,
     room: enemy.room,
     x: enemy.x,
     y: enemy.y,
-    ttl: 12,
+    ttl: enemy.capture?.ttl ?? 12,
     carriedBy: null
   };
 }

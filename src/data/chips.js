@@ -39,6 +39,22 @@ export const chips = {
     condition: 'knowsThroneEnemy',
     action: 'moveToTarget'
   },
+  focusRanged: {
+    id: 'focusRanged',
+    name: '遠隔狙い',
+    icon: '🏹',
+    description: '同じ部屋の遠距離職を優先する',
+    condition: 'rangedEnemy',
+    action: 'moveToTarget'
+  },
+  focusRare: {
+    id: 'focusRare',
+    name: '希少狙い',
+    icon: '◇',
+    description: '同じ部屋の捕獲が難しい敵を優先する',
+    condition: 'rareEnemy',
+    action: 'moveToTarget'
+  },
   carryDowned: {
     id: 'carryDowned',
     name: '牢屋搬送',
@@ -71,6 +87,8 @@ export const initialChipBag = {
   focusWeak: 0,
   focusMage: 0,
   focusKnower: 0,
+  focusRanged: 0,
+  focusRare: 0,
   carryDowned: 1,
   returnHome: 0,
   returnThrone: 0

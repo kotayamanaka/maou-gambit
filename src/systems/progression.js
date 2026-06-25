@@ -1,6 +1,7 @@
 import { allyTemplates } from '../data/units.js';
 import { chips } from '../data/chips.js';
 import { currentStage, addLog, resetToSetup } from '../game/state.js';
+import { stages } from '../data/stages.js';
 import { roomById } from '../data/rooms.js';
 import { firstOpenAllyRoom } from './placement.js';
 import { applyFeedGrowth } from './growth.js';
@@ -72,14 +73,19 @@ export function consumeCaptured(game, capturedUid, mode, targetUid) {
 }
 
 export function finishUpgrade(game) {
-  const rewardChip = currentStage(game).reward?.chip;
+  const reward = currentStage(game).reward ?? {};
+  const rewardChip = reward.chip;
   if (rewardChip) {
     game.chipBag[rewardChip] = (game.chipBag[rewardChip] ?? 0) + 1;
     game.chipUnlocks = [`報酬: ${chips[rewardChip].name} +1`, ...(game.chipUnlocks ?? [])].slice(0, 6);
   }
-  if (game.stageIndex >= 2) {
+  if (reward.gold) {
+    game.gold = (game.gold ?? 0) + reward.gold;
+    addLog(game, `防衛報酬 G+${reward.gold}。`);
+  }
+  if (game.stageIndex >= stages.length - 1) {
     game.phase = 'victory';
-    addLog(game, '三度の侵入を退け、魔王軍の勝利。');
+    addLog(game, '二十の侵入を退け、魔王軍の勝利。');
     return;
   }
   game.stageIndex += 1;

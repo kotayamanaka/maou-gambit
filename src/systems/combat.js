@@ -55,6 +55,8 @@ export function spawnDueEnemies(game) {
       range: template.stats.range,
       chips: [...(template.chips ?? [])],
       convertTo: template.convertTo,
+      capture: { ...(template.capture ?? { difficulty: 1, ttl: 12 }) },
+      drop: { ...(template.drop ?? { gold: 0, items: [] }) },
       room: 'entrance',
       x: roomById.entrance.x,
       y: roomById.entrance.y,

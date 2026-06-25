@@ -1,7 +1,22 @@
 import { addLog } from '../game/state.js';
+import { items } from '../data/items.js';
 import { decideAllyAction, decideEnemyAction } from './ai.js';
 import { approachTarget, attack, enemyDiscoverRoom, moveUnit, spawnDueEnemies } from './combat.js';
 import { createDownedEnemy, pickupDowned, resolveCaptures } from './capture.js';
+
+function awardEnemyDrop(game, enemy) {
+  const drop = enemy.drop ?? {};
+  const gold = drop.gold ?? 0;
+  if (gold > 0) {
+    game.gold = (game.gold ?? 0) + gold;
+    game.lootLog = [`${enemy.name} G+${gold}`, ...(game.lootLog ?? [])].slice(0, 6);
+  }
+  for (const itemId of drop.items ?? []) {
+    game.inventory ??= {};
+    game.inventory[itemId] = (game.inventory[itemId] ?? 0) + 1;
+    game.lootLog = [`${enemy.name} ${items[itemId]?.name ?? itemId}+1`, ...(game.lootLog ?? [])].slice(0, 6);
+  }
+}
 
 export function tickBattle(game, dt) {
   if (game.phase !== 'battle') return;
@@ -60,6 +75,7 @@ export function tickBattle(game, dt) {
 
   for (const enemy of [...game.enemies]) {
     if (enemy.hp > 0) continue;
+    awardEnemyDrop(game, enemy);
     game.downed.push(createDownedEnemy(enemy));
     game.enemies = game.enemies.filter((item) => item.uid !== enemy.uid);
     game.defeated += 1;

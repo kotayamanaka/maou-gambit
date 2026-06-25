@@ -32,7 +32,13 @@ function conditionTarget(game, unit, condition) {
       .sort((a, b) => a.hp - b.hp || distanceRooms(unit.room, a.room) - distanceRooms(unit.room, b.room))[0];
   }
   if (condition === 'mageEnemy') {
-    return enemies.find((enemy) => enemy.templateId === 'mage');
+    return enemies.find((enemy) => ['mage', 'cleric', 'alchemist', 'sage'].includes(enemy.templateId));
+  }
+  if (condition === 'rangedEnemy') {
+    return enemies.find((enemy) => (enemy.range ?? 1) > 1);
+  }
+  if (condition === 'rareEnemy') {
+    return enemies.find((enemy) => (enemy.capture?.difficulty ?? 1) >= 3);
   }
   if (condition === 'knowsThroneEnemy') {
     return enemies.find((enemy) => enemy.knowsThrone);

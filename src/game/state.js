@@ -61,6 +61,9 @@ export function createGame() {
     log: ['魔王軍、配置待機。'],
     chipBag: { ...initialChipBag },
     chipUnlocks: ['攻撃 x3', '牢屋搬送 x1'],
+    gold: 40,
+    inventory: {},
+    lootLog: [],
     allies,
     enemies: [],
     downed: [],
@@ -94,6 +97,7 @@ export function startStage(game) {
   game.escaped = 0;
   game.result = null;
   game.metrics = { allyDamage: 0, enemyDamage: 0, lordDamage: 0 };
+  game.lootLog = [];
   game.partyKnowledge = { throneKnown: false, visited: new Set(['entrance']) };
   game.waveQueue = currentStage(game).waves.flat().map((spawn, index) => ({ ...spawn, id: `${spawn.kind}-${index}`, spawned: false }));
   game.allies.forEach((unit) => {

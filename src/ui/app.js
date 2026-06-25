@@ -2,6 +2,8 @@ import { rooms } from '../data/rooms.js';
 import { roomById } from '../data/rooms.js';
 import { chips } from '../data/chips.js';
 import { enemyChips } from '../data/enemyChips.js';
+import { items } from '../data/items.js';
+import { stages } from '../data/stages.js';
 import { allyTemplates, enemyTemplates } from '../data/units.js';
 import { feedMaterials } from '../data/growth.js';
 import { currentStage, resetToSetup, startStage } from '../game/state.js';
@@ -66,12 +68,29 @@ function setupWarnings(game) {
 
 function nextEnemyPanel(game) {
   const stage = currentStage(game);
-  const reward = stage.reward?.chip ? `報酬 ${chipName(stage.reward.chip)}` : '報酬なし';
+  const rewardParts = [];
+  if (stage.reward?.chip) rewardParts.push(`報酬 ${chipName(stage.reward.chip)}`);
+  if (stage.reward?.gold) rewardParts.push(`G+${stage.reward.gold}`);
+  const reward = rewardParts.join(' / ') || '報酬なし';
   return `<div class="info-box next-enemies">
     <b>次の敵情報</b>
-    <span>${stage.name}</span>
+    <span>${stage.id}/${stages.length} ${stage.name}</span>
     <small>${waveSummary(stage)}</small>
     <small>${reward}</small>
+  </div>`;
+}
+
+function treasuryPanel(game) {
+  const inventory = Object.entries(game.inventory ?? {})
+    .filter(([, count]) => count > 0)
+    .map(([id, count]) => `${items[id]?.name ?? id}x${count}`)
+    .slice(0, 4)
+    .join(' / ') || 'アイテムなし';
+  const loot = (game.lootLog ?? []).slice(0, 3).join(' / ') || '今回の獲得なし';
+  return `<div class="info-box treasury-box">
+    <b>資金 G${game.gold ?? 0}</b>
+    <small>${inventory}</small>
+    <small>${loot}</small>
   </div>`;
 }
 
@@ -119,7 +138,7 @@ function capturedCard(captured, game) {
   const selected = (game.selectedCapturedId ?? game.captured[0]?.uid) === captured.uid;
   return `<button class="unit-card ${selected ? 'on' : ''}" data-captured-select="${captured.uid}">
     <img src="${captured.sprite}" alt="${captured.name}" />
-    <span><b>${captured.name}</b><small>${feedMaterials[captured.templateId]?.label ?? '素材'}</small></span>
+    <span><b>${captured.name}</b><small>捕獲難度${captured.capture?.difficulty ?? 1} / ${feedMaterials[captured.templateId]?.label ?? '素材'}</small></span>
   </button>`;
 }
 
@@ -181,7 +200,7 @@ function setupPanel(game) {
   const warnings = setupWarnings(game);
   return `<aside class="panel setup-panel">
     <header class="panel-head">
-      <span>${currentStage(game).id}/3 ${currentStage(game).name}</span>
+      <span>${currentStage(game).id}/${stages.length} ${currentStage(game).name}</span>
       <button class="primary" data-action="start" title="侵入開始">▶</button>
     </header>
     <div class="unit-picker" aria-label="配下選択">
@@ -203,7 +222,7 @@ function setupPanel(game) {
       <div class="chip-grid scroll-rail">${visibleChipIds(game, unit).map((id) => chipButton(id, unit, game)).join('')}</div>
     </div>
     ${chipDetail(game, unit)}
-    <div class="info-grid">${nextEnemyPanel(game)}${unlockHistory(game)}</div>
+    <div class="info-grid">${nextEnemyPanel(game)}${treasuryPanel(game)}${unlockHistory(game)}</div>
   </aside>`;
 }
 
@@ -239,6 +258,7 @@ function battlePanel(game) {
       <span>${game.partyKnowledge.throneKnown ? '❗発見済' : '？探索中'}</span>
       <span>与ダメ ${game.metrics?.allyDamage ?? 0}</span>
       <span>被ダメ ${game.metrics?.enemyDamage ?? 0}</span>
+      <span>G ${game.gold ?? 0}</span>
     </div>
     <div class="status-strip"><span>運搬 ${carrying}</span><span>ダウン ${downed}</span></div>
     ${entity ? `<div class="battle-detail">
@@ -257,6 +277,7 @@ function battlePanel(game) {
       <button data-action="toggleLog">${game.showLog ? 'ログ隠す' : 'ログ表示'}</button>
     </div>
     ${game.showLog ? `<div class="log">${game.log.map((line) => `<p>${line}</p>`).join('')}</div>` : '<div class="log compact-log"><p>ログ非表示</p></div>'}
+    ${treasuryPanel(game)}
   </aside>`;
 }
 
@@ -271,6 +292,7 @@ function resultPanel(game) {
       <span>時間<b>${result.elapsed}s</b></span>
       <span>与ダメ<b>${game.metrics?.allyDamage ?? 0}</b></span>
       <span>被ダメ<b>${game.metrics?.enemyDamage ?? 0}</b></span>
+      <span>資金<b>G${game.gold ?? 0}</b></span>
     </div>
     <button class="primary wide" data-action="${result.won ? 'upgrade' : 'restart'}">${result.won ? '捕獲処理へ' : '再挑戦'}</button>
   </aside>`;
@@ -312,7 +334,7 @@ function upgradePanel(game) {
 function endPanel(game, won) {
   return `<aside class="panel result-panel">
     <header class="panel-head"><span>${won ? '魔王軍勝利' : '魔王敗北'}</span></header>
-    <p class="empty">${won ? '三度の侵入を退けた。' : '魔王が討たれた。'}</p>
+    <p class="empty">${won ? '二十の侵入を退けた。' : '魔王が討たれた。'}</p>
     <button class="primary wide" data-action="newRun">新しいラン</button>
   </aside>`;
 }
