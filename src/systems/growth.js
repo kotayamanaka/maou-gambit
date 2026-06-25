@@ -80,6 +80,8 @@ export function applyFeedGrowth(unit, captured) {
     material,
     levelUps,
     intUps,
+    before,
+    after,
     diff: diffStats(before, after)
   };
 }

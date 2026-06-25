@@ -52,12 +52,15 @@ export function createGame() {
     speed: 1,
     selectedUnitId: allies[0].uid,
     selectedRoomId: 'atrium',
+    selectedChipId: 'attack',
     selectedCapturedId: null,
+    showLog: true,
     camera: { zoom: 0.78, x: 16, y: 16 },
     selectedEntity: { type: 'ally', id: allies[0].uid },
     elapsed: 0,
     log: ['魔王軍、配置待機。'],
     chipBag: { ...initialChipBag },
+    chipUnlocks: ['攻撃 x3', '牢屋搬送 x1'],
     allies,
     enemies: [],
     downed: [],
@@ -68,6 +71,7 @@ export function createGame() {
     waveQueue: [],
     result: null,
     demonLord: unitFromTemplate(demonLord, 'throne', []),
+    metrics: { allyDamage: 0, enemyDamage: 0, lordDamage: 0 },
     effects: []
   };
 }
@@ -89,6 +93,7 @@ export function startStage(game) {
   game.defeated = 0;
   game.escaped = 0;
   game.result = null;
+  game.metrics = { allyDamage: 0, enemyDamage: 0, lordDamage: 0 };
   game.partyKnowledge = { throneKnown: false, visited: new Set(['entrance']) };
   game.waveQueue = currentStage(game).waves.flat().map((spawn, index) => ({ ...spawn, id: `${spawn.kind}-${index}`, spawned: false }));
   game.allies.forEach((unit) => {

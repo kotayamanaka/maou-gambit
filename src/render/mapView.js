@@ -79,6 +79,8 @@ export function renderMap(game, mode = 'setup') {
         <button data-mapaction="panUp" title="上へ">↑</button>
         <button data-mapaction="panDown" title="下へ">↓</button>
         <button data-mapaction="reset" title="リセット">⟳</button>
+        <button data-mapaction="focusSelected" title="選択へ">◎</button>
+        <button data-mapaction="focusEnemy" title="侵入者へ">!</button>
       </div>
     </div>
   </section>`;

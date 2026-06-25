@@ -64,6 +64,7 @@ export function consumeCaptured(game, capturedUid, mode, targetUid) {
     const candidates = Object.keys(chips).filter((id) => (game.chipBag[id] ?? 0) < 3);
     const chipId = candidates[Math.floor(Math.random() * candidates.length)] ?? 'attack';
     game.chipBag[chipId] = (game.chipBag[chipId] ?? 0) + 1;
+    game.chipUnlocks = [`研究: ${chips[chipId].name} +1`, ...(game.chipUnlocks ?? [])].slice(0, 6);
     addLog(game, `${captured.name}を研究し、${chips[chipId].name}を獲得。`);
   }
 
@@ -71,13 +72,16 @@ export function consumeCaptured(game, capturedUid, mode, targetUid) {
 }
 
 export function finishUpgrade(game) {
+  const rewardChip = currentStage(game).reward?.chip;
+  if (rewardChip) {
+    game.chipBag[rewardChip] = (game.chipBag[rewardChip] ?? 0) + 1;
+    game.chipUnlocks = [`報酬: ${chips[rewardChip].name} +1`, ...(game.chipUnlocks ?? [])].slice(0, 6);
+  }
   if (game.stageIndex >= 2) {
     game.phase = 'victory';
     addLog(game, '三度の侵入を退け、魔王軍の勝利。');
     return;
   }
   game.stageIndex += 1;
-  const rewardChip = currentStage(game).reward?.chip;
-  if (rewardChip) game.chipBag[rewardChip] = (game.chipBag[rewardChip] ?? 0) + 1;
   resetToSetup(game);
 }

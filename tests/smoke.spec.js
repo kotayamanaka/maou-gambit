@@ -28,13 +28,20 @@ test('setup supports monster selection, placement, and chip editing', async ({ p
   await page.locator('[data-chip="carryDowned"]').click();
   const state = await page.evaluate(() => {
     const unit = window.__MAOU_GAME__.allies.find((ally) => ally.uid === window.__MAOU_GAME__.selectedUnitId);
-    return { room: unit.room, homeRoom: unit.homeRoom, chips: unit.chips, visibleChips: [...document.querySelectorAll('[data-chip]')].map((el) => el.dataset.chip) };
+    return {
+      room: unit.room,
+      homeRoom: unit.homeRoom,
+      chips: unit.chips,
+      visibleChips: [...document.querySelectorAll('[data-chip]')].map((el) => el.dataset.chip),
+      lockedChips: [...document.querySelectorAll('[data-chip][data-locked="1"]')].map((el) => el.dataset.chip)
+    };
   });
   expect(state.room).toBe('storage');
   expect(state.homeRoom).toBe('storage');
   expect(state.chips).not.toContain('carryDowned');
-  expect(state.visibleChips).not.toContain('returnHome');
-  expect(state.visibleChips).not.toContain('focusMage');
+  expect(state.visibleChips).toContain('returnHome');
+  expect(state.lockedChips).toContain('returnHome');
+  expect(state.lockedChips).toContain('focusMage');
   await assertNoDocumentScroll(page);
 });
 
@@ -47,6 +54,18 @@ test('setup enforces room capacity', async ({ page }) => {
   const rooms = await page.evaluate(() => window.__MAOU_GAME__.allies.map((ally) => ({ name: ally.name, room: ally.room })));
   expect(rooms.find((ally) => ally.name === 'ゴブリン').room).toBe('storage');
   expect(rooms.find((ally) => ally.name === 'スライム').room).not.toBe('storage');
+  await assertNoDocumentScroll(page);
+});
+
+test('setup shows advice, chip detail, next enemies, and unlock history', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.getByText(/チップ枠余り|編成チェックOK/)).toBeVisible();
+  await page.locator('[data-chip="focusMage"]').click();
+  await expect(page.getByText('術師狙い').last()).toBeVisible();
+  await expect(page.getByText('未発見').first()).toBeVisible();
+  await expect(page.getByText('次の敵情報')).toBeVisible();
+  await expect(page.getByText(/戦士x1/)).toBeVisible();
+  await expect(page.getByText('チップ解放履歴')).toBeVisible();
   await assertNoDocumentScroll(page);
 });
 
@@ -171,6 +190,26 @@ test('feeding a captured enemy applies material exp and growth bias', async ({ p
   await assertNoDocumentScroll(page);
 });
 
+test('upgrade flow supports captured selection and action previews', async ({ page }) => {
+  await page.goto('/');
+  await page.evaluate(() => {
+    window.__MAOU_COMMIT__((game) => {
+      game.phase = 'upgrade';
+      game.captured = [
+        { uid: 'cap-warrior', templateId: 'warrior', name: '戦士', sprite: 'assets/sprites/warrior.png', convertTo: 'fallenWarrior' },
+        { uid: 'cap-rogue', templateId: 'rogue', name: '盗賊', sprite: 'assets/sprites/rogue.png', convertTo: 'shadeRunner' }
+      ];
+      game.selectedCapturedId = 'cap-rogue';
+    });
+  });
+  await expect(page.getByText('影走りになる')).toBeVisible();
+  await expect(page.getByText(/EXP\+8/)).toBeVisible();
+  await expect(page.getByText('研究候補')).toBeVisible();
+  await page.locator('[data-captured-select="cap-warrior"]').click();
+  await expect(page.getByText('堕ちた戦士になる')).toBeVisible();
+  await assertNoDocumentScroll(page);
+});
+
 test('battle supports unit selection and map zoom without direct commands', async ({ page }) => {
   await page.goto('/');
   await page.locator('[data-action="start"]').click();
@@ -182,6 +221,23 @@ test('battle supports unit selection and map zoom without direct commands', asyn
   await page.getByRole('button', { name: '＋' }).click();
   const transform = await page.locator('.map-world').evaluate((el) => getComputedStyle(el).transform);
   expect(transform).not.toBe('none');
+  await assertNoDocumentScroll(page);
+});
+
+test('battle supports pause, log toggle, retry, and map focus controls', async ({ page }) => {
+  await page.goto('/');
+  await page.locator('[data-action="start"]').click();
+  await page.locator('[data-action="pause"]').click();
+  expect(await page.evaluate(() => window.__MAOU_GAME__.speed)).toBe(0);
+  await page.locator('[data-action="toggleLog"]').click();
+  expect(await page.evaluate(() => window.__MAOU_GAME__.showLog)).toBe(false);
+  await page.locator('[data-mapaction="focusSelected"]').first().click();
+  const focused = await page.evaluate(() => window.__MAOU_GAME__.camera);
+  expect(Math.abs(focused.x)).toBeGreaterThan(1);
+  await page.locator('[data-action="retry"]').click();
+  expect(await page.evaluate(() => window.__MAOU_GAME__.phase)).toBe('battle');
+  await page.locator('[data-action="retreat"]').click();
+  expect(await page.evaluate(() => window.__MAOU_GAME__.phase)).toBe('setup');
   await assertNoDocumentScroll(page);
 });
 

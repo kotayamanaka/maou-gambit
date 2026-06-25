@@ -19,7 +19,7 @@ export const stages = [
     id: 3,
     name: '勇者前衛隊',
     waves: [
-      [{ kind: 'warrior', delay: 0 }, { kind: 'mage', delay: 2 }, { kind: 'warrior', delay: 5 }, { kind: 'rogue', delay: 7 }, { kind: 'mage', delay: 10 }]
+      [{ kind: 'warrior', delay: 0 }, { kind: 'mage', delay: 5 }, { kind: 'warrior', delay: 11 }, { kind: 'rogue', delay: 17 }, { kind: 'mage', delay: 24 }]
     ],
     reward: { chip: 'focusKnower' }
   }

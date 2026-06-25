@@ -287,3 +287,37 @@
 - `npm run build:pages`: 成功
 - `npm run test:smoke -- --reporter=list --workers=1`: 24件成功
 - 追加テスト：魔法使いをスライムの養分にした時、`EXP+6`、`知能EXP+2`、`ATK+1` が適用され、即時LVアップではなく経験値蓄積になること。
+
+## 2026-06-25 Claude Design 前 UI 機能整備
+
+### 目的
+
+Claude Design に UI 設計を依頼する前に、必要な操作・表示・判断材料をプロトタイプ上に一通り実装する。
+
+### 追加実装
+
+- 編成画面にチップ詳細、未発見チップ表示、チップ入れ替え、編成警告、次の敵情報、チップ解放履歴を追加。
+- 配下ステータスに成長傾向、担当部屋、EXP、知能EXPを表示。
+- 戦闘画面に一時停止、速度切替、リトライ、撤退、ログ表示/非表示を追加。
+- 戦闘画面に運搬中状態、ダウン敵残り時間、魔王部屋発見状態、与ダメ/被ダメ表示を追加。
+- マップ操作に選択対象フォーカス、侵入者フォーカスを追加。
+- 捕獲処理で複数捕獲敵を選択できるように変更。
+- 眷属化プレビュー、養分プレビュー、現在→強化後比較、研究候補表示を追加。
+- チップ解放履歴を状態に追加し、ステージ報酬/研究で更新。
+- ダメージ実績を `metrics` として記録。
+- `npm run test:balance` を追加し、ステージ別/キャンペーンの勝率、捕獲、魔王被ダメ、与ダメ/被ダメを確認できるようにした。
+- ステージ報酬が次ステージ報酬になっていたバグを修正。クリアしたステージの報酬を受け取るようにした。
+- 第3ステージは敵数を維持しつつ、出現間隔を広げてキャンペーン検収で勝てるテンポに調整。
+- `UI_READINESS.md` を追加し、Claude Design 依頼前の機能棚卸しを記録。
+
+### 検収
+
+- `npm run build:pages`: 成功
+- `npm run test:smoke -- --reporter=list --workers=1`: 30件成功
+- `npm run test:balance`: 成功
+- バランス結果：Raw stage は 2/3 勝利、キャンペーン検収は勝利、最終キャンペーン魔王被ダメ 0。
+- スクリーンショット更新：
+  - `screenshots/desktop-ui-readiness-setup.png`
+  - `screenshots/desktop-ui-readiness-battle.png`
+  - `screenshots/desktop-ui-readiness-upgrade.png`
+  - `screenshots/mobile-ui-readiness-setup.png`

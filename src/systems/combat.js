@@ -41,7 +41,12 @@ export function canAttack(attacker, target) {
 
 export function attack(attacker, target, game, label) {
   if (!canAttack(attacker, target)) return false;
-  target.hp = Math.max(0, target.hp - attacker.atk);
+  const damage = Math.min(target.hp, attacker.atk);
+  target.hp = Math.max(0, target.hp - damage);
+  game.metrics ??= { allyDamage: 0, enemyDamage: 0, lordDamage: 0 };
+  if (attacker.type === 'enemy' && target.type === 'boss') game.metrics.lordDamage += damage;
+  else if (attacker.type === 'enemy') game.metrics.enemyDamage += damage;
+  else game.metrics.allyDamage += damage;
   attacker.attackClock = 1.05;
   const side = attacker.type === 'enemy' ? 'enemy-hit' : 'ally-hit';
   game.effects.push({
@@ -51,7 +56,7 @@ export function attack(attacker, target, game, label) {
     x: target.x,
     y: target.y,
     ttl: 0.7,
-    label: `${label} -${attacker.atk}`
+    label: `${label} -${damage}`
   });
   return true;
 }
