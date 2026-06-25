@@ -22,6 +22,8 @@ import {
   researchChip,
   researchMonster,
   sellItem,
+  useItemOnRoom,
+  useItemOnUnit,
   upgradeRoom
 } from '../systems/progression.js';
 import { allyCountInRoom, canPlaceAlly, isRoomBuilt, roomCapacity, roomLevel } from '../systems/placement.js';
@@ -234,19 +236,47 @@ function roomManagementPanel(game) {
   </div>`;
 }
 
-function inventorySellPanel(game) {
-  const buttons = Object.entries(game.inventory ?? {})
+function itemUseLabel(item, game) {
+  const effect = item.use;
+  if (!effect) return '';
+  if (effect.target === 'ally') return `${selectedUnit(game).name} ${effect.label}`;
+  if (effect.target === 'room') {
+    const roomId = effect.room ?? game.selectedRoomId ?? 'atrium';
+    return `${roomById[roomId]?.name ?? roomId} ${effect.label}`;
+  }
+  return effect.label ?? '';
+}
+
+function inventoryPanel(game) {
+  const itemEntries = Object.entries(game.inventory ?? {})
     .filter(([, count]) => count > 0)
-    .map(([id, count]) => {
-      const item = items[id];
+    .map(([id, count]) => ({ id, count, item: items[id] }))
+    .filter(({ item }) => item);
+  const useButtons = itemEntries
+    .filter(({ item }) => item.use)
+    .map(({ id, count, item }) => {
+      const effect = item.use;
+      const roomId = effect.target === 'room' ? (effect.room ?? game.selectedRoomId ?? 'atrium') : '';
+      const disabled = effect.target === 'room' && (!isRoomBuilt(game, roomId) || (effect.stat === 'capacity' && roomById[roomId]?.capacity <= 0));
+      const data = effect.target === 'ally'
+        ? `data-use-item-unit="${id}" data-target-unit="${selectedUnit(game).uid}"`
+        : `data-use-item-room="${id}" data-target-room="${roomId}"`;
+      return `<button class="mini" ${data} ${disabled ? 'disabled' : ''}>
+        ${item.name}<small>x${count} ${itemUseLabel(item, game)}</small>
+      </button>`;
+    })
+    .join('');
+  const sellButtons = itemEntries
+    .map(({ id, count, item }) => {
       return `<button class="mini" data-sell-item="${id}">
-        ${item?.name ?? id}<small>x${count} 売却G${item?.value ?? 0}</small>
+        ${item.name}<small>x${count} 売却G${item.value ?? 0}</small>
       </button>`;
     })
     .join('');
   return `<div class="info-box management-box">
     <b>戦利品</b>
-    <div class="scroll-rail">${buttons || '<span class="empty-inline">売却品なし</span>'}</div>
+    <div class="scroll-rail">${useButtons || '<span class="empty-inline">使用できる素材なし</span>'}</div>
+    <div class="scroll-rail">${sellButtons || '<span class="empty-inline">売却品なし</span>'}</div>
   </div>`;
 }
 
@@ -301,7 +331,7 @@ function objectPanel(game) {
 }
 
 function managementPanels(game) {
-  return `${treasuryPanel(game)}${collectionPanel(game)}${inventorySellPanel(game)}${researchPanel(game)}${roomManagementPanel(game)}${objectPanel(game)}`;
+  return `${treasuryPanel(game)}${collectionPanel(game)}${inventoryPanel(game)}${researchPanel(game)}${roomManagementPanel(game)}${objectPanel(game)}`;
 }
 
 function roomChoice(room, unit, game) {
@@ -595,6 +625,12 @@ export function renderApp(root, game, commit) {
   })));
   root.querySelectorAll('[data-sell-item]').forEach((button) => button.addEventListener('click', () => commit((state) => {
     sellItem(state, button.dataset.sellItem);
+  })));
+  root.querySelectorAll('[data-use-item-unit]').forEach((button) => button.addEventListener('click', () => commit((state) => {
+    useItemOnUnit(state, button.dataset.useItemUnit, button.dataset.targetUnit);
+  })));
+  root.querySelectorAll('[data-use-item-room]').forEach((button) => button.addEventListener('click', () => commit((state) => {
+    useItemOnRoom(state, button.dataset.useItemRoom, button.dataset.targetRoom);
   })));
   root.querySelectorAll('[data-research-chip]').forEach((button) => button.addEventListener('click', () => commit((state) => {
     researchChip(state);

@@ -91,7 +91,7 @@ export function tickBattle(game, dt) {
     if (enemy.hp > 0) continue;
     if (tryReviveEnemyAtSavePoint(game, enemy)) continue;
     awardEnemyDrop(game, enemy);
-    game.downed.push(createDownedEnemy(enemy));
+    game.downed.push(createDownedEnemy(enemy, game));
     game.enemies = game.enemies.filter((item) => item.uid !== enemy.uid);
     game.defeated += 1;
     addLog(game, `${enemy.name}がダウン。牢屋へ運べる。`);

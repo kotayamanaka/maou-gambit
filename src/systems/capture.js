@@ -1,6 +1,6 @@
 import { addLog } from '../game/state.js';
 
-export function createDownedEnemy(enemy) {
+export function createDownedEnemy(enemy, game = null) {
   return {
     uid: `downed-${enemy.uid}`,
     templateId: enemy.templateId,
@@ -14,7 +14,7 @@ export function createDownedEnemy(enemy) {
     room: enemy.room,
     x: enemy.x,
     y: enemy.y,
-    ttl: enemy.capture?.ttl ?? 12,
+    ttl: (enemy.capture?.ttl ?? 12) + (game?.captureTtlBonus ?? 0),
     carriedBy: null
   };
 }

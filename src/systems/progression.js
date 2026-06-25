@@ -6,7 +6,7 @@ import { currentStage, addLog, resetToSetup } from '../game/state.js';
 import { stages } from '../data/stages.js';
 import { rooms, roomById } from '../data/rooms.js';
 import { firstOpenAllyRoom, isRoomBuilt, roomCapacity, roomLevel } from './placement.js';
-import { applyFeedGrowth } from './growth.js';
+import { applyFeedGrowth, nextIntExp, growthProfile } from './growth.js';
 import { researchCost } from './roomEffects.js';
 import { canConnectRoom } from './path.js';
 
@@ -70,13 +70,69 @@ function spendGold(game, amount) {
   return true;
 }
 
-export function sellItem(game, itemId) {
+function consumeInventory(game, itemId) {
   const count = game.inventory?.[itemId] ?? 0;
-  const item = items[itemId];
-  if (!item || count <= 0) return false;
+  if (count <= 0 || !items[itemId]) return null;
   game.inventory[itemId] = count - 1;
+  return items[itemId];
+}
+
+export function sellItem(game, itemId) {
+  const item = consumeInventory(game, itemId);
+  if (!item) return false;
   game.gold = (game.gold ?? 0) + item.value;
   addLog(game, `${item.name}を売却。G+${item.value}。`);
+  return true;
+}
+
+function applyIntExp(unit, amount) {
+  const profile = growthProfile(unit);
+  unit.intExp = (unit.intExp ?? 0) + amount;
+  let intUps = 0;
+  while (unit.int < profile.maxInt && unit.intExp >= nextIntExp(unit)) {
+    unit.intExp -= nextIntExp(unit);
+    unit.int += 1;
+    intUps += 1;
+  }
+  if (unit.int >= profile.maxInt) unit.intExp = Math.min(unit.intExp, nextIntExp(unit) - 1);
+  return intUps;
+}
+
+export function useItemOnUnit(game, itemId, unitId) {
+  const item = items[itemId];
+  const effect = item?.use;
+  const unit = game.allies.find((ally) => ally.uid === unitId);
+  if (!item || !effect || effect.target !== 'ally' || !unit) return false;
+  const consumed = consumeInventory(game, itemId);
+  if (!consumed) return false;
+  let extra = '';
+  if (effect.stat === 'atk') unit.atk += effect.value;
+  if (effect.stat === 'spd') unit.spd = Math.round((unit.spd + effect.value) * 100) / 100;
+  if (effect.stat === 'intExp') {
+    const intUps = applyIntExp(unit, effect.value);
+    extra = intUps ? ` / INT+${intUps}` : '';
+  }
+  addLog(game, `${item.name}を${unit.name}に使用（${effect.label}${extra}）。`);
+  return true;
+}
+
+export function useItemOnRoom(game, itemId, roomId) {
+  const item = items[itemId];
+  const effect = item?.use;
+  const room = roomById[roomId];
+  if (!item || !effect || effect.target !== 'room' || !room || !isRoomBuilt(game, roomId)) return false;
+  if (effect.room && effect.room !== roomId) return false;
+  if (effect.stat === 'capacity' && room.capacity <= 0) return false;
+  const consumed = consumeInventory(game, itemId);
+  if (!consumed) return false;
+  if (effect.stat === 'capacity') {
+    game.roomCapacityBonus ??= {};
+    game.roomCapacityBonus[roomId] = (game.roomCapacityBonus[roomId] ?? 0) + effect.value;
+  }
+  if (effect.stat === 'captureTtlBonus') {
+    game.captureTtlBonus = (game.captureTtlBonus ?? 0) + effect.value;
+  }
+  addLog(game, `${item.name}を${room.name}に使用（${effect.label}）。`);
   return true;
 }
 

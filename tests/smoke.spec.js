@@ -393,11 +393,16 @@ test('upgrade management supports selling, building, room upgrades, and research
     window.__MAOU_COMMIT__((game) => {
       game.phase = 'upgrade';
       game.gold = 1000;
-      game.inventory = { rustyBlade: 1, manaDust: 1 };
+      game.inventory = { rustyBlade: 2, manaDust: 1, roomStone: 1, silverChain: 1 };
       game.captured = [];
     });
   });
   await expect(page.getByText('戦利品')).toBeVisible();
+  await expect(page.getByText(/ゴブリン ATK\+1/)).toBeVisible();
+  await page.locator('[data-use-item-unit="rustyBlade"]').click();
+  await page.locator('[data-use-item-unit="manaDust"]').click();
+  await page.locator('[data-use-item-room="roomStone"]').click();
+  await page.locator('[data-use-item-room="silverChain"]').click();
   await page.locator('[data-sell-item="rustyBlade"]').click();
   await page.locator('[data-build-anchor="atrium"]').click();
   await page.locator('[data-build-room="treasure"]').click();
@@ -413,15 +418,20 @@ test('upgrade management supports selling, building, room upgrades, and research
     treasureConnection: window.__MAOU_GAME__.roomConnections.treasure,
     treasureObject: window.__MAOU_GAME__.roomObjects.treasure,
     atriumCapacity: window.__MAOU_GAME__.roomCapacityBonus.atrium,
+    captureTtlBonus: window.__MAOU_GAME__.captureTtlBonus,
+    goblin: window.__MAOU_GAME__.allies.find((ally) => ally.name === 'ゴブリン'),
     knownChips: window.__MAOU_GAME__.collections.chips.size,
     allyCount: window.__MAOU_GAME__.allies.length
   }));
   expect(state.gold).toBeLessThan(1000);
   expect(state.rustyBlade).toBe(0);
+  expect(state.goblin.atk).toBe(10);
+  expect(state.goblin.intExp).toBe(2);
   expect(state.treasureBuilt).toBe(true);
   expect(state.treasureConnection).toContain('atrium');
   expect(state.treasureObject).toBe('savePoint');
-  expect(state.atriumCapacity).toBe(1);
+  expect(state.atriumCapacity).toBe(2);
+  expect(state.captureTtlBonus).toBe(3);
   expect(state.knownChips).toBeGreaterThan(2);
   expect(state.allyCount).toBeGreaterThan(1);
   await assertNoDocumentScroll(page);
