@@ -48,6 +48,7 @@ function conditionTarget(game, unit, condition) {
 export function decideAllyAction(game, unit) {
   if (unit.carrying) return { type: 'carry', targetRoom: 'jail' };
   const homeRoom = unit.homeRoom ?? unit.room;
+  if (unit.movingTo) return { type: 'move', targetRoom: unit.movingTo };
 
   const orderedChips = [...unit.chips].sort((a, b) => {
     const aAction = chips[a]?.action;
@@ -90,6 +91,7 @@ function enemyAllyTarget(game, enemy) {
 }
 
 export function decideEnemyAction(game, enemy) {
+  if (enemy.movingTo) return { type: 'move', targetRoom: enemy.movingTo };
   const allyTarget = enemyAllyTarget(game, enemy);
   if (allyTarget) return { type: 'attackAlly', target: allyTarget };
 

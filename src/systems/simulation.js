@@ -1,6 +1,6 @@
 import { addLog } from '../game/state.js';
 import { decideAllyAction, decideEnemyAction } from './ai.js';
-import { attack, enemyDiscoverRoom, moveUnit, spawnDueEnemies } from './combat.js';
+import { approachTarget, attack, enemyDiscoverRoom, moveUnit, spawnDueEnemies } from './combat.js';
 import { createDownedEnemy, pickupDowned, resolveCaptures } from './capture.js';
 
 export function tickBattle(game, dt) {
@@ -14,11 +14,11 @@ export function tickBattle(game, dt) {
     const action = decideAllyAction(game, unit);
     if (action.type === 'attack' && unit.attackClock <= 0) {
       const didAttack = attack(unit, action.target, game, '斬');
-      if (!didAttack && action.target) moveUnit(unit, action.target.room, step);
+      if (!didAttack && action.target) approachTarget(unit, action.target, step);
     }
     if (action.type === 'move') moveUnit(unit, action.targetRoom, step);
     if (action.type === 'pickup') {
-      if (!pickupDowned(unit, action.target, game)) moveUnit(unit, action.target.room, step);
+      if (!pickupDowned(unit, action.target, game)) approachTarget(unit, action.target, step);
     }
     if (action.type === 'carry') moveUnit(unit, action.targetRoom, step);
   }
@@ -28,13 +28,15 @@ export function tickBattle(game, dt) {
     enemyDiscoverRoom(game, enemy);
     const action = decideEnemyAction(game, enemy);
     if (action.type === 'attackAlly') {
-      if (enemy.attackClock <= 0) attack(enemy, action.target, game, '打');
+      if (enemy.attackClock <= 0 && !attack(enemy, action.target, game, '打')) approachTarget(enemy, action.target, step);
       continue;
     }
     if (action.type === 'attackLord') {
       if (enemy.attackClock <= 0) {
-        attack(enemy, game.demonLord, game, '魔王');
-        if (game.demonLord.hp <= 0) {
+        const didAttack = attack(enemy, game.demonLord, game, '魔王');
+        if (!didAttack) {
+          approachTarget(enemy, game.demonLord, step);
+        } else if (game.demonLord.hp <= 0) {
           game.phase = 'defeat';
           game.result = makeResult(game, false);
           addLog(game, '魔王が倒された。');
@@ -68,7 +70,13 @@ export function tickBattle(game, dt) {
   game.effects = game.effects.map((effect) => ({ ...effect, ttl: effect.ttl - step })).filter((effect) => effect.ttl > 0);
 
   const allSpawned = game.waveQueue.every((spawn) => spawn.spawned);
-  if (allSpawned && game.enemies.length === 0 && game.downed.length === 0) {
+  const carriersReturning = game.allies.some((ally) => (
+    ally.hp > 0
+    && !ally.carrying
+    && ally.chips.includes('carryDowned')
+    && ally.room !== (ally.homeRoom ?? ally.room)
+  ));
+  if (allSpawned && game.enemies.length === 0 && game.downed.length === 0 && !carriersReturning) {
     game.phase = 'result';
     game.result = makeResult(game, true);
     addLog(game, '侵入隊を撃退。');

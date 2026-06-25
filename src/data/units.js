@@ -23,7 +23,7 @@ export const allyTemplates = {
     type: 'ally',
     role: 'scout',
     sprite: 'assets/sprites/bat.png',
-    stats: { hp: 36, atk: 6, spd: 1.85, int: 1, carry: 0, range: 1 },
+    stats: { hp: 42, atk: 7, spd: 1.85, int: 1, carry: 0, range: 1 },
     traits: ['高速', '運搬不可']
   },
   fallenWarrior: {

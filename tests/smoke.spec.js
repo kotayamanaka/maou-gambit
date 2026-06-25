@@ -138,11 +138,141 @@ test('enemies use behavior chips to fight same-room monsters', async ({ page }) 
   await assertNoDocumentScroll(page);
 });
 
+test('melee units must close distance inside the same room before attacking', async ({ page }) => {
+  await page.goto('/');
+  await page.evaluate(() => {
+    window.__MAOU_COMMIT__((game) => {
+      const goblin = game.allies.find((ally) => ally.name === 'ゴブリン');
+      Object.assign(goblin, {
+        room: 'atrium',
+        homeRoom: 'atrium',
+        x: 560,
+        y: 265,
+        range: 1,
+        chips: ['attack'],
+        attackClock: 0,
+        movingTo: null
+      });
+      game.phase = 'battle';
+      game.speed = 1;
+      game.waveQueue = [];
+      game.enemies = [{
+        uid: 'melee-range-test',
+        templateId: 'warrior',
+        name: '戦士',
+        type: 'enemy',
+        sprite: 'assets/sprites/warrior.png',
+        maxHp: 34,
+        hp: 34,
+        atk: 5,
+        spd: 0.72,
+        range: 1,
+        chips: [],
+        convertTo: 'fallenWarrior',
+        room: 'atrium',
+        x: 660,
+        y: 265,
+        movingTo: null,
+        moveClock: 0,
+        attackClock: 0,
+        searchClock: 999,
+        knowsThrone: false
+      }];
+    });
+  });
+  await page.waitForFunction(() => {
+    const game = window.__MAOU_GAME__;
+    const goblin = game.allies.find((ally) => ally.name === 'ゴブリン');
+    const enemy = game.enemies.find((item) => item.uid === 'melee-range-test');
+    return goblin.x > 563 && enemy.hp === enemy.maxHp;
+  }, null, { timeout: 1200 });
+  await page.waitForFunction(() => {
+    const enemy = window.__MAOU_GAME__.enemies.find((item) => item.uid === 'melee-range-test');
+    return enemy && enemy.hp < enemy.maxHp;
+  }, null, { timeout: 3500 });
+  await assertNoDocumentScroll(page);
+});
+
+test('ranged attacks show projectile effects', async ({ page }) => {
+  await page.goto('/');
+  await page.evaluate(() => {
+    window.__MAOU_COMMIT__((game) => {
+      const goblin = game.allies.find((ally) => ally.name === 'ゴブリン');
+      Object.assign(goblin, {
+        room: 'atrium',
+        homeRoom: 'atrium',
+        x: 552,
+        y: 265,
+        range: 3,
+        chips: ['attack'],
+        attackClock: 0,
+        movingTo: null
+      });
+      game.phase = 'battle';
+      game.speed = 1;
+      game.waveQueue = [];
+      game.enemies = [{
+        uid: 'projectile-test',
+        templateId: 'mage',
+        name: '魔法使い',
+        type: 'enemy',
+        sprite: 'assets/sprites/mage.png',
+        maxHp: 20,
+        hp: 20,
+        atk: 4,
+        spd: 0.62,
+        range: 3,
+        chips: [],
+        convertTo: 'darkMage',
+        room: 'atrium',
+        x: 670,
+        y: 265,
+        movingTo: null,
+        moveClock: 0,
+        attackClock: 0,
+        searchClock: 999,
+        knowsThrone: false
+      }];
+    });
+  });
+  await page.waitForFunction(() => window.__MAOU_GAME__.effects.some((effect) => String(effect.type).includes('projectile')), null, { timeout: 2500 });
+  await expect(page.locator('.fx.projectile')).toBeVisible();
+  await assertNoDocumentScroll(page);
+});
+
 test('carrier returns to assigned room after jail delivery', async ({ page }) => {
   await page.goto('/');
-  await page.locator('[data-action="start"]').click();
-  await page.locator('[data-action="speed"]').click();
-  await page.evaluate(() => { window.__MAOU_GAME__.speed = 8; });
+  await page.evaluate(() => {
+    window.__MAOU_COMMIT__((game) => {
+      const goblin = game.allies.find((ally) => ally.name === 'ゴブリン');
+      Object.assign(goblin, {
+        room: 'atrium',
+        homeRoom: 'atrium',
+        x: 560,
+        y: 265,
+        chips: ['carryDowned', 'attack'],
+        carrying: null,
+        movingTo: null
+      });
+      game.phase = 'battle';
+      game.speed = 8;
+      game.waveQueue = [];
+      game.enemies = [];
+      game.downed = [{
+        uid: 'downed-carrier-test',
+        templateId: 'warrior',
+        name: '戦士',
+        sprite: 'assets/sprites/warrior.png',
+        convertTo: 'fallenWarrior',
+        room: 'atrium',
+        x: 660,
+        y: 265,
+        ttl: 20,
+        carriedBy: null
+      }];
+      game.captured = [];
+    });
+  });
   await page.waitForFunction(() => {
     const game = window.__MAOU_GAME__;
     const goblin = game?.allies.find((ally) => ally.name === 'ゴブリン');

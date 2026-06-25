@@ -62,6 +62,15 @@ export function renderMap(game, mode = 'setup') {
     if (!room) return '';
     const x = effect.x ?? room.x + 36;
     const y = effect.y ?? room.y + 28;
+    if (String(effect.type).includes('projectile')) {
+      const toX = effect.toX ?? x;
+      const toY = effect.toY ?? y;
+      const dx = toX - x;
+      const dy = toY - y;
+      const length = Math.max(16, Math.hypot(dx, dy));
+      const angle = Math.atan2(dy, dx);
+      return `<span class="fx ${effect.type}" style="left:${x}px;top:${y}px;width:${length}px;transform:translate(0,-50%) rotate(${angle}rad)">${effect.label ?? ''}</span>`;
+    }
     return `<span class="fx ${effect.type}" style="left:${x}px;top:${y}px">${effect.label ?? ''}</span>`;
   }).join('');
 

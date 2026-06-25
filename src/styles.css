@@ -245,6 +245,23 @@ img { image-rendering: pixelated; }
 }
 .fx.ally-hit { color: #ffe29c; }
 .fx.enemy-hit { color: #ff8b8b; }
+.fx.projectile {
+  height: 4px;
+  min-width: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(255, 246, 198, .98), rgba(216, 170, 74, .36), rgba(216, 170, 74, 0));
+  box-shadow: 0 0 10px rgba(216, 170, 74, .75);
+  transform-origin: 0 50%;
+  color: transparent;
+  text-shadow: none;
+  animation: projectileFly .32s ease-out both;
+}
+.fx.projectile.enemy-hit {
+  background: linear-gradient(90deg, rgba(255, 188, 188, .98), rgba(211, 75, 75, .35), rgba(211, 75, 75, 0));
+  box-shadow: 0 0 10px rgba(211, 75, 75, .72);
+}
 .fx.capture { color: var(--green); font-size: 16px; }
 .fx.found, .fx.question { color: var(--gold); }
 
@@ -515,6 +532,11 @@ img { image-rendering: pixelated; }
   0% { opacity: 0; transform: translate(-50%, -50%) scale(.78); }
   22% { opacity: 1; transform: translate(-50%, -80%) scale(1.12); }
   100% { opacity: 0; transform: translate(-50%, -125%) scale(.92); }
+}
+@keyframes projectileFly {
+  0% { opacity: 0; clip-path: inset(0 100% 0 0); filter: brightness(1.7); }
+  18% { opacity: 1; clip-path: inset(0 42% 0 0); }
+  100% { opacity: 0; clip-path: inset(0 0 0 100%); filter: brightness(1); }
 }
 
 @media (max-width: 720px) {

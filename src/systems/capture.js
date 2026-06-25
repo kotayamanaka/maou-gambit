@@ -18,6 +18,8 @@ export function createDownedEnemy(enemy) {
 export function pickupDowned(unit, downed, game) {
   if (!downed || downed.carriedBy || unit.carry <= 0) return false;
   if (unit.room !== downed.room) return false;
+  const distance = Math.hypot((unit.x ?? 0) - (downed.x ?? 0), (unit.y ?? 0) - (downed.y ?? 0));
+  if (distance > 38) return false;
   unit.carrying = downed.uid;
   downed.carriedBy = unit.uid;
   addLog(game, `${unit.name}が${downed.name}を担いだ。`);
