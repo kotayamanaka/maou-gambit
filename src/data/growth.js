@@ -82,6 +82,8 @@ export const feedMaterials = {
 export const growthProfiles = {
   goblin: { label: 'バランス型', hp: 5, atkEvery: 2, spd: 0.02, intNeed: 3, maxInt: 5 },
   slime: { label: 'HP型', hp: 9, atkEvery: 3, spd: 0, intNeed: 5, maxInt: 3 },
+  poisonSlime: { label: '毒HP型', hp: 8, atkEvery: 4, spd: 0.01, intNeed: 4, maxInt: 4 },
+  darkSlime: { label: '闇HP/ATK型', hp: 9, atkEvery: 2, spd: 0, intNeed: 4, maxInt: 4 },
   bat: { label: 'SPD型', hp: 3, atkEvery: 3, spd: 0.05, intNeed: 4, maxInt: 4 },
   fallenWarrior: { label: 'HP/ATK型', hp: 7, atkEvery: 2, spd: 0, intNeed: 5, maxInt: 3 },
   shadeRunner: { label: 'SPD/INT型', hp: 4, atkEvery: 3, spd: 0.06, intNeed: 3, maxInt: 5 },

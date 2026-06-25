@@ -61,10 +61,12 @@ test('setup shows advice, chip detail, next enemies, and unlock history', async 
   await page.goto('/');
   await expect(page.getByText(/チップ枠余り|編成チェックOK/)).toBeVisible();
   await page.locator('[data-chip="focusMage"]').click();
-  await expect(page.getByText('術師狙い').last()).toBeVisible();
+  await expect(page.getByText('攻撃対象系 / 未発見')).toBeVisible();
+  await expect(page.getByText('????').first()).toBeVisible();
   await expect(page.getByText('未発見').first()).toBeVisible();
   await expect(page.getByText('次の敵情報')).toBeVisible();
   await expect(page.getByText(/戦士x1/)).toBeVisible();
+  await expect(page.getByText('図鑑', { exact: true })).toBeVisible();
   await expect(page.getByText('チップ解放履歴')).toBeVisible();
   await assertNoDocumentScroll(page);
 });
@@ -217,8 +219,8 @@ test('ranged attacks show projectile effects', async ({ page }) => {
         name: '魔法使い',
         type: 'enemy',
         sprite: 'assets/sprites/mage.png',
-        maxHp: 20,
-        hp: 20,
+        maxHp: 80,
+        hp: 80,
         atk: 4,
         spd: 0.62,
         range: 3,
@@ -337,6 +339,101 @@ test('upgrade flow supports captured selection and action previews', async ({ pa
   await expect(page.getByText('研究候補')).toBeVisible();
   await page.locator('[data-captured-select="cap-warrior"]').click();
   await expect(page.getByText('堕ちた戦士になる')).toBeVisible();
+  await assertNoDocumentScroll(page);
+});
+
+test('upgrade management supports selling, building, room upgrades, and research', async ({ page }) => {
+  await page.goto('/');
+  await page.evaluate(() => {
+    window.__MAOU_COMMIT__((game) => {
+      game.phase = 'upgrade';
+      game.gold = 1000;
+      game.inventory = { rustyBlade: 1, manaDust: 1 };
+      game.captured = [];
+    });
+  });
+  await expect(page.getByText('戦利品')).toBeVisible();
+  await page.locator('[data-sell-item="rustyBlade"]').click();
+  await page.locator('[data-build-anchor="atrium"]').click();
+  await page.locator('[data-build-room="treasure"]').click();
+  await page.locator('[data-upgrade-room="atrium"]').click();
+  await page.locator('[data-object-room="treasure"]').click();
+  await page.locator('[data-install-object="savePoint"]').click();
+  await page.locator('[data-research-chip]').click();
+  await page.locator('[data-research-monster]').click();
+  const state = await page.evaluate(() => ({
+    gold: window.__MAOU_GAME__.gold,
+    rustyBlade: window.__MAOU_GAME__.inventory.rustyBlade,
+    treasureBuilt: window.__MAOU_GAME__.builtRooms.has('treasure'),
+    treasureConnection: window.__MAOU_GAME__.roomConnections.treasure,
+    treasureObject: window.__MAOU_GAME__.roomObjects.treasure,
+    atriumCapacity: window.__MAOU_GAME__.roomCapacityBonus.atrium,
+    knownChips: window.__MAOU_GAME__.collections.chips.size,
+    allyCount: window.__MAOU_GAME__.allies.length
+  }));
+  expect(state.gold).toBeLessThan(1000);
+  expect(state.rustyBlade).toBe(0);
+  expect(state.treasureBuilt).toBe(true);
+  expect(state.treasureConnection).toContain('atrium');
+  expect(state.treasureObject).toBe('savePoint');
+  expect(state.atriumCapacity).toBe(1);
+  expect(state.knownChips).toBeGreaterThan(2);
+  expect(state.allyCount).toBeGreaterThan(3);
+  await assertNoDocumentScroll(page);
+});
+
+test('skills apply visible status effects for allies and enemies', async ({ page }) => {
+  await page.goto('/');
+  await page.evaluate(() => {
+    window.__MAOU_COMMIT__((game) => {
+      const slime = game.allies.find((ally) => ally.name === 'スライム');
+      Object.assign(slime, {
+        room: 'atrium',
+        homeRoom: 'atrium',
+        x: 600,
+        y: 385,
+        chips: ['attack'],
+        attackClock: 0,
+        movingTo: null
+      });
+      game.phase = 'battle';
+      game.speed = 1;
+      game.waveQueue = [];
+      game.enemies = [{
+        uid: 'status-test',
+        templateId: 'mage',
+        name: '魔法使い',
+        type: 'enemy',
+        sprite: 'assets/sprites/mage.png',
+        maxHp: 20,
+        hp: 20,
+        atk: 4,
+        spd: 0.62,
+        range: 3,
+        skills: ['poisonTouch'],
+        chips: ['engageGuard'],
+        convertTo: 'darkMage',
+        room: 'atrium',
+        x: 635,
+        y: 385,
+        movingTo: null,
+        moveClock: 0,
+        attackClock: 0,
+        searchClock: 999,
+        knowsThrone: false,
+        capture: { difficulty: 2, ttl: 10 },
+        drop: { gold: 0, items: [] },
+        status: []
+      }];
+    });
+  });
+  await page.waitForFunction(() => {
+    const game = window.__MAOU_GAME__;
+    const poisonedAlly = game.allies.find((ally) => ally.status?.some((item) => item.id === 'poison'));
+    const enemy = game.enemies.find((item) => item.uid === 'status-test');
+    return poisonedAlly && enemy?.status?.some((item) => item.id === 'slow');
+  }, null, { timeout: 8000 });
+  await expect(page.locator('.status-badge').first()).toBeVisible();
   await assertNoDocumentScroll(page);
 });
 

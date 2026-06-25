@@ -6,6 +6,7 @@ export const allyTemplates = {
     role: 'balanced',
     sprite: 'assets/sprites/goblin.png',
     stats: { hp: 48, atk: 9, spd: 1.0, int: 3, carry: 1, range: 1 },
+    skills: ['hasteOnHit'],
     traits: ['運搬可', '初期主力']
   },
   slime: {
@@ -15,7 +16,28 @@ export const allyTemplates = {
     role: 'tank',
     sprite: 'assets/sprites/slime.png',
     stats: { hp: 68, atk: 5, spd: 0.65, int: 1, carry: 1, range: 1 },
+    skills: ['slowTouch'],
     traits: ['運搬可', '鈍足付与']
+  },
+  poisonSlime: {
+    id: 'poisonSlime',
+    name: 'ポイズンスライム',
+    type: 'ally',
+    role: 'debuffer',
+    sprite: 'assets/sprites/slime.png',
+    stats: { hp: 60, atk: 4, spd: 0.62, int: 2, carry: 1, range: 1 },
+    skills: ['poisonTouch'],
+    traits: ['運搬可', '毒付与', 'スライム亜種']
+  },
+  darkSlime: {
+    id: 'darkSlime',
+    name: 'ダークスライム',
+    type: 'ally',
+    role: 'bruiser',
+    sprite: 'assets/sprites/slime.png',
+    stats: { hp: 74, atk: 7, spd: 0.58, int: 2, carry: 1, range: 1 },
+    skills: ['poisonTouch', 'slowTouch'],
+    traits: ['運搬可', '毒付与', '鈍足付与', 'スライム亜種']
   },
   bat: {
     id: 'bat',
@@ -24,6 +46,7 @@ export const allyTemplates = {
     role: 'scout',
     sprite: 'assets/sprites/bat.png',
     stats: { hp: 42, atk: 7, spd: 1.85, int: 1, carry: 0, range: 1 },
+    skills: ['hasteOnHit'],
     traits: ['高速', '運搬不可']
   },
   fallenWarrior: {
@@ -51,6 +74,7 @@ export const allyTemplates = {
     role: 'caster',
     sprite: 'assets/sprites/dark-mage.png',
     stats: { hp: 24, atk: 6, spd: 0.75, int: 2, carry: 0, range: 3 },
+    skills: ['poisonTouch'],
     traits: ['遠距離']
   },
   boneGuard: {
@@ -60,6 +84,7 @@ export const allyTemplates = {
     role: 'guard',
     sprite: 'assets/sprites/fallen-warrior.png',
     stats: { hp: 62, atk: 7, spd: 0.58, int: 1, carry: 0, range: 1 },
+    skills: ['slowTouch'],
     traits: ['高耐久', '足止め']
   },
   goblinChief: {
@@ -78,6 +103,7 @@ export const allyTemplates = {
     role: 'tank',
     sprite: 'assets/sprites/slime.png',
     stats: { hp: 86, atk: 6, spd: 0.5, int: 1, carry: 1, range: 1 },
+    skills: ['poisonTouch', 'slowTouch'],
     traits: ['高HP', '運搬可']
   },
   impArcher: {
@@ -96,6 +122,7 @@ export const allyTemplates = {
     role: 'tactician',
     sprite: 'assets/sprites/dark-mage.png',
     stats: { hp: 30, atk: 5, spd: 0.95, int: 4, carry: 0, range: 2 },
+    skills: ['inspireOnHit'],
     traits: ['高INT', '支援向き']
   }
 };
@@ -118,6 +145,7 @@ export const enemyTemplates = {
     type: 'enemy',
     sprite: 'assets/sprites/rogue.png',
     stats: { hp: 22, atk: 3, spd: 1.2, range: 1 },
+    skills: ['hasteOnHit'],
     chips: ['engageGuard', 'exploreUnknown', 'seekThrone'],
     convertTo: 'shadeRunner',
     capture: { difficulty: 2, ttl: 10 },
@@ -129,6 +157,7 @@ export const enemyTemplates = {
     type: 'enemy',
     sprite: 'assets/sprites/mage.png',
     stats: { hp: 20, atk: 4, spd: 0.62, range: 3 },
+    skills: ['poisonTouch'],
     chips: ['focusWeakAlly', 'exploreUnknown', 'seekThrone'],
     convertTo: 'darkMage',
     capture: { difficulty: 2, ttl: 10 },
@@ -140,6 +169,7 @@ export const enemyTemplates = {
     type: 'enemy',
     sprite: 'assets/sprites/warrior.png',
     stats: { hp: 48, atk: 4, spd: 0.55, range: 1 },
+    skills: ['slowTouch'],
     chips: ['engageGuard', 'exploreUnknown', 'seekThrone'],
     convertTo: 'boneGuard',
     capture: { difficulty: 1, ttl: 14 },
@@ -184,6 +214,7 @@ export const enemyTemplates = {
     type: 'enemy',
     sprite: 'assets/sprites/mage.png',
     stats: { hp: 28, atk: 5, spd: 0.68, range: 3 },
+    skills: ['poisonTouch'],
     chips: ['focusWeakAlly', 'exploreUnknown', 'seekThrone'],
     convertTo: 'darkMage',
     capture: { difficulty: 3, ttl: 8 },
@@ -195,6 +226,7 @@ export const enemyTemplates = {
     type: 'enemy',
     sprite: 'assets/sprites/rogue.png',
     stats: { hp: 36, atk: 6, spd: 1.05, range: 1 },
+    skills: ['inspireOnHit'],
     chips: ['engageGuard', 'exploreUnknown', 'seekThrone'],
     convertTo: 'goblinChief',
     capture: { difficulty: 3, ttl: 9 },
@@ -206,6 +238,7 @@ export const enemyTemplates = {
     type: 'enemy',
     sprite: 'assets/sprites/warrior.png',
     stats: { hp: 72, atk: 8, spd: 0.68, range: 1 },
+    skills: ['slowTouch'],
     chips: ['engageGuard', 'exploreUnknown', 'seekThrone'],
     convertTo: 'boneGuard',
     capture: { difficulty: 4, ttl: 8 },
@@ -217,6 +250,7 @@ export const enemyTemplates = {
     type: 'enemy',
     sprite: 'assets/sprites/mage.png',
     stats: { hp: 34, atk: 7, spd: 0.62, range: 4 },
+    skills: ['poisonTouch', 'inspireOnHit'],
     chips: ['focusWeakAlly', 'exploreUnknown', 'seekThrone'],
     convertTo: 'oracleShade',
     capture: { difficulty: 5, ttl: 7 },
@@ -228,6 +262,7 @@ export const enemyTemplates = {
     type: 'enemy',
     sprite: 'assets/sprites/warrior.png',
     stats: { hp: 96, atk: 10, spd: 0.9, range: 1 },
+    skills: ['hasteOnHit', 'inspireOnHit'],
     chips: ['engageGuard', 'focusWeakAlly', 'exploreUnknown', 'seekThrone'],
     convertTo: 'goblinChief',
     capture: { difficulty: 6, ttl: 6 },

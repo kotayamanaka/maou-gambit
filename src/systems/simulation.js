@@ -3,6 +3,8 @@ import { items } from '../data/items.js';
 import { decideAllyAction, decideEnemyAction } from './ai.js';
 import { approachTarget, attack, enemyDiscoverRoom, moveUnit, spawnDueEnemies } from './combat.js';
 import { createDownedEnemy, pickupDowned, resolveCaptures } from './capture.js';
+import { tickStatuses } from './status.js';
+import { inventoryLimit, resolveEnemyRoomEffects, tickRoomObjects, tryReviveEnemyAtSavePoint } from './roomEffects.js';
 
 function awardEnemyDrop(game, enemy) {
   const drop = enemy.drop ?? {};
@@ -13,6 +15,11 @@ function awardEnemyDrop(game, enemy) {
   }
   for (const itemId of drop.items ?? []) {
     game.inventory ??= {};
+    const totalItems = Object.values(game.inventory).reduce((sum, count) => sum + count, 0);
+    if (totalItems >= inventoryLimit(game)) {
+      game.lootLog = [`所持上限で${items[itemId]?.name ?? itemId}を逃した`, ...(game.lootLog ?? [])].slice(0, 6);
+      continue;
+    }
     game.inventory[itemId] = (game.inventory[itemId] ?? 0) + 1;
     game.lootLog = [`${enemy.name} ${items[itemId]?.name ?? itemId}+1`, ...(game.lootLog ?? [])].slice(0, 6);
   }
@@ -24,33 +31,37 @@ export function tickBattle(game, dt) {
   game.elapsed += step;
   spawnDueEnemies(game);
 
+  for (const unit of [...game.allies, ...game.enemies]) tickStatuses(unit, step, game);
+  tickRoomObjects(game, step);
+
   for (const unit of game.allies.filter((ally) => ally.hp > 0)) {
     if (unit.attackClock > 0) unit.attackClock -= step;
     const action = decideAllyAction(game, unit);
     if (action.type === 'attack' && unit.attackClock <= 0) {
       const didAttack = attack(unit, action.target, game, '斬');
-      if (!didAttack && action.target) approachTarget(unit, action.target, step);
+      if (!didAttack && action.target) approachTarget(unit, action.target, step, game);
     }
-    if (action.type === 'move') moveUnit(unit, action.targetRoom, step);
+    if (action.type === 'move') moveUnit(unit, action.targetRoom, step, game);
     if (action.type === 'pickup') {
-      if (!pickupDowned(unit, action.target, game)) approachTarget(unit, action.target, step);
+      if (!pickupDowned(unit, action.target, game)) approachTarget(unit, action.target, step, game);
     }
-    if (action.type === 'carry') moveUnit(unit, action.targetRoom, step);
+    if (action.type === 'carry') moveUnit(unit, action.targetRoom, step, game);
   }
 
   for (const enemy of game.enemies.filter((item) => item.hp > 0)) {
     if (enemy.attackClock > 0) enemy.attackClock -= step;
     enemyDiscoverRoom(game, enemy);
+    resolveEnemyRoomEffects(game, enemy);
     const action = decideEnemyAction(game, enemy);
     if (action.type === 'attackAlly') {
-      if (enemy.attackClock <= 0 && !attack(enemy, action.target, game, '打')) approachTarget(enemy, action.target, step);
+      if (enemy.attackClock <= 0 && !attack(enemy, action.target, game, '打')) approachTarget(enemy, action.target, step, game);
       continue;
     }
     if (action.type === 'attackLord') {
       if (enemy.attackClock <= 0) {
         const didAttack = attack(enemy, game.demonLord, game, '魔王');
         if (!didAttack) {
-          approachTarget(enemy, game.demonLord, step);
+          approachTarget(enemy, game.demonLord, step, game);
         } else if (game.demonLord.hp <= 0) {
           game.phase = 'defeat';
           game.result = makeResult(game, false);
@@ -65,7 +76,7 @@ export function tickBattle(game, dt) {
       continue;
     }
     if (action.type === 'move') {
-      const moved = moveUnit(enemy, action.targetRoom, step);
+      const moved = moveUnit(enemy, action.targetRoom, step, game);
       if (moved) {
         enemy.searchClock = enemy.knowsThrone ? 0.25 : 0.85;
         game.effects.push({ id: crypto.randomUUID(), type: 'question', room: enemy.room, ttl: 0.45, label: enemy.knowsThrone ? '!' : '?' });
@@ -75,6 +86,7 @@ export function tickBattle(game, dt) {
 
   for (const enemy of [...game.enemies]) {
     if (enemy.hp > 0) continue;
+    if (tryReviveEnemyAtSavePoint(game, enemy)) continue;
     awardEnemyDrop(game, enemy);
     game.downed.push(createDownedEnemy(enemy));
     game.enemies = game.enemies.filter((item) => item.uid !== enemy.uid);

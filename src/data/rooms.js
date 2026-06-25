@@ -9,6 +9,7 @@ export const rooms = [
     w: 190,
     h: 130,
     built: true,
+    connectionLimit: 1,
     connections: ['hallA']
   },
   {
@@ -21,6 +22,7 @@ export const rooms = [
     w: 180,
     h: 130,
     built: true,
+    connectionLimit: 4,
     upgradeCost: 120,
     connections: ['entrance', 'storage', 'atrium']
   },
@@ -34,6 +36,7 @@ export const rooms = [
     w: 190,
     h: 130,
     built: true,
+    connectionLimit: 1,
     upgradeCost: 90,
     connections: ['hallA']
   },
@@ -41,12 +44,13 @@ export const rooms = [
     id: 'atrium',
     name: '広間',
     type: 'battle',
-    capacity: 2,
+    capacity: 3,
     x: 720,
     y: 385,
     w: 240,
     h: 170,
     built: true,
+    connectionLimit: 4,
     upgradeCost: 160,
     connections: ['hallA', 'jail', 'deadEnd', 'hallB']
   },
@@ -60,7 +64,25 @@ export const rooms = [
     w: 210,
     h: 145,
     built: true,
+    connectionLimit: 1,
     upgradeCost: 180,
+    connections: ['atrium']
+  },
+  {
+    id: 'library',
+    name: '禁書庫',
+    type: 'research',
+    capacity: 1,
+    x: 720,
+    y: 95,
+    w: 210,
+    h: 135,
+    built: false,
+    connectionLimit: 1,
+    buildCost: 210,
+    upgradeCost: 160,
+    effect: { kind: 'researchDiscount', value: 10 },
+    risk: { kind: 'knowledgeLeak' },
     connections: ['atrium']
   },
   {
@@ -73,9 +95,27 @@ export const rooms = [
     w: 205,
     h: 140,
     built: false,
+    connectionLimit: 1,
     buildCost: 160,
     upgradeCost: 120,
     connections: ['atrium']
+  },
+  {
+    id: 'nest',
+    name: '魔物巣',
+    type: 'barracks',
+    capacity: 3,
+    x: 1040,
+    y: 125,
+    w: 230,
+    h: 150,
+    built: false,
+    connectionLimit: 2,
+    buildCost: 190,
+    upgradeCost: 150,
+    effect: { kind: 'summonDiscount', value: 15 },
+    risk: { kind: 'panic' },
+    connections: ['atrium', 'treasure']
   },
   {
     id: 'hallB',
@@ -86,8 +126,8 @@ export const rooms = [
     y: 385,
     w: 210,
     h: 140,
-    built: false,
-    buildCost: 220,
+    built: true,
+    connectionLimit: 4,
     upgradeCost: 150,
     connections: ['atrium', 'treasure', 'throne']
   },
@@ -101,8 +141,28 @@ export const rooms = [
     w: 210,
     h: 140,
     built: false,
+    connectionLimit: 2,
     buildCost: 260,
     upgradeCost: 180,
+    effect: { kind: 'inventoryLimit', value: 4 },
+    risk: { kind: 'plunder' },
+    connections: ['hallB']
+  },
+  {
+    id: 'armory',
+    name: '武具庫',
+    type: 'side',
+    capacity: 2,
+    x: 1320,
+    y: 825,
+    w: 215,
+    h: 140,
+    built: false,
+    connectionLimit: 2,
+    buildCost: 230,
+    upgradeCost: 170,
+    effect: { kind: 'allyAtkRoom', value: 1 },
+    risk: { kind: 'armedInvader' },
     connections: ['hallB']
   },
   {
@@ -115,10 +175,10 @@ export const rooms = [
     w: 230,
     h: 160,
     built: true,
+    connectionLimit: 1,
     connections: ['hallB']
   }
 ];
 
 export const worldSize = { width: 1540, height: 900 };
 export const roomById = Object.fromEntries(rooms.map((room) => [room.id, room]));
-

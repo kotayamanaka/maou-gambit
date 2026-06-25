@@ -1,16 +1,35 @@
 import { rooms } from '../data/rooms.js';
 import { roomById } from '../data/rooms.js';
 import { chips } from '../data/chips.js';
+import { chipCategories } from '../data/chips.js';
 import { enemyChips } from '../data/enemyChips.js';
 import { items } from '../data/items.js';
+import { roomObjects } from '../data/objects.js';
 import { stages } from '../data/stages.js';
 import { allyTemplates, enemyTemplates } from '../data/units.js';
 import { feedMaterials } from '../data/growth.js';
 import { currentStage, resetToSetup, startStage } from '../game/state.js';
-import { consumeCaptured, finishUpgrade } from '../systems/progression.js';
-import { allyCountInRoom, canPlaceAlly, roomCapacity } from '../systems/placement.js';
+import {
+  buildRoom,
+  CHIP_RESEARCH_COST,
+  consumeCaptured,
+  DEMOLISH_ROOM_COST,
+  demolishRoom,
+  finishUpgrade,
+  installRoomObject,
+  MONSTER_RESEARCH_COST,
+  removeRoomObject,
+  researchChip,
+  researchMonster,
+  sellItem,
+  upgradeRoom
+} from '../systems/progression.js';
+import { allyCountInRoom, canPlaceAlly, isRoomBuilt, roomCapacity, roomLevel } from '../systems/placement.js';
 import { growthProfile, nextIntExp, nextLevelExp, previewFeedGrowth } from '../systems/growth.js';
 import { renderMap } from '../render/mapView.js';
+import { statusNameList } from '../systems/status.js';
+import { inventoryLimit, researchCost } from '../systems/roomEffects.js';
+import { canConnectRoom, connectionCount } from '../systems/path.js';
 
 function assignedChipCounts(game, exceptUnitId = null) {
   const counts = {};
@@ -81,6 +100,7 @@ function nextEnemyPanel(game) {
 }
 
 function treasuryPanel(game) {
+  const totalItems = Object.values(game.inventory ?? {}).reduce((sum, count) => sum + count, 0);
   const inventory = Object.entries(game.inventory ?? {})
     .filter(([, count]) => count > 0)
     .map(([id, count]) => `${items[id]?.name ?? id}x${count}`)
@@ -89,8 +109,25 @@ function treasuryPanel(game) {
   const loot = (game.lootLog ?? []).slice(0, 3).join(' / ') || '今回の獲得なし';
   return `<div class="info-box treasury-box">
     <b>資金 G${game.gold ?? 0}</b>
-    <small>${inventory}</small>
+    <small>${inventory} / 所持 ${totalItems}/${inventoryLimit(game)}</small>
     <small>${loot}</small>
+  </div>`;
+}
+
+function collectionRate(found, total) {
+  return `${found}/${total} ${Math.round((found / Math.max(1, total)) * 100)}%`;
+}
+
+function collectionPanel(game) {
+  const allies = game.collections?.allies?.size ?? new Set(game.allies.map((unit) => unit.templateId)).size;
+  const enemies = game.collections?.enemies?.size ?? 0;
+  const chipCount = game.collections?.chips?.size
+    ?? Object.values(game.chipBag ?? {}).filter((count) => count > 0).length;
+  return `<div class="info-box collection-box">
+    <b>図鑑</b>
+    <small>自軍 ${collectionRate(allies, Object.keys(allyTemplates).length)}</small>
+    <small>敵軍 ${collectionRate(enemies, Object.keys(enemyTemplates).length)}</small>
+    <small>チップ ${collectionRate(chipCount, Object.keys(chips).length)}</small>
   </div>`;
 }
 
@@ -150,15 +187,129 @@ function convertPreview(captured) {
 
 function researchPreview(game) {
   const candidates = Object.keys(chips).filter((id) => (game.chipBag[id] ?? 0) < 3);
-  return candidates.map((id) => chips[id].name).join(' / ') || '候補なし';
+  return candidates.map((id) => {
+    const chip = chips[id];
+    const category = chipCategories[chip.category] ?? { name: '不明' };
+    return (game.chipBag[id] ?? 0) > 0 ? chip.name : `${category.name}系????`;
+  }).join(' / ') || '候補なし';
+}
+
+function roomManagementPanel(game) {
+  const anchor = game.selectedBuildFrom ?? 'atrium';
+  const anchorButtons = rooms
+    .filter((room) => isRoomBuilt(game, room.id) && canConnectRoom(game, room.id))
+    .map((room) => `<button class="mini ${anchor === room.id ? 'on' : ''}" data-build-anchor="${room.id}">
+      ${room.name}<small>${connectionCount(game, room.id)}/${room.connectionLimit ?? 4}</small>
+    </button>`)
+    .join('');
+  const buildButtons = rooms
+    .filter((room) => !isRoomBuilt(game, room.id) && room.buildCost)
+    .map((room) => `<button class="mini" data-build-room="${room.id}" ${((game.gold ?? 0) < room.buildCost || !canConnectRoom(game, anchor) || !canConnectRoom(game, room.id)) ? 'disabled' : ''}>
+      ${room.name}<small>${roomById[anchor]?.name ?? anchor}から建設 G${room.buildCost}${roomEffectText(room) ? ` / ${roomEffectText(room)}` : ''}</small>
+    </button>`)
+    .join('');
+  const demolishButtons = rooms
+    .filter((room) => isRoomBuilt(game, room.id) && !room.built)
+    .map((room) => `<button class="mini danger" data-demolish-room="${room.id}" ${(game.gold ?? 0) < DEMOLISH_ROOM_COST ? 'disabled' : ''}>
+      ${room.name}<small>撤去 G${DEMOLISH_ROOM_COST}</small>
+    </button>`)
+    .join('');
+  const upgradeButtons = rooms
+    .filter((room) => isRoomBuilt(game, room.id) && room.capacity > 0)
+    .map((room) => {
+      const level = roomLevel(game, room.id);
+      const cost = (room.upgradeCost ?? 120) * level;
+      return `<button class="mini" data-upgrade-room="${room.id}" ${(game.gold ?? 0) < cost ? 'disabled' : ''}>
+        ${room.name}<small>Lv${level} 容量${roomCapacity(room.id, game)} / G${cost}${roomEffectText(room) ? ` / ${roomEffectText(room)}` : ''}</small>
+      </button>`;
+    })
+    .join('');
+  return `<div class="info-box management-box">
+    <b>ダンジョン</b>
+    <div class="scroll-rail">${anchorButtons || '<span class="empty-inline">接続元なし</span>'}</div>
+    <div class="scroll-rail">${buildButtons || '<span class="empty-inline">建設候補なし</span>'}</div>
+    <div class="scroll-rail">${demolishButtons || '<span class="empty-inline">撤去候補なし</span>'}</div>
+    <div class="scroll-rail">${upgradeButtons || '<span class="empty-inline">拡張候補なし</span>'}</div>
+  </div>`;
+}
+
+function inventorySellPanel(game) {
+  const buttons = Object.entries(game.inventory ?? {})
+    .filter(([, count]) => count > 0)
+    .map(([id, count]) => {
+      const item = items[id];
+      return `<button class="mini" data-sell-item="${id}">
+        ${item?.name ?? id}<small>x${count} 売却G${item?.value ?? 0}</small>
+      </button>`;
+    })
+    .join('');
+  return `<div class="info-box management-box">
+    <b>戦利品</b>
+    <div class="scroll-rail">${buttons || '<span class="empty-inline">売却品なし</span>'}</div>
+  </div>`;
+}
+
+function roomEffectText(room) {
+  const effects = {
+    inventoryLimit: `所持上限+${room.effect?.value ?? 0}`,
+    researchDiscount: `研究費-${room.effect?.value ?? 0}`,
+    summonDiscount: `魔物召喚費-${room.effect?.value ?? 0}`,
+    allyAtkRoom: '侵入されると敵が武装'
+  };
+  const risks = {
+    plunder: '侵入で略奪',
+    knowledgeLeak: '侵入で魔王部屋発覚',
+    panic: '侵入で配下混乱',
+    armedInvader: '侵入で敵ATK+1'
+  };
+  return [effects[room.effect?.kind], risks[room.risk?.kind]].filter(Boolean).join(' / ');
+}
+
+function researchPanel(game) {
+  const chipCost = researchCost(game, CHIP_RESEARCH_COST, 'chip');
+  const monsterCost = researchCost(game, MONSTER_RESEARCH_COST, 'monster');
+  return `<div class="info-box management-box">
+    <b>研究</b>
+    <div class="scroll-rail">
+      <button class="mini" data-research-chip ${(game.gold ?? 0) < chipCost ? 'disabled' : ''}>チップ研究<small>G${chipCost}</small></button>
+      <button class="mini" data-research-monster ${(game.gold ?? 0) < monsterCost ? 'disabled' : ''}>魔物召喚<small>G${monsterCost}</small></button>
+    </div>
+  </div>`;
+}
+
+function objectPanel(game) {
+  const roomId = game.selectedRoomId ?? 'atrium';
+  const room = roomById[roomId];
+  const current = roomObjects[game.roomObjects?.[roomId]];
+  const roomButtons = rooms
+    .filter((item) => isRoomBuilt(game, item.id) && item.type !== 'spawn' && item.type !== 'throne')
+    .map((item) => `<button class="mini ${roomId === item.id ? 'on' : ''}" data-object-room="${item.id}">
+      ${item.name}<small>${roomObjects[game.roomObjects?.[item.id]]?.name ?? '空き'}</small>
+    </button>`)
+    .join('');
+  const buttons = Object.values(roomObjects).map((object) => `<button class="mini" data-install-object="${object.id}" ${(current || !room || !isRoomBuilt(game, roomId) || (game.gold ?? 0) < object.cost) ? 'disabled' : ''}>
+    ${object.icon} ${object.name}<small>G${object.cost} / ${object.description}</small>
+  </button>`).join('');
+  return `<div class="info-box management-box">
+    <b>部屋オブジェクト</b>
+    <small>${room?.name ?? roomId} ${current ? `設置中: ${current.name}` : '未設置'}</small>
+    <div class="scroll-rail">${roomButtons}</div>
+    <div class="scroll-rail">${buttons}</div>
+    ${current ? `<button class="mini danger wide" data-remove-object="${roomId}">設備撤去<small>G30</small></button>` : ''}
+  </div>`;
+}
+
+function managementPanels(game) {
+  return `${treasuryPanel(game)}${collectionPanel(game)}${inventorySellPanel(game)}${researchPanel(game)}${roomManagementPanel(game)}${objectPanel(game)}`;
 }
 
 function roomChoice(room, unit, game) {
-  const capacity = roomCapacity(room.id);
+  const built = isRoomBuilt(game, room.id);
+  const capacity = roomCapacity(room.id, game);
   const count = allyCountInRoom(game, room.id, unit.uid);
   const full = !canPlaceAlly(game, room.id, unit);
   return `<button class="mini ${unit.room === room.id ? 'on' : ''}" data-place="${room.id}" ${full ? 'disabled' : ''}>
-    ${room.name}<small>${count}/${capacity}</small>
+    ${room.name}<small>${built ? `${count}/${capacity}` : `未建設 G${room.buildCost ?? 0}`}</small>
   </button>`;
 }
 
@@ -171,8 +322,12 @@ function chipButton(chipId, unit, game) {
   const locked = owned <= 0 && !inUnit;
   const full = !inUnit && unit.chips.length >= unit.int;
   const selected = game.selectedChipId === chipId;
-  return `<button class="chip ${inUnit ? 'on' : ''} ${locked ? 'locked' : ''} ${selected ? 'selected-chip' : ''}" data-chip="${chipId}" data-locked="${locked ? '1' : '0'}" title="${chip.description}">
-    <b>${chip.icon}</b><span>${chip.name}</span><small>${locked ? '未発見' : inUnit ? '装備中' : `残${available}`}</small>
+  const category = chipCategories[chip.category] ?? { name: '不明', icon: '?' };
+  const label = locked ? '????' : chip.name;
+  const icon = locked ? category.icon : chip.icon;
+  const title = locked ? `${category.name}系の未発見チップ` : chip.description;
+  return `<button class="chip ${inUnit ? 'on' : ''} ${locked ? 'locked' : ''} ${selected ? 'selected-chip' : ''}" data-chip="${chipId}" data-locked="${locked ? '1' : '0'}" title="${title}">
+    <b>${icon}</b><span>${label}</span><small>${locked ? `${category.name} / 未発見` : inUnit ? '装備中' : `残${available}`}</small>
     ${!locked && full ? '<small>入替可</small>' : ''}
   </button>`;
 }
@@ -187,6 +342,15 @@ function chipDetail(game, unit) {
   if (!chip) return '';
   const owned = game.chipBag[chipId] ?? 0;
   const equipped = unit.chips.includes(chipId);
+  const known = owned > 0 || equipped;
+  const category = chipCategories[chip.category] ?? { name: '不明', icon: '?' };
+  if (!known) {
+    return `<div class="detail-card chip-detail">
+      <div class="detail-title"><b>${category.icon} ????</b><small>${category.name}系 / 未発見</small></div>
+      <p>研究・報酬・捕獲処理で正体が判明する。</p>
+      <div class="mini-stat">図鑑未登録</div>
+    </div>`;
+  }
   return `<div class="detail-card chip-detail">
     <div class="detail-title"><b>${chip.icon} ${chip.name}</b><small>${owned > 0 || equipped ? `所持 ${owned}` : '未発見'}</small></div>
     <p>${chip.description}</p>
@@ -222,7 +386,7 @@ function setupPanel(game) {
       <div class="chip-grid scroll-rail">${visibleChipIds(game, unit).map((id) => chipButton(id, unit, game)).join('')}</div>
     </div>
     ${chipDetail(game, unit)}
-    <div class="info-grid">${nextEnemyPanel(game)}${treasuryPanel(game)}${unlockHistory(game)}</div>
+    <div class="info-grid">${nextEnemyPanel(game)}${treasuryPanel(game)}${collectionPanel(game)}${unlockHistory(game)}</div>
   </aside>`;
 }
 
@@ -237,6 +401,7 @@ function battlePanel(game) {
       : entity?.carriedBy ? '担がれ中'
         : entity?.knowsThrone ? '魔王部屋把握'
           : '';
+  const statusText = statusNameList(entity ?? {}).join(' / ');
   return `<aside class="panel battle-panel">
     <header class="panel-head">
       <span>防衛中</span>
@@ -267,6 +432,7 @@ function battlePanel(game) {
         <div><b>${entity.name}</b><small>${entity.room ? roomById[entity.room]?.name ?? entity.room : '戦場'}</small></div>
       </div>
       ${entityStatus ? `<div class="mini-stat">${entityStatus}</div>` : ''}
+      ${statusText ? `<div class="mini-stat">状態 ${statusText}</div>` : ''}
       ${entity.maxHp ? `<div class="mini-stat">${entity.level ? `LV ${entity.level} / ` : ''}HP ${entity.hp}/${entity.maxHp}${entity.atk ? ` / ATK ${entity.atk}` : ''}${entity.int != null ? ` / INT ${entity.int}` : ''}</div>${hpBar(entity.hp, entity.maxHp)}` : ''}
       ${isAlly ? `<div class="battle-chips">${entity.chips.map((id) => `<span>${chips[id]?.icon ?? '□'} ${chips[id]?.name ?? id}</span>`).join('')}</div>` : ''}
       ${isEnemy ? `<div class="battle-chips">${entity.chips.map((id) => `<span>${enemyChips[id]?.icon ?? '□'} ${enemyChips[id]?.name ?? id}</span>`).join('')}</div>` : ''}
@@ -306,6 +472,7 @@ function upgradePanel(game) {
     return `<aside class="panel upgrade-panel">
       <header class="panel-head"><span>強化</span></header>
       <p class="empty">捕獲なし。報酬チップを受け取り、次へ進む。</p>
+      ${managementPanels(game)}
       <button class="primary wide" data-action="nextStage">次の防衛へ</button>
     </aside>`;
   }
@@ -327,6 +494,7 @@ function upgradePanel(game) {
       <button data-upgrade="feed" data-captured="${captured.uid}" data-target="${target.uid}">🩸 ${target.name} ${feedText}</button>
       <button data-upgrade="research" data-captured="${captured.uid}">📜 研究</button>
     </div>
+    ${managementPanels(game)}
     <button class="wide" data-action="nextStage">処理を終えて次へ</button>
   </aside>`;
 }
@@ -402,6 +570,36 @@ export function renderApp(root, game, commit) {
   root.querySelectorAll('[data-upgrade]').forEach((button) => button.addEventListener('click', () => commit((state) => {
     consumeCaptured(state, button.dataset.captured, button.dataset.upgrade, button.dataset.target);
     state.selectedCapturedId = state.captured[0]?.uid ?? null;
+  })));
+  root.querySelectorAll('[data-build-room]').forEach((button) => button.addEventListener('click', () => commit((state) => {
+    buildRoom(state, button.dataset.buildRoom, state.selectedBuildFrom);
+  })));
+  root.querySelectorAll('[data-build-anchor]').forEach((button) => button.addEventListener('click', () => commit((state) => {
+    state.selectedBuildFrom = button.dataset.buildAnchor;
+  })));
+  root.querySelectorAll('[data-demolish-room]').forEach((button) => button.addEventListener('click', () => commit((state) => {
+    demolishRoom(state, button.dataset.demolishRoom);
+  })));
+  root.querySelectorAll('[data-upgrade-room]').forEach((button) => button.addEventListener('click', () => commit((state) => {
+    upgradeRoom(state, button.dataset.upgradeRoom);
+  })));
+  root.querySelectorAll('[data-install-object]').forEach((button) => button.addEventListener('click', () => commit((state) => {
+    installRoomObject(state, state.selectedRoomId ?? 'atrium', button.dataset.installObject);
+  })));
+  root.querySelectorAll('[data-object-room]').forEach((button) => button.addEventListener('click', () => commit((state) => {
+    state.selectedRoomId = button.dataset.objectRoom;
+  })));
+  root.querySelectorAll('[data-remove-object]').forEach((button) => button.addEventListener('click', () => commit((state) => {
+    removeRoomObject(state, button.dataset.removeObject);
+  })));
+  root.querySelectorAll('[data-sell-item]').forEach((button) => button.addEventListener('click', () => commit((state) => {
+    sellItem(state, button.dataset.sellItem);
+  })));
+  root.querySelectorAll('[data-research-chip]').forEach((button) => button.addEventListener('click', () => commit((state) => {
+    researchChip(state);
+  })));
+  root.querySelectorAll('[data-research-monster]').forEach((button) => button.addEventListener('click', () => commit((state) => {
+    researchMonster(state);
   })));
   root.querySelectorAll('[data-action]').forEach((button) => button.addEventListener('click', () => commit((state) => {
     if (button.dataset.action === 'start') startStage(state);

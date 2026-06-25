@@ -1,7 +1,8 @@
 import { enemyTemplates } from '../data/units.js';
 import { roomById } from '../data/rooms.js';
 import { addLog } from '../game/state.js';
-import { nextStep } from './path.js';
+import { nextStep, roomConnections } from './path.js';
+import { applyStatus, attackMultiplier, speedMultiplier } from './status.js';
 
 const MELEE_RANGE = 34;
 
@@ -13,7 +14,7 @@ function hashOffset(value = '') {
 
 function unitSpeed(unit) {
   const base = unit.type === 'enemy' ? 34 : 48;
-  return Math.max(28, (unit.spd || 0.7) * base) / (unit.carrying ? 1.65 : 1);
+  return Math.max(28, (unit.spd || 0.7) * base * speedMultiplier(unit)) / (unit.carrying ? 1.65 : 1);
 }
 
 function attackRadius(unit) {
@@ -23,8 +24,30 @@ function attackRadius(unit) {
 }
 
 function attackCooldown(unit) {
-  const speed = Math.max(0.45, unit.spd ?? 1);
+  const speed = Math.max(0.45, (unit.spd ?? 1) * speedMultiplier(unit));
   return Math.max(0.62, Math.min(1.45, 1.05 / Math.sqrt(speed)));
+}
+
+function sameSideUnits(game, unit) {
+  if (unit.type === 'enemy') return game.enemies.filter((item) => item.hp > 0 && item.room === unit.room);
+  return game.allies.filter((item) => item.hp > 0 && item.room === unit.room);
+}
+
+function triggerSkills(attacker, target, game) {
+  const skills = attacker.skills ?? [];
+  if (skills.includes('poisonTouch') && applyStatus(target, 'poison', 4.5, 1)) {
+    game.effects.push({ id: crypto.randomUUID(), type: 'status poison', room: target.room, x: target.x, y: (target.y ?? 0) - 18, ttl: 0.8, label: '毒' });
+  }
+  if (skills.includes('slowTouch') && applyStatus(target, 'slow', 4, 1)) {
+    game.effects.push({ id: crypto.randomUUID(), type: 'status slow', room: target.room, x: target.x, y: (target.y ?? 0) - 18, ttl: 0.8, label: '鈍足' });
+  }
+  if (skills.includes('hasteOnHit') && applyStatus(attacker, 'haste', 3, 1)) {
+    game.effects.push({ id: crypto.randomUUID(), type: 'status haste', room: attacker.room, x: attacker.x, y: (attacker.y ?? 0) - 18, ttl: 0.8, label: '加速' });
+  }
+  if (skills.includes('inspireOnHit')) {
+    for (const unit of sameSideUnits(game, attacker)) applyStatus(unit, 'might', 3.5, 1);
+    game.effects.push({ id: crypto.randomUUID(), type: 'status might', room: attacker.room, x: attacker.x, y: (attacker.y ?? 0) - 18, ttl: 0.8, label: '鼓舞' });
+  }
 }
 
 export function roomPoint(roomId, unit) {
@@ -53,6 +76,7 @@ export function spawnDueEnemies(game) {
       atk: template.stats.atk,
       spd: template.stats.spd,
       range: template.stats.range,
+      skills: [...(template.skills ?? [])],
       chips: [...(template.chips ?? [])],
       convertTo: template.convertTo,
       capture: { ...(template.capture ?? { difficulty: 1, ttl: 12 }) },
@@ -70,6 +94,7 @@ export function spawnDueEnemies(game) {
     enemy.x = point.x;
     enemy.y = point.y;
     game.enemies.push(enemy);
+    game.collections?.enemies?.add?.(template.id);
     spawn.spawned = true;
     addLog(game, `${template.name}が入口から侵入。`);
   }
@@ -84,7 +109,7 @@ export function canAttack(attacker, target) {
 
 export function attack(attacker, target, game, label) {
   if (!canAttack(attacker, target)) return false;
-  const damage = Math.min(target.hp, attacker.atk);
+  const damage = Math.min(target.hp, Math.max(1, Math.round(attacker.atk * attackMultiplier(attacker))));
   target.hp = Math.max(0, target.hp - damage);
   game.metrics ??= { allyDamage: 0, enemyDamage: 0, lordDamage: 0 };
   if (attacker.type === 'enemy' && target.type === 'boss') game.metrics.lordDamage += damage;
@@ -116,12 +141,13 @@ export function attack(attacker, target, game, label) {
     ttl: 0.7,
     label: `${label} -${damage}`
   });
+  triggerSkills(attacker, target, game);
   return true;
 }
 
-export function moveUnit(unit, targetRoom, dt) {
+export function moveUnit(unit, targetRoom, dt, game = null) {
   if (!targetRoom || unit.room === targetRoom) return false;
-  const stepRoom = roomById[unit.movingTo] ? unit.movingTo : nextStep(unit.room, targetRoom);
+  const stepRoom = roomById[unit.movingTo] ? unit.movingTo : nextStep(unit.room, targetRoom, game);
   const destination = roomPoint(stepRoom, unit);
   if (!destination) return false;
   unit.movingTo = stepRoom;
@@ -144,10 +170,10 @@ export function moveUnit(unit, targetRoom, dt) {
   return false;
 }
 
-export function approachTarget(unit, target, dt) {
+export function approachTarget(unit, target, dt, game = null) {
   if (!target) return false;
-  if (unit.movingTo) return moveUnit(unit, unit.movingTo, dt);
-  if (unit.room !== target.room) return moveUnit(unit, target.room, dt);
+  if (unit.movingTo) return moveUnit(unit, unit.movingTo, dt, game);
+  if (unit.room !== target.room) return moveUnit(unit, target.room, dt, game);
 
   const dx = (target.x ?? 0) - (unit.x ?? 0);
   const dy = (target.y ?? 0) - (unit.y ?? 0);
@@ -171,7 +197,7 @@ export function enemyDiscoverRoom(game, enemy) {
     }
     game.partyKnowledge.throneKnown = true;
   }
-  for (const next of roomById[enemy.room].connections) {
+  for (const next of roomConnections(game, enemy.room)) {
     if (roomById[next].type === 'throne') {
       enemy.knowsThrone = true;
       game.partyKnowledge.throneKnown = true;

@@ -1,7 +1,7 @@
 import { chips } from '../data/chips.js';
 import { roomById, rooms } from '../data/rooms.js';
 import { distanceRooms, nearestRoom, nextStep } from './path.js';
-import { canPlaceAlly } from './placement.js';
+import { canPlaceAlly, isRoomBuilt } from './placement.js';
 
 function liveEnemies(game) {
   return game.enemies.filter((enemy) => enemy.hp > 0);
@@ -11,10 +11,10 @@ function canAttackFrom(unit, target) {
   return unit.room === target.room;
 }
 
-function nearestByDistance(unit, enemies) {
+function nearestByDistance(game, unit, enemies) {
   return [...enemies].sort((a, b) => (
-    distanceRooms(unit.room, a.room) - distanceRooms(unit.room, b.room)
-    || distanceRooms(a.room, 'throne') - distanceRooms(b.room, 'throne')
+    distanceRooms(unit.room, a.room, game) - distanceRooms(unit.room, b.room, game)
+    || distanceRooms(a.room, 'throne', game) - distanceRooms(b.room, 'throne', game)
   ))[0];
 }
 
@@ -25,11 +25,11 @@ function conditionTarget(game, unit, condition) {
     return enemies.find((enemy) => canAttackFrom(unit, enemy));
   }
   if (condition === 'nearestEnemy') {
-    return nearestByDistance(unit, enemies);
+    return nearestByDistance(game, unit, enemies);
   }
   if (condition === 'weakEnemy') {
     return enemies.filter((enemy) => enemy.hp / enemy.maxHp <= 0.55)
-      .sort((a, b) => a.hp - b.hp || distanceRooms(unit.room, a.room) - distanceRooms(unit.room, b.room))[0];
+      .sort((a, b) => a.hp - b.hp || distanceRooms(unit.room, a.room, game) - distanceRooms(unit.room, b.room, game))[0];
   }
   if (condition === 'mageEnemy') {
     return enemies.find((enemy) => ['mage', 'cleric', 'alchemist', 'sage'].includes(enemy.templateId));
@@ -46,7 +46,7 @@ function conditionTarget(game, unit, condition) {
   if (condition === 'downedEnemy') {
     if (unit.carry <= 0) return null;
     return game.downed.filter((body) => !body.carriedBy && body.room === unit.room)
-      .sort((a, b) => distanceRooms(unit.room, a.room) - distanceRooms(unit.room, b.room))[0];
+      .sort((a, b) => distanceRooms(unit.room, a.room, game) - distanceRooms(unit.room, b.room, game))[0];
   }
   return null;
 }
@@ -105,14 +105,15 @@ export function decideEnemyAction(game, enemy) {
 
   if (enemy.knowsThrone || game.partyKnowledge.throneKnown) {
     enemy.knowsThrone = true;
-    return { type: 'move', targetRoom: nextStep(enemy.room, 'throne') };
+    return { type: 'move', targetRoom: nextStep(enemy.room, 'throne', game) };
   }
 
   const current = roomById[enemy.room];
-  const unvisited = current.connections.filter((id) => !game.partyKnowledge.visited.has(id));
+  const connections = game.roomConnections?.[enemy.room] ?? current.connections;
+  const unvisited = connections.filter((id) => isRoomBuilt(game, id) && !game.partyKnowledge.visited.has(id));
   const remainingRooms = rooms
-    .filter((room) => room.id !== 'entrance' && !game.partyKnowledge.visited.has(room.id))
+    .filter((room) => isRoomBuilt(game, room.id) && room.id !== 'entrance' && !game.partyKnowledge.visited.has(room.id))
     .map((room) => room.id);
-  const destination = unvisited[0] ?? nearestRoom(enemy.room, remainingRooms) ?? nearestRoom(enemy.room, current.connections);
+  const destination = unvisited[0] ?? nearestRoom(enemy.room, remainingRooms, game) ?? nearestRoom(enemy.room, connections, game);
   return { type: 'move', targetRoom: destination };
 }

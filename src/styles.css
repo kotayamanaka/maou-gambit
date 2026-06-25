@@ -93,6 +93,11 @@ img { image-rendering: pixelated; }
 .room.throne { border-color: rgba(211, 75, 75, .6); }
 .room.side { opacity: .92; }
 .room.fog { filter: brightness(.66) saturate(.7); }
+.room.unbuilt {
+  opacity: .48;
+  filter: grayscale(.7);
+  border-style: dashed;
+}
 .room.selected-room { outline: 2px solid var(--gold); outline-offset: 2px; }
 
 .room-name {
@@ -113,6 +118,20 @@ img { image-rendering: pixelated; }
   font-weight: 900;
   color: #111;
   background: var(--gold);
+}
+.room-object {
+  position: absolute;
+  left: 6px;
+  bottom: 5px;
+  min-width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 900;
+  color: #111;
+  background: #b9d985;
+  border-radius: 3px;
 }
 
 .actor {
@@ -185,6 +204,23 @@ img { image-rendering: pixelated; }
   border-radius: 50%;
 }
 .badge.warn { background: var(--red); color: white; }
+.status-stack {
+  position: absolute;
+  left: -5px;
+  top: -5px;
+  display: grid;
+  gap: 1px;
+}
+.status-badge {
+  min-width: 14px;
+  height: 14px;
+  display: grid;
+  place-items: center;
+  font-size: 9px;
+  color: #111;
+  background: #b9d985;
+  border-radius: 3px;
+}
 .down-timer {
   position: absolute;
   inset: auto -3px -4px auto;
@@ -208,6 +244,10 @@ img { image-rendering: pixelated; }
   filter: drop-shadow(0 0 5px rgba(0,0,0,.55));
 }
 .corridor:nth-child(even) { stroke: rgba(162, 126, 68, .58); }
+.corridor.unbuilt {
+  stroke-dasharray: 18 18;
+  opacity: .34;
+}
 
 .map-controls {
   position: absolute;
@@ -267,6 +307,10 @@ img { image-rendering: pixelated; }
 }
 .fx.capture { color: var(--green); font-size: 16px; }
 .fx.found, .fx.question { color: var(--gold); }
+.fx.status {
+  font-size: 14px;
+  color: #d5ffab;
+}
 
 .panel {
   position: absolute;
@@ -441,6 +485,7 @@ img { image-rendering: pixelated; }
   padding: 6px 8px;
 }
 .mini.on, .chip.on { border-color: var(--gold); background: rgba(216,170,74,.22); }
+.mini.danger { border-color: rgba(211,75,75,.55); }
 .chip {
   display: grid;
   grid-template-columns: 22px minmax(0, 1fr);
@@ -542,6 +587,12 @@ img { image-rendering: pixelated; }
 }
 .log p { margin: 0 0 7px; font-size: 12px; color: #d9c8ad; }
 .wide { width: 100%; }
+.empty-inline {
+  flex: 0 0 auto;
+  color: #cbb99c;
+  font-size: 11px;
+  padding: 7px 2px;
+}
 
 @keyframes bob { 50% { transform: translateY(-2px); } }
 @keyframes mapBob { 50% { transform: translateY(-2px); } }

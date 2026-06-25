@@ -1,9 +1,18 @@
 import { allyTemplates, demonLord } from '../data/units.js';
 import { initialChipBag } from '../data/chips.js';
 import { stages } from '../data/stages.js';
-import { roomById } from '../data/rooms.js';
+import { rooms, roomById } from '../data/rooms.js';
 
 let nextId = 1;
+
+function initialRoomConnections() {
+  const built = new Set(rooms.filter((room) => room.built).map((room) => room.id));
+  const entries = rooms.map((room) => [
+    room.id,
+    built.has(room.id) ? room.connections.filter((target) => built.has(target)) : []
+  ]);
+  return Object.fromEntries(entries);
+}
 
 function unitFromTemplate(template, room, chips = []) {
   const start = roomById[room];
@@ -24,6 +33,7 @@ function unitFromTemplate(template, room, chips = []) {
     int: template.stats.int ?? 0,
     carry: template.stats.carry ?? 0,
     range: template.stats.range,
+    skills: [...(template.skills ?? [])],
     traits: [...(template.traits ?? [])],
     room,
     homeRoom: room,
@@ -61,9 +71,20 @@ export function createGame() {
     log: ['魔王軍、配置待機。'],
     chipBag: { ...initialChipBag },
     chipUnlocks: ['攻撃 x3', '牢屋搬送 x1'],
+    collections: {
+      allies: new Set(allies.map((ally) => ally.templateId)),
+      enemies: new Set(),
+      chips: new Set(Object.entries(initialChipBag).filter(([, count]) => count > 0).map(([id]) => id))
+    },
     gold: 40,
     inventory: {},
     lootLog: [],
+    builtRooms: new Set(rooms.filter((room) => room.built).map((room) => room.id)),
+    roomLevels: Object.fromEntries(rooms.map((room) => [room.id, 1])),
+    roomCapacityBonus: {},
+    roomConnections: initialRoomConnections(),
+    selectedBuildFrom: 'atrium',
+    roomObjects: {},
     allies,
     enemies: [],
     downed: [],
