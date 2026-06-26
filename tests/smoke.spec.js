@@ -966,7 +966,10 @@ test('upgrade management supports selling, building, room upgrades, and research
   await expect(page.getByRole('button', { name: /魔物研究.*配下を増やす/ })).toBeVisible();
   await expect(page.getByRole('button', { name: /広間拡張.*容量\+1/ })).toBeVisible();
   await expect(page.getByRole('button', { name: /攻撃開発.*在庫x1/ })).toBeVisible();
+  await expect(page.locator('.investment-grid .decision-card')).toHaveCount(4);
+  await expect(page.locator('.focus-strip')).toContainText('ゴブリン');
   await page.locator('[data-ui-panel="loot"]').click();
+  await expect(page.locator('.loot-columns')).toBeVisible();
   await expect(page.getByText(/ゴブリン 攻撃\+1/)).toBeVisible();
   await page.locator('[data-ui-panel="research"]').click();
   await expect(page.locator('[data-develop-chip="attack"]')).toBeVisible();
@@ -1389,6 +1392,7 @@ test('monster fusion consumes an ally to grow the selected monster', async ({ pa
 
   await page.locator('[data-ui-panel="fusion"]').click();
   await expect(page.getByText('魔物合成')).toBeVisible();
+  await expect(page.locator('.fusion-preview')).toContainText('経験+12');
   await expect(page.locator('[data-fusion-material="fusion-slime"]')).toContainText('通常素材');
   await expect(page.locator('[data-fuse-ally="fusion-slime"]')).toContainText('合成実行');
   await page.locator('[data-fuse-ally="fusion-slime"]').click();

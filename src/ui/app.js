@@ -343,6 +343,13 @@ function itemUseLabel(item, game) {
   return effect.label ?? '';
 }
 
+function railGroup(label, content, emptyText) {
+  return `<div class="rail-group">
+    <span>${label}</span>
+    <div class="scroll-rail">${content || `<span class="empty-inline">${emptyText}</span>`}</div>
+  </div>`;
+}
+
 function inventoryPanel(game) {
   const itemEntries = Object.entries(game.inventory ?? {})
     .filter(([, count]) => count > 0)
@@ -357,22 +364,26 @@ function inventoryPanel(game) {
       const data = effect.target === 'ally'
         ? `data-use-item-unit="${id}" data-target-unit="${selectedUnit(game).uid}"`
         : `data-use-item-room="${id}" data-target-room="${roomId}"`;
-      return `<button class="mini" ${data} ${disabled ? 'disabled' : ''}>
-        ${item.name}<small>x${count} ${itemUseLabel(item, game)}</small>
+      return `<button class="mini compact-card" ${data} ${disabled ? 'disabled' : ''}>
+        <span class="choice-top">${item.name}<em>x${count}</em></span>
+        <small>${itemUseLabel(item, game)}</small>
       </button>`;
     })
     .join('');
   const sellButtons = itemEntries
     .map(({ id, count, item }) => {
-      return `<button class="mini" data-sell-item="${id}">
-        ${item.name}<small>x${count} 売却G${item.value ?? 0}</small>
+      return `<button class="mini compact-card" data-sell-item="${id}">
+        <span class="choice-top">${item.name}<em>x${count}</em></span>
+        <small>売却G${item.value ?? 0}</small>
       </button>`;
     })
     .join('');
   return `<div class="info-box management-box">
     <b>戦利品</b>
-    <div class="scroll-rail">${useButtons || '<span class="empty-inline">使用できる素材なし</span>'}</div>
-    <div class="scroll-rail">${sellButtons || '<span class="empty-inline">売却品なし</span>'}</div>
+    <div class="loot-columns">
+      ${railGroup('使用', useButtons, '使用できる素材なし')}
+      ${railGroup('売却', sellButtons, '売却品なし')}
+    </div>
   </div>`;
 }
 
@@ -433,23 +444,37 @@ function investmentPanel(game) {
     : Object.keys(game.chipBag ?? {}).find((id) => (game.chipBag[id] ?? 0) > 0);
   const developCost = chipId ? chipDevelopmentCost(game, chipId) : Infinity;
   const unit = selectedUnit(game);
+  const canPay = (cost) => Number.isFinite(cost) && (game.gold ?? 0) >= cost;
   return `${treasuryPanel(game)}<div class="info-box management-box investment-box">
     <b>投資</b>
     <div class="investment-grid">
-      <button class="mini" data-research-chip ${(game.gold ?? 0) < chipCost ? 'disabled' : ''}>
-        ▣ チップ研究<small>行動を増やす / G${chipCost}</small>
+      <button class="mini decision-card" data-research-chip ${!canPay(chipCost) ? 'disabled' : ''}>
+        <span class="choice-top">▣ チップ研究<em>G${chipCost}</em></span>
+        <small>行動を増やす</small>
+        <span class="decision-meta">図鑑 ${collectionRate(game.collections?.chips?.size ?? 0, Object.keys(chips).length)}</span>
       </button>
-      <button class="mini" data-research-monster ${(game.gold ?? 0) < monsterCost ? 'disabled' : ''}>
-        ♟ 魔物研究<small>配下を増やす / G${monsterCost} 希少${monsterPreview.rareRate}%</small>
+      <button class="mini decision-card" data-research-monster ${!canPay(monsterCost) ? 'disabled' : ''}>
+        <span class="choice-top">♟ 魔物研究<em>G${monsterCost}</em></span>
+        <small>配下を増やす</small>
+        <span class="decision-meta">希少${monsterPreview.rareRate}%</span>
       </button>
-      <button class="mini" data-upgrade-room="${roomId}" ${(!canUpgradeSelectedRoom || (game.gold ?? 0) < roomCost) ? 'disabled' : ''}>
-        □ ${room?.name ?? '部屋'}拡張<small>容量+1 / G${Number.isFinite(roomCost) ? roomCost : '-'}</small>
+      <button class="mini decision-card" data-upgrade-room="${roomId}" ${(!canUpgradeSelectedRoom || !canPay(roomCost)) ? 'disabled' : ''}>
+        <span class="choice-top">□ ${room?.name ?? '部屋'}拡張<em>G${Number.isFinite(roomCost) ? roomCost : '-'}</em></span>
+        <small>容量+1</small>
+        <span class="decision-meta">現在 ${canUpgradeSelectedRoom ? roomCapacity(roomId, game) : '-'}</span>
       </button>
-      <button class="mini" data-develop-chip="${chipId ?? ''}" ${(!chipId || (game.gold ?? 0) < developCost) ? 'disabled' : ''}>
-        ${chipId ? `${chips[chipId].icon} ${chips[chipId].name}` : 'チップ'}開発<small>${chipId ? `在庫x${game.chipBag[chipId]} / G${developCost}` : '候補なし'}</small>
+      <button class="mini decision-card" data-develop-chip="${chipId ?? ''}" ${(!chipId || !canPay(developCost)) ? 'disabled' : ''}>
+        <span class="choice-top">${chipId ? `${chips[chipId].icon} ${chips[chipId].name}` : 'チップ'}開発<em>${chipId ? `G${developCost}` : '-'}</em></span>
+        <small>${chipId ? `在庫x${game.chipBag[chipId]}` : '候補なし'}</small>
+        <span class="decision-meta">${chipId ? chips[chipId].category ? chipCategories[chips[chipId].category]?.name ?? '作戦' : '作戦' : '-'}</span>
       </button>
     </div>
-    <small>${unit.name} Lv${unit.level ?? 1} / 知性${unit.int} / 担当 ${roomById[unit.homeRoom ?? unit.room]?.name ?? unit.room}</small>
+    <div class="focus-strip">
+      <span>${unit.name}</span>
+      <span>Lv${unit.level ?? 1}</span>
+      <span>知性${unit.int}</span>
+      <span>${roomById[unit.homeRoom ?? unit.room]?.name ?? unit.room}</span>
+    </div>
   </div>`;
 }
 
@@ -467,13 +492,18 @@ function fusionPanel(game) {
   const preview = previewGrowthMaterial(target, material);
   const materialButtons = materials.map((unit) => {
     const item = fusionMaterialForAlly(unit);
-    return `<button class="mini ${selected.uid === unit.uid ? 'on' : ''}" data-fusion-material="${unit.uid}">
-      ${unit.name}<small>${item.label}</small>
+    return `<button class="mini compact-card ${selected.uid === unit.uid ? 'on' : ''}" data-fusion-material="${unit.uid}">
+      <span class="choice-top">${unit.name}<em>Lv${unit.level ?? 1}</em></span>
+      <small>${item.label}</small>
     </button>`;
   }).join('');
   return `<div class="info-box management-box">
     <b>魔物合成</b>
-    <small>${selected.name}を素材にして${target.name}を強化: ${growthPreviewText(preview)}</small>
+    <div class="fusion-preview">
+      <span><b>${target.name}</b><small>Lv${target.level ?? 1} / 知性${target.int}</small></span>
+      <span><b>${selected.name}</b><small>${material.label}</small></span>
+      <span><b>${growthPreviewText(preview)}</b><small>素材消費</small></span>
+    </div>
     <div class="scroll-rail">${materialButtons}</div>
     <button class="mini danger wide" data-fuse-ally="${selected.uid}" data-fuse-target="${target.uid}">
       合成実行<small>${selected.name}を消費</small>

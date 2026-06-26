@@ -679,6 +679,21 @@ img { image-rendering: pixelated; }
   gap: 6px;
   margin-top: 6px;
 }
+.loot-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 6px;
+}
+.rail-group {
+  min-width: 0;
+}
+.rail-group > span {
+  display: block;
+  margin-bottom: 4px;
+  color: #d8aa4a;
+  font-size: 10px;
+  font-weight: 800;
+}
 .scroll-rail {
   display: flex !important;
   gap: 6px;
@@ -690,6 +705,9 @@ img { image-rendering: pixelated; }
 }
 .scroll-rail .mini {
   flex: 0 0 96px;
+}
+.loot-columns .scroll-rail .mini {
+  flex-basis: 122px;
 }
 .room-picker .mini {
   flex: 0 0 88px;
@@ -716,6 +734,75 @@ img { image-rendering: pixelated; }
   background: rgba(255,255,255,.07);
   border: 1px solid var(--line);
   padding: 6px 8px;
+}
+.compact-card,
+.decision-card {
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+}
+.choice-top {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 800;
+}
+.choice-top em {
+  flex: 0 0 auto;
+  font-style: normal;
+  color: #d8aa4a;
+  font-size: 10px;
+}
+.choice-top:first-child {
+  overflow: hidden;
+}
+.decision-card {
+  min-height: 70px;
+}
+.decision-meta,
+.focus-strip span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 18px;
+  width: fit-content;
+  border: 1px solid rgba(245, 220, 170, .12);
+  background: rgba(0,0,0,.18);
+  padding: 2px 5px;
+  color: #e7d3ac;
+  font-size: 10px;
+}
+.focus-strip {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+.fusion-preview {
+  display: grid;
+  grid-template-columns: minmax(0, .9fr) minmax(0, .9fr) minmax(0, 1.35fr);
+  gap: 5px;
+  margin: 4px 0 6px;
+}
+.fusion-preview span {
+  min-width: 0;
+  border: 1px solid rgba(245, 220, 170, .12);
+  background: rgba(0,0,0,.18);
+  padding: 5px;
+}
+.fusion-preview b,
+.fusion-preview small {
+  display: block;
+  overflow: hidden;
+}
+.fusion-preview b { line-height: 1.25; }
+.fusion-preview small { text-overflow: ellipsis; white-space: nowrap; }
+.fusion-preview small {
+  margin: 2px 0 0;
 }
 .mini.on, .chip.on { border-color: var(--gold); background: rgba(216,170,74,.22); }
 .mini.danger { border-color: rgba(211,75,75,.55); }
@@ -911,6 +998,16 @@ img { image-rendering: pixelated; }
   .unit-card img, .detail-title img { width: 28px; height: 28px; }
   .unit-card small { font-size: 10px; }
   .stats { grid-template-columns: repeat(4, 1fr); }
+  .investment-grid,
+  .loot-columns {
+    grid-template-columns: 1fr;
+  }
+  .decision-card {
+    min-height: 58px;
+  }
+  .fusion-preview {
+    grid-template-columns: 1fr;
+  }
   .chip {
     min-height: 42px;
     display: flex;
