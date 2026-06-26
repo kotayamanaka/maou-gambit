@@ -186,12 +186,19 @@ export const worldSize = { width: 4620, height: 2700 };
 export const roomById = Object.fromEntries(rooms.map((room) => [room.id, room]));
 
 export const buildSlots = [
+  { id: 'far-west-high', x: 570, y: 285 },
+  { id: 'far-west-mid', x: 570, y: 1155 },
+  { id: 'far-west-low', x: 570, y: 2070 },
   { id: 'north-west', x: 1170, y: 285 },
+  { id: 'west', x: 1170, y: 1155 },
   { id: 'north', x: 2160, y: 285 },
+  { id: 'center-low', x: 2160, y: 1680 },
+  { id: 'south', x: 2160, y: 2475 },
   { id: 'north-east', x: 3120, y: 375 },
   { id: 'west-low', x: 1170, y: 1680 },
   { id: 'east-high', x: 3240, y: 735 },
   { id: 'east-low', x: 3240, y: 1680 },
+  { id: 'east-far-mid', x: 3960, y: 1410 },
   { id: 'far-east-high', x: 3960, y: 570 },
   { id: 'far-east-low', x: 3960, y: 2475 }
 ];
@@ -210,14 +217,21 @@ export function doorSideLabel(side) {
 }
 
 export const buildSlotLabels = {
+  'far-west-high': '西端上',
+  'far-west-mid': '西端中',
+  'far-west-low': '西端下',
   'north-west': '北西',
+  west: '西',
   north: '北',
+  'center-low': '中央下',
+  south: '南',
   'north-east': '北東',
   'west-low': '西下',
   'east-high': '東上',
   'east-low': '東下',
-  'far-east-high': '東奥上',
-  'far-east-low': '東奥下'
+  'east-far-mid': '東端中',
+  'far-east-high': '東端上',
+  'far-east-low': '東端下'
 };
 
 export function buildSlotLabel(slotId) {
@@ -239,6 +253,40 @@ export function slotTaken(game, slotId) {
   if (!slot) return true;
   return Object.values(game?.roomPositions ?? {}).some((position) => position.slotId === slotId)
     || rooms.some((room) => room.built && room.x === slot.x && room.y === slot.y);
+}
+
+function rectFor(room, margin = 0) {
+  return {
+    left: room.x - room.w / 2 - margin,
+    right: room.x + room.w / 2 + margin,
+    top: room.y - room.h / 2 - margin,
+    bottom: room.y + room.h / 2 + margin
+  };
+}
+
+function rectsOverlap(a, b) {
+  return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+}
+
+export function roomAtBuildSlot(roomId, slotId) {
+  const room = roomById[roomId];
+  const slot = buildSlots.find((item) => item.id === slotId);
+  if (!room || !slot) return null;
+  return { ...room, x: slot.x, y: slot.y };
+}
+
+export function roomCollidesAtSlot(game, roomId, slotId, margin = 72) {
+  const candidate = roomAtBuildSlot(roomId, slotId);
+  if (!candidate) return true;
+  const candidateRect = rectFor(candidate, margin);
+  return roomViews(game)
+    .filter((room) => room.id !== roomId && (room.built || game?.builtRooms?.has?.(room.id)))
+    .some((room) => rectsOverlap(candidateRect, rectFor(room, margin)));
+}
+
+export function buildSlotBlocked(game, slotId, roomId = null) {
+  if (slotTaken(game, slotId)) return true;
+  return roomId ? roomCollidesAtSlot(game, roomId, slotId) : false;
 }
 
 function directionFromDelta(dx, dy) {

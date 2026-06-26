@@ -1,4 +1,4 @@
-import { buildSlotRelation, buildSlots, doorSideLabel, doorSides, rooms, roomById, roomView, slotTaken, worldSize } from '../data/rooms.js';
+import { buildSlotBlocked, buildSlotRelation, buildSlots, doorSideLabel, doorSides, rooms, roomById, roomView, slotTaken, worldSize } from '../data/rooms.js';
 import { chips } from '../data/chips.js';
 import { chipCategories } from '../data/chips.js';
 import { enemyChips } from '../data/enemyChips.js';
@@ -309,17 +309,18 @@ function roomManagementPanel(game) {
     .join('');
   const slotButtons = buildSlots
     .map((slot) => {
-      const used = slotTaken(game, slot.id);
+      const occupied = slotTaken(game, slot.id);
+      const blocked = selectedBuildRoom ? buildSlotBlocked(game, slot.id, selectedBuildRoom) : occupied;
       const relation = buildSlotRelation(game, slot.id, anchor);
-      return `<button class="mini compact-card ${selectedSlot === slot.id ? 'on' : ''}" data-build-slot="${slot.id}" ${used ? 'disabled' : ''}>
-        <span class="choice-top">${used ? '占有済' : relation.direction}<em>${relation.label}</em></span>
-        <small>${used ? '別部屋あり' : relation.distance}</small>
+      return `<button class="mini compact-card ${selectedSlot === slot.id ? 'on' : ''}" data-build-slot="${slot.id}" ${blocked ? 'disabled' : ''}>
+        <span class="choice-top">${occupied ? '占有済' : blocked ? '重複' : relation.direction}<em>${relation.label}</em></span>
+        <small>${occupied ? '別部屋あり' : blocked ? '既存部屋と近い' : relation.distance}</small>
       </button>`;
     })
     .join('');
   const selectedRelation = selectedSlot ? buildSlotRelation(game, selectedSlot, anchor) : null;
   const buildButtons = buildableRooms
-    .map((room) => `<button class="mini decision-card ${selectedBuildRoom === room.id ? 'on' : ''}" data-build-room="${room.id}" draggable="true" ${((game.gold ?? 0) < room.buildCost || !selectedSlot || slotTaken(game, selectedSlot) || !canConnectRoom(game, anchor) || !canConnectRoom(game, room.id)) ? 'disabled' : ''}>
+    .map((room) => `<button class="mini decision-card ${selectedBuildRoom === room.id ? 'on' : ''}" data-build-room="${room.id}" draggable="true" ${((game.gold ?? 0) < room.buildCost || !selectedSlot || buildSlotBlocked(game, selectedSlot, room.id) || !canConnectRoom(game, anchor) || !canConnectRoom(game, room.id)) ? 'disabled' : ''}>
       <span class="choice-top">${room.name}<em>G${room.buildCost}</em></span>
       <small>${roomById[anchor]?.name ?? anchor}${doorSideLabel(selectedDoor)}から ${selectedRelation ? selectedRelation.direction : '配置点未選択'}へ</small>
       <span class="decision-meta">${roomEffectText(room) || `容量${room.capacity ?? 0}`}</span>
@@ -986,7 +987,7 @@ export function renderApp(root, game, commit) {
     state.selectedBuildDoor = button.dataset.buildDoor;
   })));
   root.querySelectorAll('[data-build-slot]').forEach((button) => button.addEventListener('click', () => commit((state) => {
-    if (slotTaken(state, button.dataset.buildSlot)) return;
+    if (buildSlotBlocked(state, button.dataset.buildSlot, state.selectedBuildRoom)) return;
     state.selectedBuildSlot = button.dataset.buildSlot;
     state.uiPanel = 'build';
   })));

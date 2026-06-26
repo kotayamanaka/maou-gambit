@@ -316,6 +316,11 @@ img { image-rendering: pixelated; }
   box-shadow: inset 0 0 0 3px rgba(216, 170, 74, .12), 0 0 24px rgba(216, 170, 74, .18);
   pointer-events: none;
 }
+.build-preview-room.blocked {
+  border-color: rgba(211, 75, 75, .88);
+  opacity: .52;
+  box-shadow: inset 0 0 0 3px rgba(211, 75, 75, .16), 0 0 24px rgba(211, 75, 75, .22);
+}
 .build-preview-room small {
   position: absolute;
   left: 12px;

@@ -145,6 +145,7 @@ Claude Design に UI / アートディレクション案を依頼するための
 - 建設: 接続元、接続扉、配置点、建設候補、拡張、撤去をレーン化。
 - 建設配置点: 選択中の接続元から見た方角と距離感を表示し、接続元の北/東/南/西扉を選べる。
 - 建設プレビュー: 選択中の部屋候補をマップ上に半透明表示し、選択扉から予定通路を点線で表示する。
+- 建設衝突判定: 選択中の部屋サイズで既存部屋と近すぎる配置点を `重複` として無効化する。
 - 設備: 設置部屋、設備候補、現在設置状態をカード化。
 
 ## Data and Asset State
@@ -180,6 +181,7 @@ Claude Design に UI / アートディレクション案を依頼するための
 - `screenshots/build-slot-directions-desktop.png`
 - `screenshots/build-door-selection-desktop.png`
 - `screenshots/build-preview-desktop.png`
+- `screenshots/build-grid-collision-desktop.png`
 - `screenshots/captured-research-desktop.png`
 
 ### Art and Motion Audit

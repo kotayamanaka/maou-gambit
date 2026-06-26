@@ -1,4 +1,4 @@
-import { autoDoorSide, buildSlotRelation, buildSlots, connectionDoorSide, doorPoint, roomViews, rooms, slotTaken, worldSize } from '../data/rooms.js';
+import { autoDoorSide, buildSlotBlocked, buildSlotRelation, buildSlots, connectionDoorSide, doorPoint, roomAtBuildSlot, roomCollidesAtSlot, roomViews, rooms, slotTaken, worldSize } from '../data/rooms.js';
 import { roomObjects } from '../data/objects.js';
 import { isRoomBuilt, roomCapacity } from '../systems/placement.js';
 import { statusIconList } from '../systems/status.js';
@@ -119,13 +119,17 @@ export function renderMap(game, mode = 'setup') {
   }).join('');
 
   const buildingMode = ['setup', 'upgrade'].includes(mode) && game.uiPanel === 'build';
+  const buildPreviewTemplate = rooms.find((room) => room.id === game.selectedBuildRoom && !isRoomBuilt(game, room.id))
+    ?? rooms.find((room) => !isRoomBuilt(game, room.id) && room.buildCost);
+  const buildPreviewRoomId = buildPreviewTemplate?.id ?? null;
   const slotNodes = buildingMode
     ? buildSlots.map((slot) => {
-      const used = slotTaken(game, slot.id);
+      const occupied = slotTaken(game, slot.id);
+      const blocked = buildPreviewRoomId ? buildSlotBlocked(game, slot.id, buildPreviewRoomId) : occupied;
       const selected = game.selectedBuildSlot === slot.id;
       const relation = buildSlotRelation(game, slot.id, game.selectedBuildFrom ?? 'atrium');
-      return `<button class="build-slot ${selected ? 'selected-slot' : ''} ${used ? 'used' : ''}" data-build-slot="${slot.id}" style="left:${slot.x - 58}px;top:${slot.y - 42}px;width:116px;height:84px" ${used ? 'disabled' : ''}>
-        <span>${used ? '占有' : relation.direction}</span>
+      return `<button class="build-slot ${selected ? 'selected-slot' : ''} ${blocked ? 'used' : ''}" data-build-slot="${slot.id}" style="left:${slot.x - 58}px;top:${slot.y - 42}px;width:116px;height:84px" ${blocked ? 'disabled' : ''}>
+        <span>${occupied ? '占有' : blocked ? '重複' : relation.direction}</span>
         <small>${relation.label}</small>
       </button>`;
     }).join('')
@@ -171,11 +175,11 @@ export function renderMap(game, mode = 'setup') {
   }
 
   const previewSlot = buildSlots.find((slot) => slot.id === game.selectedBuildSlot);
-  const previewTemplate = rooms.find((room) => room.id === game.selectedBuildRoom && !isRoomBuilt(game, room.id))
-    ?? rooms.find((room) => !isRoomBuilt(game, room.id) && room.buildCost);
+  const previewTemplate = buildPreviewTemplate;
   const previewFrom = roomById[game.selectedBuildFrom ?? 'atrium'];
+  const previewBlocked = previewSlot && previewTemplate ? roomCollidesAtSlot(game, previewTemplate.id, previewSlot.id) : false;
   const previewRoom = buildingMode && previewSlot && previewTemplate && previewFrom && !slotTaken(game, previewSlot.id)
-    ? { ...previewTemplate, x: previewSlot.x, y: previewSlot.y }
+    ? roomAtBuildSlot(previewTemplate.id, previewSlot.id)
     : null;
   const previewDoors = previewRoom
     ? doorPairFromSides(
@@ -193,9 +197,9 @@ export function renderMap(game, mode = 'setup') {
     ? `<span class="room-door preview-door" style="left:${previewDoors.from.x}px;top:${previewDoors.from.y}px"></span><span class="room-door preview-door" style="left:${previewDoors.to.x}px;top:${previewDoors.to.y}px"></span>`
     : '';
   const previewNode = previewRoom
-    ? `<div class="room ${previewTemplate.type} build-preview-room" data-build-preview-room="${previewTemplate.id}" style="left:${previewRoom.x - previewRoom.w / 2}px;top:${previewRoom.y - previewRoom.h / 2}px;width:${previewRoom.w}px;height:${previewRoom.h}px">
+    ? `<div class="room ${previewTemplate.type} build-preview-room ${previewBlocked ? 'blocked' : ''}" data-build-preview-room="${previewTemplate.id}" style="left:${previewRoom.x - previewRoom.w / 2}px;top:${previewRoom.y - previewRoom.h / 2}px;width:${previewRoom.w}px;height:${previewRoom.h}px">
       <span class="room-name">${previewTemplate.name}</span>
-      <span class="room-cap">予定</span>
+      <span class="room-cap">${previewBlocked ? '重複' : '予定'}</span>
       <small>G${previewTemplate.buildCost}</small>
     </div>`
     : '';

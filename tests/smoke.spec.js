@@ -183,9 +183,19 @@ test('corridors use orthogonal door segments and build slots', async ({ page }) 
   });
   await expect(page.locator('.build-slot[data-build-slot="north"]')).toBeVisible();
   await expect(page.locator('.build-slot[data-build-slot="north"]')).toContainText('北');
+  await expect(page.locator('.build-slot')).toHaveCount(15);
+  await expect(page.locator('.build-slot[data-build-slot="center-low"]')).toBeDisabled();
+  await expect(page.locator('.build-slot[data-build-slot="center-low"]')).toContainText('重複');
   await expect(page.locator('[data-build-preview-room="treasure"]')).toBeVisible();
   await expect(page.locator('[data-build-preview-room="treasure"]')).toContainText('宝物庫');
   await expect(page.locator('.corridor-path.build-preview.floor')).toHaveCount(1);
+  await page.evaluate(() => {
+    window.__MAOU_COMMIT__((game) => {
+      game.selectedBuildSlot = 'center-low';
+    });
+  });
+  await expect(page.locator('[data-build-preview-room="treasure"]')).toHaveClass(/blocked/);
+  await expect(page.locator('[data-build-preview-room="treasure"]')).toContainText('重複');
   await assertNoDocumentScroll(page);
 });
 
