@@ -679,6 +679,18 @@ img { image-rendering: pixelated; }
   gap: 6px;
   margin-top: 6px;
 }
+.research-actions,
+.build-layout {
+  display: grid;
+  gap: 6px;
+}
+.research-actions {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 6px;
+}
+.build-layout {
+  grid-template-columns: 1fr;
+}
 .loot-columns {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -708,6 +720,10 @@ img { image-rendering: pixelated; }
 }
 .loot-columns .scroll-rail .mini {
   flex-basis: 122px;
+}
+.build-layout .scroll-rail .mini,
+.research-actions .mini {
+  flex-basis: 132px;
 }
 .room-picker .mini {
   flex: 0 0 88px;
@@ -763,6 +779,13 @@ img { image-rendering: pixelated; }
 }
 .decision-card {
   min-height: 70px;
+}
+.research-actions .decision-card,
+.build-layout .decision-card {
+  min-height: 72px;
+}
+.research-summary {
+  margin-top: 5px !important;
 }
 .decision-meta,
 .focus-strip span {
@@ -999,7 +1022,9 @@ img { image-rendering: pixelated; }
   .unit-card small { font-size: 10px; }
   .stats { grid-template-columns: repeat(4, 1fr); }
   .investment-grid,
-  .loot-columns {
+  .loot-columns,
+  .research-actions,
+  .build-layout {
     grid-template-columns: 1fr;
   }
   .decision-card {

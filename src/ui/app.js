@@ -274,13 +274,31 @@ function convertPreview(captured) {
   return `<small>${template.name}になる / 体力${template.stats.hp} 攻撃${template.stats.atk} 知性${template.stats.int}</small>`;
 }
 
-function researchPreview(game) {
+function researchPreview(game, limit = Infinity) {
   const candidates = Object.keys(chips).filter((id) => (game.chipBag[id] ?? 0) < 3);
-  return candidates.map((id) => {
+  const labels = candidates.map((id) => {
     const chip = chips[id];
     const category = chipCategories[chip.category] ?? { name: '不明' };
     return (game.chipBag[id] ?? 0) > 0 ? chip.name : `${category.name}系????`;
-  }).join(' / ') || '候補なし';
+  });
+  if (!labels.length) return '候補なし';
+  const visible = labels.slice(0, limit);
+  return `${visible.join(' / ')}${labels.length > limit ? ` / ほか${labels.length - limit}` : ''}`;
+}
+
+const buildSlotLabels = {
+  'north-west': '北西',
+  north: '北',
+  'north-east': '北東',
+  'west-low': '西下',
+  'east-high': '東上',
+  'east-low': '東下',
+  'far-east-high': '東奥上',
+  'far-east-low': '東奥下'
+};
+
+function buildSlotLabel(slotId) {
+  return buildSlotLabels[slotId] ?? slotId;
 }
 
 function roomManagementPanel(game) {
@@ -288,28 +306,33 @@ function roomManagementPanel(game) {
   const selectedSlot = game.selectedBuildSlot ?? buildSlots.find((slot) => !slotTaken(game, slot.id))?.id;
   const anchorButtons = rooms
     .filter((room) => isRoomBuilt(game, room.id) && canConnectRoom(game, room.id))
-    .map((room) => `<button class="mini ${anchor === room.id ? 'on' : ''}" data-build-anchor="${room.id}">
-      ${room.name}<small>${connectionCount(game, room.id)}/${room.connectionLimit ?? 4}</small>
+    .map((room) => `<button class="mini compact-card ${anchor === room.id ? 'on' : ''}" data-build-anchor="${room.id}">
+      <span class="choice-top">${room.name}<em>${connectionCount(game, room.id)}/${room.connectionLimit ?? 4}</em></span>
+      <small>接続元</small>
     </button>`)
     .join('');
   const slotButtons = buildSlots
     .map((slot) => {
       const used = slotTaken(game, slot.id);
-      return `<button class="mini ${selectedSlot === slot.id ? 'on' : ''}" data-build-slot="${slot.id}" ${used ? 'disabled' : ''}>
-        ${used ? '占有済' : '配置点'}<small>${slot.id}</small>
+      return `<button class="mini compact-card ${selectedSlot === slot.id ? 'on' : ''}" data-build-slot="${slot.id}" ${used ? 'disabled' : ''}>
+        <span class="choice-top">${used ? '占有済' : '配置点'}<em>${buildSlotLabel(slot.id)}</em></span>
+        <small>${used ? '別部屋あり' : '建設先'}</small>
       </button>`;
     })
     .join('');
   const buildButtons = rooms
     .filter((room) => !isRoomBuilt(game, room.id) && room.buildCost)
-    .map((room) => `<button class="mini" data-build-room="${room.id}" draggable="true" ${((game.gold ?? 0) < room.buildCost || !selectedSlot || slotTaken(game, selectedSlot) || !canConnectRoom(game, anchor) || !canConnectRoom(game, room.id)) ? 'disabled' : ''}>
-      ${room.name}<small>${roomById[anchor]?.name ?? anchor}から ${selectedSlot ?? '配置点未選択'}へ G${room.buildCost}${roomEffectText(room) ? ` / ${roomEffectText(room)}` : ''}</small>
+    .map((room) => `<button class="mini decision-card" data-build-room="${room.id}" draggable="true" ${((game.gold ?? 0) < room.buildCost || !selectedSlot || slotTaken(game, selectedSlot) || !canConnectRoom(game, anchor) || !canConnectRoom(game, room.id)) ? 'disabled' : ''}>
+      <span class="choice-top">${room.name}<em>G${room.buildCost}</em></span>
+      <small>${roomById[anchor]?.name ?? anchor}から ${selectedSlot ? buildSlotLabel(selectedSlot) : '配置点未選択'}へ</small>
+      <span class="decision-meta">${roomEffectText(room) || `容量${room.capacity ?? 0}`}</span>
     </button>`)
     .join('');
   const demolishButtons = rooms
     .filter((room) => isRoomBuilt(game, room.id) && !room.built)
-    .map((room) => `<button class="mini danger" data-demolish-room="${room.id}" ${(game.gold ?? 0) < DEMOLISH_ROOM_COST ? 'disabled' : ''}>
-      ${room.name}<small>撤去 G${DEMOLISH_ROOM_COST}</small>
+    .map((room) => `<button class="mini compact-card danger" data-demolish-room="${room.id}" ${(game.gold ?? 0) < DEMOLISH_ROOM_COST ? 'disabled' : ''}>
+      <span class="choice-top">${room.name}<em>G${DEMOLISH_ROOM_COST}</em></span>
+      <small>撤去</small>
     </button>`)
     .join('');
   const upgradeButtons = rooms
@@ -317,18 +340,21 @@ function roomManagementPanel(game) {
     .map((room) => {
       const level = roomLevel(game, room.id);
       const cost = (room.upgradeCost ?? 120) * level;
-      return `<button class="mini" data-upgrade-room="${room.id}" ${(game.gold ?? 0) < cost ? 'disabled' : ''}>
-        ${room.name}<small>Lv${level} 容量${roomCapacity(room.id, game)} / G${cost}${roomEffectText(room) ? ` / ${roomEffectText(room)}` : ''}</small>
+      return `<button class="mini compact-card" data-upgrade-room="${room.id}" ${(game.gold ?? 0) < cost ? 'disabled' : ''}>
+        <span class="choice-top">${room.name}<em>G${cost}</em></span>
+        <small>Lv${level} 容量${roomCapacity(room.id, game)}</small>
       </button>`;
     })
     .join('');
   return `<div class="info-box management-box">
     <b>ダンジョン</b>
-    <div class="scroll-rail">${anchorButtons || '<span class="empty-inline">接続元なし</span>'}</div>
-    <div class="scroll-rail">${slotButtons || '<span class="empty-inline">配置点なし</span>'}</div>
-    <div class="scroll-rail">${buildButtons || '<span class="empty-inline">建設候補なし</span>'}</div>
-    <div class="scroll-rail">${demolishButtons || '<span class="empty-inline">撤去候補なし</span>'}</div>
-    <div class="scroll-rail">${upgradeButtons || '<span class="empty-inline">拡張候補なし</span>'}</div>
+    <div class="build-layout">
+      ${railGroup('接続元', anchorButtons, '接続元なし')}
+      ${railGroup('配置点', slotButtons, '配置点なし')}
+      ${railGroup('建設', buildButtons, '建設候補なし')}
+      ${railGroup('拡張', upgradeButtons, '拡張候補なし')}
+      ${railGroup('撤去', demolishButtons, '撤去候補なし')}
+    </div>
   </div>`;
 }
 
@@ -414,19 +440,28 @@ function researchPanel(game) {
     .filter((id) => (game.chipBag?.[id] ?? 0) > 0)
     .map((id) => {
       const cost = chipDevelopmentCost(game, id);
-      return `<button class="mini" data-develop-chip="${id}" ${(game.gold ?? 0) < cost ? 'disabled' : ''}>
-        ${chips[id].icon} ${chips[id].name}<small>x${game.chipBag[id]} 開発G${cost}</small>
+      return `<button class="mini compact-card" data-develop-chip="${id}" ${(game.gold ?? 0) < cost ? 'disabled' : ''}>
+        <span class="choice-top">${chips[id].icon} ${chips[id].name}<em>G${cost}</em></span>
+        <small>x${game.chipBag[id]} ${chipCategories[chips[id].category]?.name ?? '作戦'}</small>
       </button>`;
     })
     .join('');
   return `<div class="info-box management-box">
     <b>研究</b>
-    <div class="scroll-rail">
-      <button class="mini" data-research-chip ${(game.gold ?? 0) < chipCost ? 'disabled' : ''}>チップ研究<small>G${chipCost}</small></button>
-      <button class="mini" data-research-monster ${(game.gold ?? 0) < monsterCost ? 'disabled' : ''}>魔物研究<small>G${monsterCost} 希少${monsterPreview.rareRate}%</small></button>
+    <div class="research-actions">
+      <button class="mini decision-card" data-research-chip ${(game.gold ?? 0) < chipCost ? 'disabled' : ''}>
+        <span class="choice-top">▣ チップ研究<em>G${chipCost}</em></span>
+        <small>${researchPreview(game, 4)}</small>
+        <span class="decision-meta">未発見優先</span>
+      </button>
+      <button class="mini decision-card" data-research-monster ${(game.gold ?? 0) < monsterCost ? 'disabled' : ''}>
+        <span class="choice-top">♟ 魔物研究<em>G${monsterCost}</em></span>
+        <small>希少${monsterPreview.rareRate}% / ${monsterSummary}</small>
+        <span class="decision-meta">未知優先</span>
+      </button>
     </div>
-    <small>魔物候補 ${monsterSummary}</small>
-    <div class="scroll-rail">${knownChipButtons || '<span class="empty-inline">開発候補なし</span>'}</div>
+    <small class="research-summary">魔物候補 ${monsterSummary}</small>
+    ${railGroup('既知チップ開発', knownChipButtons, '開発候補なし')}
   </div>`;
 }
 
@@ -517,18 +552,24 @@ function objectPanel(game) {
   const current = roomObjects[game.roomObjects?.[roomId]];
   const roomButtons = rooms
     .filter((item) => isRoomBuilt(game, item.id) && item.type !== 'spawn' && item.type !== 'throne')
-    .map((item) => `<button class="mini ${roomId === item.id ? 'on' : ''}" data-object-room="${item.id}">
-      ${item.name}<small>${roomObjects[game.roomObjects?.[item.id]]?.name ?? '空き'}</small>
+    .map((item) => `<button class="mini compact-card ${roomId === item.id ? 'on' : ''}" data-object-room="${item.id}">
+      <span class="choice-top">${item.name}<em>${roomObjects[game.roomObjects?.[item.id]] ? '有' : '空'}</em></span>
+      <small>${roomObjects[game.roomObjects?.[item.id]]?.name ?? '空き'}</small>
     </button>`)
     .join('');
-  const buttons = Object.values(roomObjects).map((object) => `<button class="mini" data-install-object="${object.id}" draggable="true" ${(current || !room || !isRoomBuilt(game, roomId) || (game.gold ?? 0) < object.cost) ? 'disabled' : ''}>
-    ${object.icon} ${object.name}<small>G${object.cost} / ${object.description}</small>
+  const buttons = Object.values(roomObjects).map((object) => `<button class="mini decision-card" data-install-object="${object.id}" draggable="true" ${(current || !room || !isRoomBuilt(game, roomId) || (game.gold ?? 0) < object.cost) ? 'disabled' : ''}>
+    <span class="choice-top">${object.icon} ${object.name}<em>G${object.cost}</em></span>
+    <small>${object.description}</small>
+    <span class="decision-meta">${object.risk ?? '設備'}</span>
   </button>`).join('');
   return `<div class="info-box management-box">
     <b>部屋オブジェクト</b>
-    <small>${room?.name ?? roomId} ${current ? `設置中: ${current.name}` : '未設置'}</small>
-    <div class="scroll-rail">${roomButtons}</div>
-    <div class="scroll-rail">${buttons}</div>
+    <div class="focus-strip">
+      <span>${room?.name ?? roomId}</span>
+      <span>${current ? `設置中 ${current.name}` : '未設置'}</span>
+    </div>
+    ${railGroup('設置部屋', roomButtons, '設置先なし')}
+    ${railGroup('設備候補', buttons, '設備候補なし')}
     ${current ? `<button class="mini danger wide" data-remove-object="${roomId}">設備撤去<small>G30</small></button>` : ''}
   </div>`;
 }

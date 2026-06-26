@@ -972,6 +972,7 @@ test('upgrade management supports selling, building, room upgrades, and research
   await expect(page.locator('.loot-columns')).toBeVisible();
   await expect(page.getByText(/ゴブリン 攻撃\+1/)).toBeVisible();
   await page.locator('[data-ui-panel="research"]').click();
+  await expect(page.locator('.research-actions .decision-card')).toHaveCount(2);
   await expect(page.locator('[data-develop-chip="attack"]')).toBeVisible();
   await expect(page.locator('[data-research-monster]')).toContainText('魔物研究');
   await expect(page.getByText(/魔物候補/)).toBeVisible();
@@ -984,11 +985,16 @@ test('upgrade management supports selling, building, room upgrades, and research
   await page.locator('[data-ui-panel="research"]').click();
   await page.locator('[data-develop-chip="attack"]').click();
   await page.locator('[data-ui-panel="build"]').click();
+  await expect(page.locator('.build-layout')).toBeVisible();
   await page.locator('[data-build-anchor="atrium"]').click();
   await page.locator('[data-build-slot="north"]').click();
+  await expect(page.locator('[data-build-room="treasure"]')).toHaveClass(/decision-card/);
+  await expect(page.locator('.build-layout')).toContainText('北');
   await page.locator('[data-build-room="treasure"]').click();
   await page.locator('[data-upgrade-room="atrium"]').click();
   await page.locator('[data-ui-panel="object"]').click();
+  await expect(page.locator('[data-install-object="savePoint"]')).toHaveClass(/decision-card/);
+  await expect(page.locator('[data-install-object="savePoint"]')).toContainText('↻');
   await page.locator('[data-object-room="treasure"]').click();
   await page.locator('[data-install-object="savePoint"]').click();
   await page.locator('[data-ui-panel="research"]').click();

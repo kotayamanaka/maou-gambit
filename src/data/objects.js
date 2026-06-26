@@ -9,7 +9,7 @@ export const roomObjects = {
   savePoint: {
     id: 'savePoint',
     name: 'セーブポイント',
-    icon: 'S',
+    icon: '↻',
     cost: 110,
     description: '敵が一度復活する。倒す機会が増えるが危険'
   },
