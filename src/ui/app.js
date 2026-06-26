@@ -449,6 +449,21 @@ function panelTabs(game, items) {
   return `<div class="tool-tabs">${items.map((item) => `<button class="${game.uiPanel === item.id ? 'on' : ''}" data-ui-panel="${item.id}" title="${item.label}"><b>${item.icon}</b><span>${item.label}</span></button>`).join('')}</div>`;
 }
 
+function setupTabItems(game) {
+  const base = [
+    { id: 'unit', icon: '♟', label: '配下' },
+    { id: 'place', icon: '⌖', label: '配置' },
+    { id: 'chips', icon: '▣', label: 'チップ' },
+    { id: 'info', icon: 'ⓘ', label: '情報' }
+  ];
+  if (game.stageIndex <= 0) return base;
+  return [
+    ...base,
+    { id: 'build', icon: '□', label: '建設' },
+    { id: 'object', icon: '◆', label: '設備' }
+  ];
+}
+
 function managementPanels(game) {
   const managementIds = ['loot', 'research', 'fusion', 'build', 'object', 'info'];
   const active = managementIds.includes(game.uiPanel) ? game.uiPanel : 'loot';
@@ -563,15 +578,10 @@ function setupPanel(game) {
   const unit = selectedUnit(game);
   const profile = growthProfile(unit);
   const warnings = setupWarnings(game);
-  const active = game.uiPanel ?? 'unit';
-  const tabs = panelTabs(game, [
-    { id: 'unit', icon: '♟', label: '配下' },
-    { id: 'place', icon: '⌖', label: '配置' },
-    { id: 'chips', icon: '▣', label: 'チップ' },
-    { id: 'build', icon: '□', label: '建設' },
-    { id: 'object', icon: '◆', label: '設備' },
-    { id: 'info', icon: 'ⓘ', label: '情報' }
-  ]);
+  const setupTabs = setupTabItems(game);
+  const setupPanelIds = [...setupTabs.map((item) => item.id), 'build', 'object'];
+  const active = setupPanelIds.includes(game.uiPanel) ? game.uiPanel : 'unit';
+  const tabs = panelTabs(game, setupTabs);
   const unitSection = `<div class="setup-section">
     <div class="unit-picker" aria-label="配下選択">
       <div class="unit-list">${game.allies.map((ally) => unitCard(ally, game)).join('')}</div>

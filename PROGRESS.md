@@ -9,6 +9,7 @@
 - 初期配下をゴブリンとスライムの2体に変更。ゴブリンは戦闘/牢屋搬送、スライムは広間の足止め役として、初回から分担が見えるようにした。
 - 初期チップ在庫を `接近 x2`、`攻撃 x2`、`牢屋搬送 x1` に調整し、2体の基本行動に合わせた。
 - 編成の配置候補は建設済み部屋だけを表示するようにし、未建設部屋への配置ネタバレを減らした。
+- 初回セットアップでは `配下`、`配置`、`チップ`、`情報` だけを表示し、`建設`、`設備` は第1防衛後に開くようにした。初手から上級メニューを見せず、まず配置とチップを理解させる。
 - 速度ボタンのクリック処理を明示的に止めてから速度を確定するようにし、`1x`、`2x`、`4x` の選択状態をテストで固定した。
 - 盾兵 `guard` を色替え流用から専用生成シートに差し替え、盾を持つシルエットとして判別しやすくした。
 - `scripts/slice_dedicated_enemy_sheets.py` を追加し、単体生成した敵職シートを `idle/walk/attack/downed` x `front/back/left/right` に切り出せるようにした。
@@ -16,11 +17,17 @@
 ### 検証結果
 
 - `npx playwright test tests/smoke.spec.js -g "stage runs|result can continue"`: 4件成功
+- `npx playwright test tests/smoke.spec.js -g "setup reveals|corridors use|setup supports drag"`: 6件成功
 - `npm test`: 64件成功
 - `npm run build`: 成功
 - `npm run test:balance`: 成功。キャンペーン検収は勝利。
 - 初期状態のシミュレーション確認: ステージ1は敵2体、魔王無傷、捕獲1体以上で勝利。
 - 速度UIは `4x -> 1x -> 2x` の順に選択でき、内部速度値も更新されることをテストで確認。
+- 目視確認: 初回セットアップで上級タブが隠れ、ダンジョン全体に透過パネルが重なる状態を確認。
+
+### スクリーンショット
+
+- `screenshots/tutorial-setup-minimal-tabs-desktop.png`
 
 ## 2026-06-26 戦闘表現・速度UI・DnD操作の再修正
 

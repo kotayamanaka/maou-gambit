@@ -67,6 +67,8 @@ test('setup reveals only the selected menu section', async ({ page }) => {
   await expect(page.locator('[data-ui-panel="unit"]')).toContainText('配下');
   await expect(page.locator('[data-ui-panel="place"]')).toContainText('配置');
   await expect(page.locator('[data-ui-panel="chips"]')).toContainText('チップ');
+  await expect(page.locator('[data-ui-panel="build"]')).toHaveCount(0);
+  await expect(page.locator('[data-ui-panel="object"]')).toHaveCount(0);
   await expect(page.locator('[data-place="storage"]')).toHaveCount(0);
   await page.locator('[data-ui-panel="place"]').click();
   await expect(page.locator('[data-place="storage"]')).toBeVisible();
@@ -76,6 +78,13 @@ test('setup reveals only the selected menu section', async ({ page }) => {
   await page.locator('[data-ui-panel="chips"]').click();
   await expect(page.locator('[data-chip="attack"]')).toBeVisible();
   await expect(page.locator('[data-place="storage"]')).toHaveCount(0);
+  await page.evaluate(() => {
+    window.__MAOU_COMMIT__((game) => {
+      game.stageIndex = 1;
+    });
+  });
+  await expect(page.locator('[data-ui-panel="build"]')).toBeVisible();
+  await expect(page.locator('[data-ui-panel="object"]')).toBeVisible();
   await assertNoDocumentScroll(page);
 });
 
@@ -157,7 +166,12 @@ test('corridors use orthogonal door segments and build slots', async ({ page }) 
   expect(segments.every((item) => item.lineCap === 'square')).toBe(true);
   expect(segments.every((item) => item.lineJoin === 'miter')).toBe(true);
 
-  await page.locator('[data-ui-panel="build"]').click();
+  await page.evaluate(() => {
+    window.__MAOU_COMMIT__((game) => {
+      game.stageIndex = 1;
+      game.uiPanel = 'build';
+    });
+  });
   await expect(page.locator('.build-slot[data-build-slot="north"]')).toBeVisible();
   await expect(page.locator('.build-slot').filter({ hasText: '配置' }).first()).toBeVisible();
   await assertNoDocumentScroll(page);
