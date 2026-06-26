@@ -1,4 +1,4 @@
-import { buildSlotBlocked, buildSlotList, buildSlotRelation, doorSideLabel, doorSides, rooms, roomAtBuildSlot, roomById, roomView, setCustomBuildSlot, slotTaken, worldSize } from '../data/rooms.js';
+import { autoDoorSide, buildSlotBlocked, buildSlotList, buildSlotRelation, doorSideLabel, doorSides, rooms, roomAtBuildSlot, roomById, roomView, setCustomBuildSlot, slotTaken, worldSize } from '../data/rooms.js';
 import { chips } from '../data/chips.js';
 import { chipCategories } from '../data/chips.js';
 import { enemyChips } from '../data/enemyChips.js';
@@ -612,14 +612,45 @@ function researchPreview(game, limit = Infinity) {
   return `${visible.join(' / ')}${labels.length > limit ? ` / 他${labels.length - limit}` : ''}`;
 }
 
+function recommendedBuildDoor(game, anchor, roomId, slotId) {
+  const from = roomView(game, anchor);
+  const to = roomAtBuildSlot(game, roomId, slotId);
+  if (!from || !to) return 'north';
+  return autoDoorSide(from, to);
+}
+
+function buildPlanSummary(game, anchor, roomId, slotId, selectedDoor) {
+  const room = roomById[roomId];
+  const from = roomView(game, anchor);
+  const to = roomAtBuildSlot(game, roomId, slotId);
+  if (!room || !from || !to) return '';
+  const targetDoor = autoDoorSide(to, from);
+  const relation = buildSlotRelation(game, slotId, anchor);
+  const blocked = buildSlotBlocked(game, slotId, roomId);
+  const enoughGold = (game.gold ?? 0) >= (room.buildCost ?? 0);
+  const anchorOpen = canConnectRoom(game, anchor);
+  const roomOpen = canConnectRoom(game, roomId);
+  const status = !enoughGold ? '資金不足'
+    : !anchorOpen ? '接続元が満杯'
+      : !roomOpen ? '部屋の接続上限'
+        : blocked ? '配置不可'
+          : '建設可能';
+  return `<div class="build-plan" data-build-plan>
+    <span><b>${roomById[anchor]?.name ?? anchor}</b><small>${doorSideLabel(selectedDoor)} → ${room.name}${doorSideLabel(targetDoor)}</small></span>
+    <span><b>${relation.direction}</b><small>${relation.distance} / ${relation.label}</small></span>
+    <em class="${status === '建設可能' ? 'ok' : 'warn'}">${status}</em>
+  </div>`;
+}
+
 function roomManagementPanel(game) {
   const anchor = game.selectedBuildFrom ?? 'atrium';
-  const selectedDoor = game.selectedBuildDoor ?? 'north';
   const selectedSlot = game.selectedBuildSlot ?? buildSlotList(game).find((slot) => !slotTaken(game, slot.id))?.id;
   const buildableRooms = rooms.filter((room) => !isRoomBuilt(game, room.id) && room.buildCost);
   const selectedBuildRoom = buildableRooms.some((room) => room.id === game.selectedBuildRoom)
     ? game.selectedBuildRoom
     : buildableRooms[0]?.id;
+  const suggestedDoor = recommendedBuildDoor(game, anchor, selectedBuildRoom, selectedSlot);
+  const selectedDoor = game.selectedBuildDoor ?? suggestedDoor;
   const anchorButtons = rooms
     .filter((room) => isRoomBuilt(game, room.id) && canConnectRoom(game, room.id))
     .map((room) => `<button class="mini compact-card ${anchor === room.id ? 'on' : ''}" data-build-anchor="${room.id}">
@@ -627,12 +658,16 @@ function roomManagementPanel(game) {
       <small>接続元</small>
     </button>`)
     .join('');
-  const doorButtons = doorSides
-    .map((side) => `<button class="mini compact-card ${selectedDoor === side ? 'on' : ''}" data-build-door="${side}">
+  const doorButtons = [
+    `<button class="mini compact-card ${game.selectedBuildDoor ? '' : 'on'}" data-build-door="auto">
+      <span class="choice-top">自動<em>${doorSideLabel(suggestedDoor)}</em></span>
+      <small>配置点から推奨</small>
+    </button>`,
+    ...doorSides.map((side) => `<button class="mini compact-card ${game.selectedBuildDoor === side ? 'on' : ''}" data-build-door="${side}">
       <span class="choice-top">${doorSideLabel(side)}<em>${side === 'north' ? '上' : side === 'east' ? '右' : side === 'south' ? '下' : '左'}</em></span>
-      <small>接続口</small>
+      <small>${suggestedDoor === side ? '推奨' : '手動指定'}</small>
     </button>`)
-    .join('');
+  ].join('');
   const slotButtons = buildSlotList(game)
     .map((slot) => {
       const occupied = slotTaken(game, slot.id);
@@ -645,6 +680,7 @@ function roomManagementPanel(game) {
     })
     .join('');
   const selectedRelation = selectedSlot ? buildSlotRelation(game, selectedSlot, anchor) : null;
+  const planSummary = buildPlanSummary(game, anchor, selectedBuildRoom, selectedSlot, selectedDoor);
   const buildButtons = buildableRooms
     .map((room) => `<button class="mini decision-card ${selectedBuildRoom === room.id ? 'on' : ''}" data-build-room="${room.id}" draggable="true" ${((game.gold ?? 0) < room.buildCost || !selectedSlot || buildSlotBlocked(game, selectedSlot, room.id) || !canConnectRoom(game, anchor) || !canConnectRoom(game, room.id)) ? 'disabled' : ''}>
       <span class="choice-top">${room.name}<em>G${room.buildCost}</em></span>
@@ -675,6 +711,7 @@ function roomManagementPanel(game) {
     <div class="build-layout">
       ${railGroup('接続元', anchorButtons, '接続元なし')}
       ${railGroup('接続扉', doorButtons, '接続扉なし')}
+      ${planSummary}
       ${railGroup('配置点', slotButtons, '配置点なし')}
       ${railGroup('建設', buildButtons, '建設候補なし')}
       ${railGroup('拡張', upgradeButtons, '拡張候補なし')}
@@ -1418,7 +1455,7 @@ export function renderApp(root, game, commit) {
     state.selectedBuildFrom = button.dataset.buildAnchor;
   })));
   root.querySelectorAll('[data-build-door]').forEach((button) => button.addEventListener('click', () => commit((state) => {
-    state.selectedBuildDoor = button.dataset.buildDoor;
+    state.selectedBuildDoor = button.dataset.buildDoor === 'auto' ? null : button.dataset.buildDoor;
   })));
   root.querySelectorAll('[data-build-slot]').forEach((button) => button.addEventListener('click', () => commit((state) => {
     if (buildSlotBlocked(state, button.dataset.buildSlot, state.selectedBuildRoom)) return;

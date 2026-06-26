@@ -178,6 +178,22 @@ test('corridors use orthogonal door segments and build slots', async ({ page }) 
       game.stageIndex = 1;
       game.uiPanel = 'build';
       game.selectedBuildRoom = 'treasure';
+      game.selectedBuildDoor = null;
+      game.selectedBuildSlot = 'far-east-high';
+      game.gold = 1000;
+    });
+  });
+  await expect(page.locator('[data-build-door="auto"]')).toHaveClass(/on/);
+  await expect(page.locator('[data-build-door="auto"]')).toContainText('東扉');
+  await expect(page.locator('[data-build-plan]')).toContainText('広間');
+  await expect(page.locator('[data-build-plan]')).toContainText('宝物庫');
+  await expect(page.locator('[data-build-plan]')).toContainText('建設可能');
+  await page.locator('[data-build-door="west"]').click();
+  await expect(page.locator('[data-build-door="west"]')).toHaveClass(/on/);
+  await page.locator('[data-build-door="auto"]').click();
+  expect(await page.evaluate(() => window.__MAOU_GAME__.selectedBuildDoor)).toBeNull();
+  await page.evaluate(() => {
+    window.__MAOU_COMMIT__((game) => {
       game.selectedBuildDoor = 'east';
       game.selectedBuildSlot = 'north';
     });

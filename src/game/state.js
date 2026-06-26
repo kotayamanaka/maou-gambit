@@ -101,7 +101,7 @@ export function createGame() {
     roomCapacityBonus: {},
     roomConnections: initialRoomConnections(),
     selectedBuildFrom: 'atrium',
-    selectedBuildDoor: 'north',
+    selectedBuildDoor: null,
     selectedBuildSlot: 'north',
     selectedBuildRoom: 'hallA',
     roomConnectionDoors: {},

@@ -993,6 +993,51 @@ img { image-rendering: pixelated; }
 .build-layout {
   grid-template-columns: 1fr;
 }
+.build-plan {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, .8fr) auto;
+  gap: 6px;
+  align-items: stretch;
+  padding: 7px;
+  border: 1px solid rgba(216, 170, 74, .3);
+  background: rgba(33, 25, 14, .32);
+}
+.build-plan span {
+  min-width: 0;
+  padding: 5px 6px;
+  background: rgba(0,0,0,.18);
+}
+.build-plan b,
+.build-plan small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.build-plan b {
+  color: #f4dfb0;
+  font-size: 12px;
+}
+.build-plan small {
+  color: #cbb99c;
+  font-size: 10px;
+}
+.build-plan em {
+  align-self: stretch;
+  display: grid;
+  place-items: center;
+  min-width: 64px;
+  padding: 0 7px;
+  color: #111;
+  background: var(--gold);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 900;
+}
+.build-plan em.warn {
+  color: #fff2ec;
+  background: rgba(211, 75, 75, .7);
+}
 .loot-columns {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -1421,6 +1466,12 @@ img { image-rendering: pixelated; }
   .research-actions,
   .build-layout {
     grid-template-columns: 1fr;
+  }
+  .build-plan {
+    grid-template-columns: 1fr;
+  }
+  .build-plan em {
+    min-height: 28px;
   }
   .decision-card {
     min-height: 58px;
