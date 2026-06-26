@@ -1,5 +1,39 @@
 # PROGRESS
 
+## 2026-06-26 味方魔物/洗脳後ユニットの4方向生成スプライトと石通路を接続
+
+### 実装
+
+- 画像生成でコウモリ、堕ちた戦士、影走り、闇術師の4種を単体4方向シートとして作成。
+- 4体まとめ生成は12列/3方向に崩れたため不採用。右向きミラー補完も採用しない方針に変更。
+- 生成原本を `assets/generated/characters/<unit-id>/sheet-v1-4dir.png` に保存。
+- `scripts/slice_ally_monsters_sheet.py` を追加し、各キャラ単体シートから `idle`、`walk`、`attack`、`downed` x `front/back/left/right` に切り出すようにした。
+- 切り出し先は `assets/generated/characters/<unit-id>/` と `public/assets/sprites/<unit-id>/`。
+- `scripts/make_sprite_direction_audit.py` を追加し、`screenshots/sprite-direction-audit-ally-monsters.png` で4方向と動作を検収できるようにした。
+- `bat`、`fallenWarrior`、`shadeRunner`、`darkMage` を生成スプライトの `spriteSet` 参照へ切り替えた。
+- `boneGuard` は暫定で `fallenWarrior`、`impArcher` は `bat`、`oracleShade` は `darkMage` の素材を共有する。
+- 捕獲/研究で増えた味方が旧仮アイコンではなく、魔王軍側に変化した見た目でマップに出るようになった。
+- 通路の楕円感と分断感を消すため、部屋の扉同士を直角SVGパスで接続し、通路床に `corridor-stone` タイルパターンを適用した。
+- 通路幅がズーム時に部屋とズレないよう、通路のストロークもマップと一緒にスケールする設定にした。
+
+### 検証結果
+
+- `npm test -- --reporter=line -g "map uses generated|corridors use orthogonal"`: 4件成功
+- `npm test -- --reporter=line -g "generated ally sprite folders|converted ally templates"`: 4件成功
+- `npm test -- --reporter=line`: 60件成功
+- `npm run test:balance`: キャンペーン勝利まで成功
+- `npm run build:pages`: 成功
+- PCスクリーンショット確認。通路は部屋の扉から連続した石通路として表示され、ズーム時も分断しない。
+- 方向検収画像確認。味方4種は単体4方向シートから切り出され、12列/3方向素材は使っていない。
+
+### スクリーンショット
+
+- `screenshots/ally-monsters-desktop.png`
+- `screenshots/ally-monsters-mobile.png`
+- `screenshots/rect-corridors-desktop.png`
+- `screenshots/corridors-zoom-desktop.png`
+- `screenshots/sprite-direction-audit-ally-monsters.png`
+
 ## 2026-06-26 序盤敵スプライトと戦闘近景カメラを改善
 
 ### 実装

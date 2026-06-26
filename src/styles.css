@@ -246,47 +246,34 @@ img { image-rendering: pixelated; }
   inset: 0;
   width: 100%;
   height: 100%;
-  z-index: 0;
+  z-index: 1;
   pointer-events: none;
-  display: none;
 }
-.corridor {
-  stroke: rgba(0, 0, 0, .42);
-  stroke-width: 60;
-  stroke-linecap: round;
-  filter: drop-shadow(0 0 8px rgba(0,0,0,.62));
+.corridor-path {
+  fill: none;
+  stroke-linecap: square;
+  stroke-linejoin: miter;
 }
-.corridor.unbuilt {
+.corridor-path.under {
+  stroke: rgba(12, 8, 6, .9);
+  stroke-width: 76;
+}
+.corridor-path.floor {
+  stroke: url("#corridor-stone-pattern") #806136;
+  stroke-width: 62;
+  filter: drop-shadow(0 0 8px rgba(0,0,0,.42));
+}
+.corridor-path.unbuilt {
   stroke-dasharray: 18 18;
   opacity: .34;
 }
 
 .corridor-band {
-  position: absolute;
-  z-index: 1;
-  border-radius: 28px;
-  background:
-    linear-gradient(90deg, rgba(0,0,0,.25), rgba(255, 201, 103, .16) 38%, rgba(255, 201, 103, .18) 62%, rgba(0,0,0,.28)),
-    url("../assets/tiles/corridor-stone.png");
-  background-size: auto, 96px 96px;
-  box-shadow: inset 0 0 0 2px rgba(0,0,0,.26), 0 0 9px rgba(0,0,0,.48);
-  pointer-events: none;
-}
-.corridor-band.horizontal {
-  height: 56px;
-  transform: translate(0, -50%);
-}
-.corridor-band.vertical {
-  width: 56px;
-  transform: translate(-50%, 0);
-}
-.corridor-band.unbuilt {
-  opacity: .28;
-  filter: grayscale(.62) brightness(.72);
+  display: none;
 }
 .room-door {
   position: absolute;
-  z-index: 3;
+  z-index: 4;
   width: 28px;
   height: 28px;
   transform: translate(-50%, -50%);

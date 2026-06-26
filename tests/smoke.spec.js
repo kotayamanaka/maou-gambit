@@ -1,5 +1,7 @@
 import { expect, test } from '@playwright/test';
-import { enemyTemplates } from '../src/data/units.js';
+import fs from 'node:fs';
+import path from 'node:path';
+import { allyTemplates, enemyTemplates } from '../src/data/units.js';
 
 async function assertNoDocumentScroll(page) {
   const metrics = await page.evaluate(() => ({
@@ -12,6 +14,14 @@ async function assertNoDocumentScroll(page) {
   expect(metrics.sh).toBeLessThanOrEqual(metrics.ih + 2);
 }
 
+function pngSize(filePath) {
+  const buffer = fs.readFileSync(filePath);
+  return {
+    width: buffer.readUInt32BE(16),
+    height: buffer.readUInt32BE(20)
+  };
+}
+
 test('layout fits without page scroll', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByText('第一侵入隊').first()).toBeVisible();
@@ -20,16 +30,25 @@ test('layout fits without page scroll', async ({ page }) => {
   await assertNoDocumentScroll(page);
 });
 
-test('map uses generated dungeon texture tiles', async ({ page }) => {
+test('map uses generated dungeon texture tiles and continuous corridors', async ({ page }) => {
   await page.goto('/');
   const mapBackground = await page.locator('.map-shell').evaluate((el) => getComputedStyle(el).backgroundImage);
   const roomBackground = await page.locator('.room').first().evaluate((el) => getComputedStyle(el).backgroundImage);
-  const corridorBackground = await page.locator('.corridor-band').first().evaluate((el) => getComputedStyle(el).backgroundImage);
+  const corridor = await page.locator('.corridor-path.floor').first().evaluate((el) => ({
+    d: el.getAttribute('d'),
+    stroke: getComputedStyle(el).stroke,
+    strokeWidth: getComputedStyle(el).strokeWidth,
+    lineCap: getComputedStyle(el).strokeLinecap,
+    lineJoin: getComputedStyle(el).strokeLinejoin
+  }));
 
   expect(mapBackground).toContain('floor-stone');
   expect(roomBackground).toContain('room-stone');
-  expect(corridorBackground).toContain('corridor-stone');
-  await expect(page.locator('.corridor-band').first()).toBeVisible();
+  expect(corridor.d).toContain('L');
+  expect(corridor.stroke).not.toBe('none');
+  expect(corridor.strokeWidth).not.toBe('0px');
+  expect(corridor.lineCap).toBe('square');
+  expect(corridor.lineJoin).toBe('miter');
   await assertNoDocumentScroll(page);
 });
 
@@ -48,15 +67,15 @@ test('setup reveals only the selected menu section', async ({ page }) => {
 
 test('corridors use orthogonal door segments and build slots', async ({ page }) => {
   await page.goto('/');
-  const segments = await page.locator('.corridor-band').evaluateAll((items) => items.map((el) => ({
-    horizontal: el.classList.contains('horizontal'),
-    vertical: el.classList.contains('vertical'),
-    transform: getComputedStyle(el).transform
+  const segments = await page.locator('.corridor-path.floor').evaluateAll((items) => items.map((el) => ({
+    d: el.getAttribute('d'),
+    lineCap: getComputedStyle(el).strokeLinecap,
+    lineJoin: getComputedStyle(el).strokeLinejoin
   })));
   expect(segments.length).toBeGreaterThan(0);
-  expect(segments.every((item) => item.horizontal || item.vertical)).toBe(true);
-  expect(segments.some((item) => item.vertical)).toBe(true);
-  expect(segments.every((item) => !item.transform.includes('rotate'))).toBe(true);
+  expect(segments.every((item) => item.d.includes('L'))).toBe(true);
+  expect(segments.every((item) => item.lineCap === 'square')).toBe(true);
+  expect(segments.every((item) => item.lineJoin === 'miter')).toBe(true);
 
   await page.locator('[data-ui-panel="build"]').click();
   await expect(page.locator('.build-slot[data-build-slot="north"]')).toBeVisible();
@@ -244,6 +263,39 @@ test('early enemy templates use generated directional action sprites', () => {
   expect(enemyTemplates.knight.spriteSet.attack.front).toBe('assets/sprites/warrior/attack-front.png');
   expect(enemyTemplates.ranger.spriteSet.walk.left).toBe('assets/sprites/rogue/walk-left.png');
   expect(enemyTemplates.sage.spriteSet.attack.right).toBe('assets/sprites/mage/attack-right.png');
+});
+
+test('converted ally templates use generated directional action sprites', () => {
+  for (const [id, sample] of [
+    ['bat', 'attack-left'],
+    ['fallenWarrior', 'walk-front'],
+    ['shadeRunner', 'attack-right'],
+    ['darkMage', 'downed-back']
+  ]) {
+    const [pose, facing] = sample.split('-');
+    expect(allyTemplates[id].sprite).toBe(`assets/sprites/${id}/idle-front.png`);
+    expect(allyTemplates[id].spriteSet[pose][facing]).toBe(`assets/sprites/${id}/${sample}.png`);
+    expect(allyTemplates[id].spriteSet.idle.front).toBe(`assets/sprites/${id}/idle-front.png`);
+  }
+  expect(allyTemplates.boneGuard.spriteSet.attack.front).toBe('assets/sprites/fallenWarrior/attack-front.png');
+  expect(allyTemplates.impArcher.spriteSet.walk.left).toBe('assets/sprites/bat/walk-left.png');
+  expect(allyTemplates.oracleShade.spriteSet.attack.right).toBe('assets/sprites/darkMage/attack-right.png');
+});
+
+test('generated ally sprite folders contain four directions for each action', () => {
+  const required = [
+    'idle-front.png', 'idle-back.png', 'idle-left.png', 'idle-right.png',
+    'walk-front.png', 'walk-back.png', 'walk-left.png', 'walk-right.png',
+    'attack-front.png', 'attack-back.png', 'attack-left.png', 'attack-right.png',
+    'downed.png', 'downed-back.png', 'downed-left.png', 'downed-right.png'
+  ];
+  for (const unitId of ['bat', 'fallenWarrior', 'shadeRunner', 'darkMage']) {
+    const dir = path.resolve('public', 'assets', 'sprites', unitId);
+    expect(fs.readdirSync(dir).filter((name) => name.endsWith('.png')).sort()).toEqual([...required].sort());
+    const source = pngSize(path.resolve('assets', 'generated', 'characters', unitId, 'sheet-v1-4dir.png'));
+    expect(source.width).toBeGreaterThan(900);
+    expect(source.height).toBeGreaterThan(900);
+  }
 });
 
 test('stage runs and reaches result screen', async ({ page }) => {
@@ -770,9 +822,14 @@ test('battle supports unit selection and map zoom without direct commands', asyn
   await expect(page.getByText('防衛中')).toBeVisible();
   const battleCamera = await page.evaluate(() => window.__MAOU_GAME__.camera);
   expect(battleCamera.zoom).toBeGreaterThanOrEqual(1.2);
-  const actorBox = await page.locator('.actor.ally').first().boundingBox();
-  expect(actorBox.width).toBeGreaterThanOrEqual(62);
-  await page.locator('.actor.ally').first().click();
+  const allyActor = page.locator('.actor.ally').first();
+  await expect(allyActor).toBeVisible();
+  const actorDisplayWidth = await allyActor.evaluate((el) => {
+    const cssWidth = parseFloat(getComputedStyle(el).width);
+    return cssWidth * window.__MAOU_GAME__.camera.zoom;
+  });
+  expect(actorDisplayWidth).toBeGreaterThanOrEqual(62);
+  await allyActor.click();
   await expect(page.getByText(/HP \d+\/\d+ \/ ATK/)).toBeVisible();
   await expect(page.locator('[data-command-room]')).toHaveCount(0);
   await expect(page.locator('.battle-chips span').first()).toBeVisible();

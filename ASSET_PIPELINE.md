@@ -17,6 +17,7 @@ assets/generated/
     enemy-adventurers/
       sheet-v1.png
     <unit-id>/
+      sheet-v1-4dir.png
       idle-front.png
       idle-back.png
       idle-left.png
@@ -65,6 +66,14 @@ assets/generated/
 - 原本切り出し先: `assets/generated/characters/<unit-id>/`
 - ゲーム参照先: `public/assets/sprites/<unit-id>/`
 - 背景の `#ff00ff` は透明化し、ゲーム表示用に半分サイズへ縮小する。
+- 味方魔物/洗脳後ユニットの生成シートは `scripts/slice_ally_monsters_sheet.py` で、各ユニットごとの 4方向 x 4動作に切り出す。
+- 入力: `assets/generated/characters/<unit-id>/sheet-v1-4dir.png`
+- 対象: `bat`、`fallenWarrior`、`shadeRunner`、`darkMage`
+- 原本切り出し先: `assets/generated/characters/<unit-id>/`
+- ゲーム参照先: `public/assets/sprites/<unit-id>/`
+- 背景の `#ff00ff` は透明化し、ゲーム表示用に半分サイズへ縮小する。
+- まとめて複数ユニットを生成したシートが3方向や12列に崩れた場合は採用しない。単体生成で4列 `front/back/left/right` が揃ったものだけを切り出す。
+- `scripts/make_sprite_direction_audit.py` で `screenshots/sprite-direction-audit-ally-monsters.png` を作成し、4方向と動作の検収をしてから実装へ接続する。
 - ダンジョン床タイルの生成シートは `scripts/slice_dungeon_tiles.py` で、横3枚のタイルに切り出す。
 - 入力: `assets/generated/dungeon/tiles/sheet-v1.png`
 - 対象: `floor-stone`、`room-stone`、`corridor-stone`
@@ -89,10 +98,11 @@ assets/generated/
 - `goblin` と `goblinChief` は `spriteSet` として `idle`、`walk`、`attack`、`downed` の上下左右スプライトを参照する。
 - `slime`、`poisonSlime`、`darkSlime`、`plagueSlime` は `spriteSet` として生成スライム素材を参照する。`plagueSlime` は暫定で `poisonSlime` と同じ素材を使う。
 - `warrior`、`rogue`、`mage` は生成した冒険者素材を参照する。後半敵の `guard`、`knight`、`paladin`、`hero` は暫定で `warrior`、`ranger`、`beastTamer` は `rogue`、`cleric`、`alchemist`、`sage` は `mage` の素材を共有する。
+- `bat`、`fallenWarrior`、`shadeRunner`、`darkMage` は生成した味方魔物素材を参照する。`boneGuard` は暫定で `fallenWarrior`、`impArcher` は `bat`、`oracleShade` は `darkMage` の素材を共有する。
 - ダンジョンマップは `floor-stone` を背景床、`room-stone` を部屋床、`corridor-stone` を通路床として参照する。
 - 通路は部屋中心同士の斜め直線ではなく、部屋の扉から水平・垂直の直角セグメントとして描画する。
 - ゲーム中は座標移動の向きから `front/back/left/right` を更新し、移動中は `walk`、攻撃直後は `attack` を表示する。
-- まだ `bat`、人型味方、敵職などは旧仮スプライト参照。
+- まだ専用化されていない後半亜種は既存生成素材を共有している。
 
 ## 初期生成対象
 
