@@ -808,6 +808,12 @@ test('upgrade management supports selling, building, room upgrades, and research
     });
   });
   await expect(page.locator('.treasury-box b')).toContainText('資金');
+  await expect(page.locator('[data-ui-panel="invest"]')).toHaveClass(/on/);
+  await expect(page.getByRole('button', { name: /チップ研究.*行動を増やす/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /魔物研究.*配下を増やす/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /広間拡張.*容量\+1/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /攻撃開発.*在庫x1/ })).toBeVisible();
+  await page.locator('[data-ui-panel="loot"]').click();
   await expect(page.getByText(/ゴブリン 攻撃\+1/)).toBeVisible();
   await page.locator('[data-ui-panel="research"]').click();
   await expect(page.locator('[data-develop-chip="attack"]')).toBeVisible();

@@ -521,6 +521,16 @@ img { image-rendering: pixelated; }
   color: #111;
   background: var(--gold);
 }
+.upgrade-panel .tool-tabs {
+  display: flex;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  padding-bottom: 2px;
+}
+.upgrade-panel .tool-tabs button {
+  flex: 0 0 66px;
+}
 .panel-actions {
   display: flex;
   gap: 5px;
@@ -643,6 +653,12 @@ img { image-rendering: pixelated; }
 
 .room-picker div, .chip-grid, .upgrade-actions {
   display: grid;
+  gap: 6px;
+  margin-top: 6px;
+}
+.investment-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px;
   margin-top: 6px;
 }
@@ -912,6 +928,16 @@ img { image-rendering: pixelated; }
   }
   .unit-card img, .detail-title img { width: 26px; height: 26px; }
   .room-picker div, .chip-grid { gap: 5px; }
+  .investment-grid {
+    display: flex;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: thin;
+    padding-bottom: 2px;
+  }
+  .investment-grid .mini {
+    flex: 0 0 132px;
+  }
   .mini, .chip, .upgrade-actions button, .panel button { min-height: 31px; }
   .setup-panel .chip { min-height: 38px; flex-basis: 64px; }
 }

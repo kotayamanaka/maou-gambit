@@ -418,6 +418,40 @@ function researchPanel(game) {
   </div>`;
 }
 
+function investmentPanel(game) {
+  const chipCost = researchCost(game, CHIP_RESEARCH_COST, 'chip');
+  const monsterCost = researchCost(game, MONSTER_RESEARCH_COST, 'monster');
+  const monsterPreview = monsterResearchPreview(game);
+  const roomId = game.selectedRoomId ?? selectedUnit(game)?.homeRoom ?? 'atrium';
+  const room = roomById[roomId];
+  const canUpgradeSelectedRoom = room && isRoomBuilt(game, roomId) && room.capacity > 0;
+  const roomLevelValue = canUpgradeSelectedRoom ? roomLevel(game, roomId) : 1;
+  const roomCost = canUpgradeSelectedRoom ? (room.upgradeCost ?? 120) * roomLevelValue : Infinity;
+  const chipId = game.selectedChipId && (game.chipBag?.[game.selectedChipId] ?? 0) > 0
+    ? game.selectedChipId
+    : Object.keys(game.chipBag ?? {}).find((id) => (game.chipBag[id] ?? 0) > 0);
+  const developCost = chipId ? chipDevelopmentCost(game, chipId) : Infinity;
+  const unit = selectedUnit(game);
+  return `${treasuryPanel(game)}<div class="info-box management-box investment-box">
+    <b>投資</b>
+    <div class="investment-grid">
+      <button class="mini" data-research-chip ${(game.gold ?? 0) < chipCost ? 'disabled' : ''}>
+        ▣ チップ研究<small>行動を増やす / G${chipCost}</small>
+      </button>
+      <button class="mini" data-research-monster ${(game.gold ?? 0) < monsterCost ? 'disabled' : ''}>
+        ♟ 魔物研究<small>配下を増やす / G${monsterCost} 希少${monsterPreview.rareRate}%</small>
+      </button>
+      <button class="mini" data-upgrade-room="${roomId}" ${(!canUpgradeSelectedRoom || (game.gold ?? 0) < roomCost) ? 'disabled' : ''}>
+        □ ${room?.name ?? '部屋'}拡張<small>容量+1 / G${Number.isFinite(roomCost) ? roomCost : '-'}</small>
+      </button>
+      <button class="mini" data-develop-chip="${chipId ?? ''}" ${(!chipId || (game.gold ?? 0) < developCost) ? 'disabled' : ''}>
+        ${chipId ? `${chips[chipId].icon} ${chips[chipId].name}` : 'チップ'}開発<small>${chipId ? `在庫x${game.chipBag[chipId]} / G${developCost}` : '候補なし'}</small>
+      </button>
+    </div>
+    <small>${unit.name} Lv${unit.level ?? 1} / 知性${unit.int} / 担当 ${roomById[unit.homeRoom ?? unit.room]?.name ?? unit.room}</small>
+  </div>`;
+}
+
 function fusionPanel(game) {
   const target = selectedUnit(game);
   const materials = game.allies.filter((unit) => unit.uid !== target.uid);
@@ -488,10 +522,11 @@ function setupTabItems(game) {
 }
 
 function managementPanels(game) {
-  const managementIds = ['loot', 'research', 'fusion', 'build', 'object', 'info'];
-  const active = managementIds.includes(game.uiPanel) ? game.uiPanel : 'loot';
+  const managementIds = ['invest', 'loot', 'research', 'fusion', 'build', 'object', 'info'];
+  const active = managementIds.includes(game.uiPanel) ? game.uiPanel : 'invest';
   const panelState = { ...game, uiPanel: active };
   const tabs = panelTabs(panelState, [
+    { id: 'invest', icon: '✦', label: '投資' },
     { id: 'loot', icon: '◇', label: '戦利品' },
     { id: 'research', icon: '⌕', label: '研究' },
     { id: 'fusion', icon: '⇄', label: '合成' },
@@ -499,12 +534,13 @@ function managementPanels(game) {
     { id: 'object', icon: '◆', label: '設備' },
     { id: 'info', icon: 'ⓘ', label: '情報' }
   ]);
-  const content = active === 'research' ? researchPanel(game)
-    : active === 'fusion' ? fusionPanel(game)
-      : active === 'build' ? roomManagementPanel(game)
-        : active === 'object' ? objectPanel(game)
-          : active === 'info' ? `<div class="info-grid">${collectionPanel(game)}${unlockHistory(game)}${nextEnemyPanel(game)}${treasuryPanel(game)}</div>`
-            : `${treasuryPanel(game)}${inventoryPanel(game)}`;
+  const content = active === 'loot' ? `${treasuryPanel(game)}${inventoryPanel(game)}`
+    : active === 'research' ? researchPanel(game)
+      : active === 'fusion' ? fusionPanel(game)
+        : active === 'build' ? roomManagementPanel(game)
+          : active === 'object' ? objectPanel(game)
+            : active === 'info' ? `<div class="info-grid">${collectionPanel(game)}${unlockHistory(game)}${nextEnemyPanel(game)}${treasuryPanel(game)}</div>`
+              : investmentPanel(game);
   return `${tabs}${content}`;
 }
 
