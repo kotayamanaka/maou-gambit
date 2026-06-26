@@ -1141,6 +1141,21 @@ export function renderApp(root, game, commit) {
     const getDistance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
     const getCenter = (a, b) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
     let pointerStart = null;
+    const autoPanBuildDrag = (event, camera) => {
+      const rect = mapShell.getBoundingClientRect();
+      const localX = event.clientX - rect.left;
+      const localY = event.clientY - rect.top;
+      const zone = 88;
+      const step = 170;
+      const next = { ...camera };
+      if (localX < zone) next.x += step;
+      if (localX > rect.width - zone) next.x -= step;
+      if (localY < zone) next.y += step;
+      if (localY > rect.height - zone) next.y -= step;
+      next.x = Math.round(next.x);
+      next.y = Math.round(next.y);
+      return next;
+    };
     const mapWorldPoint = (event, camera = game.camera ?? overviewCamera()) => {
       const rect = mapShell.getBoundingClientRect();
       const localX = event.clientX - rect.left;
@@ -1164,9 +1179,13 @@ export function renderApp(root, game, commit) {
       if (!payload || payload.kind !== 'buildRoom') return;
       event.preventDefault();
       mapShell.classList.add('drop-ready');
-      const point = mapWorldPoint(event);
+      const camera = game.camera ?? overviewCamera();
+      const nextCamera = autoPanBuildDrag(event, camera);
+      const point = mapWorldPoint(event, nextCamera);
+      applyCamera(nextCamera);
       commit((state) => {
         if (!['setup', 'upgrade'].includes(state.phase)) return;
+        state.camera = nextCamera;
         state.uiPanel = 'build';
         state.selectedBuildRoom = payload.id;
         setCustomBuildSlot(state, point.x, point.y);
@@ -1178,9 +1197,12 @@ export function renderApp(root, game, commit) {
       if (!payload || payload.kind !== 'buildRoom') return;
       event.preventDefault();
       mapShell.classList.remove('drop-ready');
-      const point = mapWorldPoint(event);
+      const camera = game.camera ?? overviewCamera();
+      const nextCamera = autoPanBuildDrag(event, camera);
+      const point = mapWorldPoint(event, nextCamera);
       commit((state) => {
         if (!['setup', 'upgrade'].includes(state.phase)) return;
+        state.camera = nextCamera;
         state.uiPanel = 'build';
         state.selectedBuildRoom = payload.id;
         const slot = setCustomBuildSlot(state, point.x, point.y);

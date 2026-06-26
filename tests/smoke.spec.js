@@ -267,6 +267,41 @@ test('corridors use orthogonal door segments and build slots', async ({ page }) 
   expect(dragBuild.built).toBe(true);
   expect(dragBuild.position).toMatchObject({ x: 1440, y: 360, slotId: dragPreview.customSlot.id });
   expect(dragBuild.mapReady).toBe(false);
+  await page.evaluate(() => {
+    window.__MAOU_COMMIT__((game) => {
+      game.builtRooms.delete('hallA');
+      delete game.roomPositions.hallA;
+      game.roomConnections.hallA = [];
+      game.roomConnections.atrium = (game.roomConnections.atrium ?? []).filter((id) => id !== 'hallA');
+      game.roomConnectionDoors = {};
+      game.selectedBuildRoom = 'hallA';
+      game.selectedBuildDoor = 'west';
+      game.customBuildSlot = null;
+      game.selectedBuildSlot = 'north';
+      game.gold = 1000;
+      game.camera = { zoom: 1, x: -1250, y: 0 };
+    });
+  });
+  await page.evaluate(() => {
+    const map = document.querySelector('[data-map-shell]');
+    const rect = map.getBoundingClientRect();
+    const data = new DataTransfer();
+    window.__MAOU_DRAG_PAYLOAD__ = { kind: 'buildRoom', id: 'hallA' };
+    map.dispatchEvent(new DragEvent('dragover', {
+      bubbles: true,
+      cancelable: true,
+      dataTransfer: data,
+      clientX: rect.right - 8,
+      clientY: rect.top + rect.height / 2
+    }));
+  });
+  const edgeDrag = await page.evaluate(() => ({
+    camera: window.__MAOU_GAME__.camera,
+    customSlot: window.__MAOU_GAME__.customBuildSlot
+  }));
+  expect(edgeDrag.camera.x).toBeLessThan(-1250);
+  expect(edgeDrag.customSlot).toMatchObject({ label: '自由', custom: true });
+  expect(edgeDrag.customSlot.x).toBeGreaterThan(1440);
   await assertNoDocumentScroll(page);
 });
 
