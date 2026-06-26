@@ -1011,6 +1011,33 @@ test('result can continue into upgrade flow after a win', async ({ page }) => {
   await assertNoDocumentScroll(page);
 });
 
+test('capture report summarizes missed capture opportunities', async ({ page }) => {
+  await page.goto('/');
+  await page.evaluate(() => {
+    window.__MAOU_COMMIT__((game) => {
+      game.phase = 'result';
+      game.captured = [];
+      game.captureStats = { opportunities: 3, captured: 1, expired: 2, interrupted: 0 };
+      game.result = {
+        won: true,
+        defeated: 3,
+        captured: 1,
+        lordHp: 100,
+        elapsed: 180,
+        captureStats: { ...game.captureStats }
+      };
+    });
+  });
+  await expect(page.locator('.capture-report')).toContainText('捕獲レポート');
+  await expect(page.locator('.capture-report')).toContainText('機会');
+  await expect(page.locator('.capture-report')).toContainText('成功率');
+  await expect(page.locator('.capture-report')).toContainText('ダウン猶予切れ');
+  await page.getByRole('button', { name: /捕獲処理へ/ }).click();
+  await expect(page.locator('.capture-report')).toContainText('消滅');
+  await expect(page.locator('.capture-report')).toContainText('銀の拘束具');
+  await assertNoDocumentScroll(page);
+});
+
 test('first reward expands the roster with slime after the tutorial defense', async ({ page }) => {
   await page.goto('/');
   await expect(page.locator('[data-unit]')).toHaveCount(1);

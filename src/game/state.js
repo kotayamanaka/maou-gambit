@@ -112,6 +112,7 @@ export function createGame() {
     captured: [],
     defeated: 0,
     escaped: 0,
+    captureStats: { opportunities: 0, captured: 0, expired: 0, interrupted: 0 },
     partyKnowledge: { throneKnown: false, visited: new Set(['entrance']) },
     waveQueue: [],
     result: null,
@@ -137,6 +138,7 @@ export function startStage(game) {
   game.captured = [];
   game.defeated = 0;
   game.escaped = 0;
+  game.captureStats = { opportunities: 0, captured: 0, expired: 0, interrupted: 0 };
   game.result = null;
   game.metrics = { allyDamage: 0, enemyDamage: 0, lordDamage: 0 };
   game.lootLog = [];

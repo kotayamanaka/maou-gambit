@@ -1186,6 +1186,42 @@ img { image-rendering: pixelated; }
   grid-template-columns: repeat(2, 1fr);
   gap: 6px;
 }
+.capture-report {
+  display: grid;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid rgba(99, 194, 124, .24);
+  background: rgba(13, 27, 18, .24);
+}
+.capture-report > b {
+  color: #a8e8a8;
+  font-size: 12px;
+}
+.capture-report-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 5px;
+}
+.capture-report-grid span {
+  min-width: 0;
+  padding: 5px;
+  text-align: center;
+  background: rgba(255,255,255,.06);
+  font-size: 10px;
+  color: #d9c8ad;
+}
+.capture-report-grid em {
+  display: block;
+  margin-top: 2px;
+  color: #f5ead8;
+  font-size: 16px;
+  font-style: normal;
+  font-weight: 900;
+}
+.capture-report small {
+  color: #cbb99c;
+  font-size: 11px;
+}
 .battle-detail {
   border: 1px solid var(--line);
   background: rgba(0,0,0,.18);

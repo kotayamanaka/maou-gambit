@@ -1188,8 +1188,30 @@ function resultPanel(game) {
       <span>被ダメ<b>${game.metrics?.enemyDamage ?? 0}</b></span>
       <span>資金<b>G${game.gold ?? 0}</b></span>
     </div>
+    ${captureReport(game)}
     <button class="primary wide" data-action="${result.won ? 'upgrade' : 'restart'}">${result.won ? '捕獲処理へ' : '再挑戦'}</button>
   </aside>`;
+}
+
+function captureReport(game) {
+  const stats = game.result?.captureStats ?? game.captureStats ?? { opportunities: 0, captured: game.captured.length, expired: 0, interrupted: 0 };
+  const missed = Math.max(0, (stats.opportunities ?? 0) - (stats.captured ?? 0));
+  const rate = stats.opportunities ? Math.round(((stats.captured ?? 0) / stats.opportunities) * 100) : 0;
+  const reason = stats.opportunities <= 0 ? '敵をダウンさせると捕獲機会が生まれる'
+    : missed <= 0 ? '捕獲機会を逃さず牢屋へ運べた'
+      : (stats.expired ?? 0) > 0 ? 'ダウン猶予切れ。牢屋搬送役や銀の拘束具が効く'
+        : (stats.interrupted ?? 0) > 0 ? '運搬中断。運搬役の耐久や配置を見直す'
+          : '捕獲役の配置とチップを見直す';
+  return `<div class="capture-report">
+    <b>捕獲レポート</b>
+    <div class="capture-report-grid">
+      <span>機会<em>${stats.opportunities ?? 0}</em></span>
+      <span>成功<em>${stats.captured ?? game.captured.length}</em></span>
+      <span>消滅<em>${stats.expired ?? 0}</em></span>
+      <span>成功率<em>${rate}%</em></span>
+    </div>
+    <small>${reason}</small>
+  </div>`;
 }
 
 function upgradePanel(game) {
@@ -1200,12 +1222,14 @@ function upgradePanel(game) {
     return `<aside class="panel upgrade-panel">
       <header class="panel-head"><span>強化</span></header>
       <p class="empty">捕獲なし。報酬チップを受け取り、次へ進む。</p>
+      ${captureReport(game)}
       ${managementPanels(game)}
       <button class="primary wide" data-action="nextStage">次の防衛へ</button>
     </aside>`;
   }
   return `<aside class="panel upgrade-panel">
     <header class="panel-head"><span>捕獲処理</span></header>
+    ${captureReport(game)}
     <div class="unit-picker" aria-label="捕獲敵選択">
       <div class="unit-list">${game.captured.map((item) => capturedCard(item, game)).join('')}</div>
     </div>

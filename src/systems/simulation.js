@@ -122,6 +122,7 @@ function makeResult(game, won) {
     won,
     defeated: game.defeated,
     captured: game.captured.length,
+    captureStats: { ...(game.captureStats ?? { opportunities: 0, captured: game.captured.length, expired: 0, interrupted: 0 }) },
     lordHp: game.demonLord.hp,
     elapsed: Math.round(game.elapsed)
   };

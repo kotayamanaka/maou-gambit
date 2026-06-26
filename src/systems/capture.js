@@ -1,6 +1,10 @@
 import { addLog } from '../game/state.js';
 
 export function createDownedEnemy(enemy, game = null) {
+  if (game) {
+    game.captureStats ??= { opportunities: 0, captured: 0, expired: 0, interrupted: 0 };
+    game.captureStats.opportunities += 1;
+  }
   return {
     uid: `downed-${enemy.uid}`,
     templateId: enemy.templateId,
@@ -37,6 +41,8 @@ export function resolveCaptures(game, dt) {
       if (!carrier || carrier.hp <= 0) {
         if (carrier) carrier.carrying = null;
         body.carriedBy = null;
+        game.captureStats ??= { opportunities: 0, captured: 0, expired: 0, interrupted: 0 };
+        game.captureStats.interrupted += 1;
       } else {
         body.room = carrier.room;
         body.x = carrier.x;
@@ -55,6 +61,8 @@ export function resolveCaptures(game, dt) {
       continue;
     }
     game.captured.push({ ...body, capturedAt: game.elapsed });
+    game.captureStats ??= { opportunities: 0, captured: 0, expired: 0, interrupted: 0 };
+    game.captureStats.captured += 1;
     game.downed = game.downed.filter((item) => item.uid !== body.uid);
     unit.carrying = null;
     addLog(game, `${body.name}を牢屋に捕獲。`);
@@ -66,6 +74,10 @@ export function resolveCaptures(game, dt) {
     const carrier = game.allies.find((unit) => unit.carrying === body.uid);
     if (carrier) carrier.carrying = null;
   }
-  if (expired.length) addLog(game, `${expired.length}体のダウン敵が消滅。`);
+  if (expired.length) {
+    game.captureStats ??= { opportunities: 0, captured: 0, expired: 0, interrupted: 0 };
+    game.captureStats.expired += expired.length;
+    addLog(game, `${expired.length}体のダウン敵が消滅。`);
+  }
   game.downed = game.downed.filter((body) => body.ttl > 0);
 }
