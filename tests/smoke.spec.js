@@ -1697,3 +1697,48 @@ test('map supports pinch zoom while the screen frame stays fixed', async ({ page
   expect(after).toBeGreaterThan(before);
   await assertNoDocumentScroll(page);
 });
+
+test('map camera stays inside the dungeon bounds during extreme pan gestures', async ({ page }) => {
+  await page.goto('/');
+  await page.evaluate(() => {
+    window.__MAOU_COMMIT__((game) => {
+      game.camera = { zoom: 1, x: 0, y: 0 };
+    });
+  });
+  await page.evaluate(() => {
+    const el = document.querySelector('[data-map-shell]');
+    const rect = el.getBoundingClientRect();
+    const opts = { bubbles: true, pointerType: 'mouse', pointerId: 41, isPrimary: true };
+    const startX = rect.left + Math.min(220, rect.width * 0.45);
+    const startY = rect.top + Math.min(220, rect.height * 0.38);
+    el.dispatchEvent(new PointerEvent('pointerdown', { ...opts, clientX: startX, clientY: startY }));
+    el.dispatchEvent(new PointerEvent('pointermove', { ...opts, clientX: startX + 8000, clientY: startY + 8000 }));
+    el.dispatchEvent(new PointerEvent('pointerup', { ...opts, clientX: startX + 8000, clientY: startY + 8000 }));
+  });
+  const maxed = await page.evaluate(() => ({
+    camera: window.__MAOU_GAME__.camera,
+    view: { width: window.innerWidth, height: window.innerHeight }
+  }));
+  const margin = maxed.view.width < 720 ? 80 : 160;
+  expect(maxed.camera.x).toBeLessThanOrEqual(margin);
+  expect(maxed.camera.y).toBeLessThanOrEqual(margin);
+
+  await page.evaluate(() => {
+    const el = document.querySelector('[data-map-shell]');
+    const rect = el.getBoundingClientRect();
+    const opts = { bubbles: true, pointerType: 'mouse', pointerId: 42, isPrimary: true };
+    const startX = rect.left + Math.min(220, rect.width * 0.45);
+    const startY = rect.top + Math.min(220, rect.height * 0.38);
+    el.dispatchEvent(new PointerEvent('pointerdown', { ...opts, clientX: startX, clientY: startY }));
+    el.dispatchEvent(new PointerEvent('pointermove', { ...opts, clientX: startX - 8000, clientY: startY - 8000 }));
+    el.dispatchEvent(new PointerEvent('pointerup', { ...opts, clientX: startX - 8000, clientY: startY - 8000 }));
+  });
+  const mined = await page.evaluate(() => ({
+    camera: window.__MAOU_GAME__.camera,
+    view: { width: window.innerWidth, height: window.innerHeight }
+  }));
+  const minMargin = mined.view.width < 720 ? 80 : 160;
+  expect(mined.camera.x).toBeGreaterThanOrEqual(Math.round(mined.view.width - worldSize.width * mined.camera.zoom - minMargin));
+  expect(mined.camera.y).toBeGreaterThanOrEqual(Math.round(mined.view.height - worldSize.height * mined.camera.zoom - minMargin));
+  await assertNoDocumentScroll(page);
+});

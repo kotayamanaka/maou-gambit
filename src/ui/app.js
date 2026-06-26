@@ -63,15 +63,38 @@ function selectedEntity(game) {
 }
 
 const cameraLimits = { min: 0.12, max: 2.6 };
+const cameraPanMargin = { desktop: 160, mobile: 80 };
 
 function clampZoom(zoom) {
   return Math.max(cameraLimits.min, Math.min(cameraLimits.max, zoom));
+}
+
+function clampValue(value, min, max) {
+  return Math.max(min, Math.min(max, value));
 }
 
 function viewportSize() {
   return {
     width: window.innerWidth || 1200,
     height: window.innerHeight || 760
+  };
+}
+
+function constrainCamera(camera, view = viewportSize()) {
+  const zoom = clampZoom(camera.zoom ?? 1);
+  const margin = view.width < 720 ? cameraPanMargin.mobile : cameraPanMargin.desktop;
+  const scaled = {
+    width: worldSize.width * zoom,
+    height: worldSize.height * zoom
+  };
+  const clampAxis = (offset, viewSize, worldSizeAtZoom) => {
+    if (worldSizeAtZoom <= viewSize) return Math.round((viewSize - worldSizeAtZoom) / 2);
+    return Math.round(clampValue(offset, viewSize - worldSizeAtZoom - margin, margin));
+  };
+  return {
+    zoom: +zoom.toFixed(3),
+    x: clampAxis(camera.x ?? 0, view.width, scaled.width),
+    y: clampAxis(camera.y ?? 0, view.height, scaled.height)
   };
 }
 
@@ -83,11 +106,11 @@ function overviewCamera() {
     (view.height - padding * 2) / worldSize.height,
     0.78
   ));
-  return {
+  return constrainCamera({
     zoom: +zoom.toFixed(3),
     x: Math.round((view.width - worldSize.width * zoom) / 2),
     y: Math.round((view.height - worldSize.height * zoom) / 2)
-  };
+  }, view);
 }
 
 function detailZoom() {
@@ -100,11 +123,11 @@ function focusCameraOn(state, entity, preferredZoom = null) {
   const view = viewportSize();
   const current = state.camera?.zoom ?? detailZoom();
   const zoom = clampZoom(preferredZoom ?? Math.max(current, detailZoom()));
-  state.camera = {
+  state.camera = constrainCamera({
     zoom: +zoom.toFixed(3),
     x: Math.round(view.width * (view.width < 720 ? 0.5 : 0.42) - (entity.x ?? 0) * zoom),
     y: Math.round(view.height * (view.width < 720 ? 0.34 : 0.45) - (entity.y ?? 0) * zoom)
-  };
+  }, view);
 }
 
 function hpBar(current, max) {
@@ -1066,15 +1089,17 @@ export function renderApp(root, game, commit) {
   }));
   root.querySelectorAll('[data-mapaction]').forEach((button) => button.addEventListener('click', () => commit((state) => {
     state.camera ??= overviewCamera();
-    if (button.dataset.mapaction === 'zoomIn') state.camera.zoom = clampZoom(+(state.camera.zoom + 0.18).toFixed(2));
-    if (button.dataset.mapaction === 'zoomOut') state.camera.zoom = clampZoom(+(state.camera.zoom - 0.18).toFixed(2));
-    if (button.dataset.mapaction === 'panLeft') state.camera.x += 72;
-    if (button.dataset.mapaction === 'panRight') state.camera.x -= 72;
-    if (button.dataset.mapaction === 'panUp') state.camera.y += 72;
-    if (button.dataset.mapaction === 'panDown') state.camera.y -= 72;
+    const next = { ...state.camera };
+    if (button.dataset.mapaction === 'zoomIn') next.zoom = clampZoom(+(next.zoom + 0.18).toFixed(2));
+    if (button.dataset.mapaction === 'zoomOut') next.zoom = clampZoom(+(next.zoom - 0.18).toFixed(2));
+    if (button.dataset.mapaction === 'panLeft') next.x += 72;
+    if (button.dataset.mapaction === 'panRight') next.x -= 72;
+    if (button.dataset.mapaction === 'panUp') next.y += 72;
+    if (button.dataset.mapaction === 'panDown') next.y -= 72;
     if (button.dataset.mapaction === 'reset') state.camera = overviewCamera();
     if (button.dataset.mapaction === 'focusSelected') focusCameraOn(state, selectedEntity(state));
     if (button.dataset.mapaction === 'focusEnemy') focusCameraOn(state, state.enemies[0] ?? state.downed[0]);
+    if (!['reset', 'focusSelected', 'focusEnemy'].includes(button.dataset.mapaction)) state.camera = constrainCamera(next);
   })));
 
   root.querySelectorAll('[draggable="true"]').forEach((button) => button.addEventListener('dragstart', (event) => {
@@ -1152,9 +1177,7 @@ export function renderApp(root, game, commit) {
       if (localX > rect.width - zone) next.x -= step;
       if (localY < zone) next.y += step;
       if (localY > rect.height - zone) next.y -= step;
-      next.x = Math.round(next.x);
-      next.y = Math.round(next.y);
-      return next;
+      return constrainCamera(next);
     };
     const mapWorldPoint = (event, camera = game.camera ?? overviewCamera()) => {
       const rect = mapShell.getBoundingClientRect();
@@ -1220,11 +1243,11 @@ export function renderApp(root, game, commit) {
       const worldY = (localY - camera.y) / camera.zoom;
       const delta = event.deltaY < 0 ? 0.1 : -0.1;
       const nextZoom = clampZoom(+(camera.zoom + delta).toFixed(2));
-      const next = {
+      const next = constrainCamera({
         zoom: nextZoom,
         x: Math.round(localX - worldX * nextZoom),
         y: Math.round(localY - worldY * nextZoom)
-      };
+      });
       applyCamera(next);
       commit((state) => {
         state.camera = next;
@@ -1238,7 +1261,7 @@ export function renderApp(root, game, commit) {
       } catch {
         // Synthetic and some touch events can fail capture; map gestures still work without it.
       }
-      draftCamera = { ...(game.camera ?? overviewCamera()) };
+      draftCamera = constrainCamera(game.camera ?? overviewCamera());
       if (pointers.size === 2) {
         const [a, b] = [...pointers.values()];
         const center = getCenter(a, b);
@@ -1267,9 +1290,11 @@ export function renderApp(root, game, commit) {
         const center = getCenter(a, b);
         const distance = Math.max(24, getDistance(a, b));
         const nextZoom = clampZoom(+(pinch.camera.zoom * (distance / pinch.distance)).toFixed(3));
-        draftCamera.zoom = nextZoom;
-        draftCamera.x = Math.round(center.x - pinch.worldCenter.x * nextZoom);
-        draftCamera.y = Math.round(center.y - pinch.worldCenter.y * nextZoom);
+        draftCamera = constrainCamera({
+          zoom: nextZoom,
+          x: Math.round(center.x - pinch.worldCenter.x * nextZoom),
+          y: Math.round(center.y - pinch.worldCenter.y * nextZoom)
+        });
         applyCamera(draftCamera);
         return;
       }
@@ -1277,8 +1302,11 @@ export function renderApp(root, game, commit) {
       const dx = event.clientX - last.x;
       const dy = event.clientY - last.y;
       last = { x: event.clientX, y: event.clientY };
-      draftCamera.x += dx;
-      draftCamera.y += dy;
+      draftCamera = constrainCamera({
+        ...draftCamera,
+        x: draftCamera.x + dx,
+        y: draftCamera.y + dy
+      });
       applyCamera(draftCamera);
     });
     const finishPointer = (event) => {

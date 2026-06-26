@@ -1,5 +1,28 @@
 # PROGRESS
 
+## 2026-06-26 マップカメラの境界制御
+
+### 目的
+
+PCフルスクリーンの広いダンジョンをパン/ズームする時に、視界がワールド外へ抜けすぎて空白ばかりになる状態を防ぐ。建設ドラッグ中の端自動パン、ホイールズーム、ピンチズーム、通常ドラッグを同じ境界ルールへ揃える。
+
+### 修正
+
+- `constrainCamera` を追加し、ワールドが画面より小さい時は中央寄せ、大きい時はPC160px/スマホ80pxの余白だけ許してカメラをクランプするようにした。
+- マップ操作ボタン、ホイールズーム、ピンチズーム、ドラッグパン、建設ドラッグ端パンがすべて境界制御を通るようにした。
+- Playwrightで、極端なパン操作をしてもカメラがダンジョン境界内に留まることを固定した。
+
+### スクリーンショット
+
+- `screenshots/map-camera-bounds-desktop.png`
+
+### 検証結果
+
+- `npm test -- --reporter=line -g "map supports pinch|map camera stays|battle supports unit selection"`: 6件成功。
+- `npm test -- --reporter=line`: 86件成功。
+- `npm run test:balance`: 成功。キャンペーン検収は勝利。
+- `npm run build:pages`: 成功。
+
 ## 2026-06-26 建設ドラッグ中の端自動パン
 
 ### 目的
