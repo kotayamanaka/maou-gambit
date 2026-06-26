@@ -130,6 +130,23 @@ function waveSummary(stage) {
   return Object.entries(counts).map(([kind, count]) => `${enemyName(kind)}x${count}`).join(' / ');
 }
 
+function enemyScoutLines(stage) {
+  const kinds = [...new Set(stage.waves.flat().map((spawn) => spawn.kind))];
+  return kinds.map((kind) => {
+    const template = enemyTemplates[kind];
+    if (!template) return '';
+    const capture = template.capture ?? { difficulty: 1, ttl: 10 };
+    const drops = [
+      template.drop?.gold ? `G${template.drop.gold}` : '',
+      ...(template.drop?.items ?? []).map((id) => items[id]?.name ?? id)
+    ].filter(Boolean).join(' ');
+    const convert = allyTemplates[template.convertTo]?.name ?? '不可';
+    const material = feedMaterials[kind]?.label ?? feedMaterials.default.label;
+    const ransom = capturedSaleValue(template);
+    return `<small class="enemy-scout"><b>${template.name}</b> 捕獲${capture.difficulty} 残${capture.ttl}s / 身代金G${ransom} / 落 ${drops || 'なし'} / 眷属 ${convert} / 養分 ${material}</small>`;
+  }).join('');
+}
+
 function setupWarnings(game) {
   const warnings = [];
   const hasCarrier = game.allies.some((unit) => unit.chips.includes('carryDowned') && unit.carry > 0);
@@ -154,6 +171,7 @@ function nextEnemyPanel(game) {
     <b>次の敵情報</b>
     <span>${stage.id}/${stages.length} ${stage.name}</span>
     <small>${waveSummary(stage)}</small>
+    ${enemyScoutLines(stage)}
     <small>${reward}</small>
   </div>`;
 }

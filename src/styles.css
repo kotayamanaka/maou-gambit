@@ -559,7 +559,21 @@ img { image-rendering: pixelated; }
   grid-template-columns: 1fr 1fr;
   gap: 6px;
 }
+.info-grid .next-enemies {
+  grid-column: 1 / -1;
+}
 .info-box b { display: block; margin-bottom: 4px; font-size: 12px; }
+.enemy-scout {
+  padding-top: 3px;
+  border-top: 1px solid rgba(245, 220, 170, .1);
+  line-height: 1.35;
+}
+.enemy-scout b {
+  display: inline;
+  margin: 0;
+  color: #f4dfb0;
+  font-size: 11px;
+}
 
 .unit-list {
   min-height: 0;

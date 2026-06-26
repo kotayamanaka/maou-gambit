@@ -248,8 +248,24 @@ test('setup shows advice, chip detail, next enemies, and unlock history', async 
   await page.locator('[data-ui-panel="info"]').click();
   await expect(page.getByText('次の敵情報')).toBeVisible();
   await expect(page.getByText(/戦士x1/)).toBeVisible();
+  await expect(page.getByText(/戦士 捕獲1 残12s .*眷属 堕ちた戦士 .*養分 体力\+4 攻撃\+1/)).toBeVisible();
+  await expect(page.getByText(/盗賊 捕獲2 残10s .*落 G20 斥候の靴 .*眷属 影走り/)).toBeVisible();
   await expect(page.getByText('図鑑', { exact: true })).toBeVisible();
   await expect(page.getByText('チップ解放履歴')).toBeVisible();
+  await assertNoDocumentScroll(page);
+});
+
+test('setup scout panel exposes high-value intelligence capture targets', async ({ page }) => {
+  await page.goto('/');
+  await page.evaluate(() => {
+    window.__MAOU_COMMIT__((game) => {
+      game.stageIndex = 11;
+      game.uiPanel = 'info';
+    });
+  });
+  const scout = page.locator('.next-enemies');
+  await expect(scout.getByText('12/20 賢者の下見')).toBeVisible();
+  await expect(scout.getByText(/賢者 捕獲5 残7s .*落 G55 賢者のインク 魔素の粉 .*眷属 影託者 .*養分 攻撃\+1 知識\+6/)).toBeVisible();
   await assertNoDocumentScroll(page);
 });
 
