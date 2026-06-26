@@ -3,6 +3,10 @@ import { roomObjects } from '../data/objects.js';
 import { isRoomBuilt, roomCapacity } from '../systems/placement.js';
 import { statusIconList } from '../systems/status.js';
 
+const publicBase = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
+const publicAsset = (path) => `${publicBase}${path.replace(/^\/+/, '')}`;
+const corridorTile = publicAsset('assets/tiles/corridor-stone.png');
+
 function entityPose(entity, fallbackPose = 'idle') {
   return entity.animTtl > 0 && entity.anim ? entity.anim
     : entity.movingTo ? 'walk'
@@ -205,7 +209,7 @@ export function renderMap(game, mode = 'setup') {
         <svg class="corridors" viewBox="0 0 ${worldSize.width} ${worldSize.height}" aria-hidden="true">
           <defs>
             <pattern id="corridor-stone-pattern" patternUnits="userSpaceOnUse" width="128" height="128">
-              <image href="assets/tiles/corridor-stone.png" width="128" height="128" preserveAspectRatio="none" />
+              <image href="${corridorTile}" width="128" height="128" preserveAspectRatio="none" />
             </pattern>
           </defs>
           ${corridorPaths}

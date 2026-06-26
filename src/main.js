@@ -7,6 +7,12 @@ const app = document.querySelector('#app');
 const game = createGame();
 window.__MAOU_GAME__ = game;
 
+const publicBase = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
+const publicAsset = (path) => `${publicBase}${path.replace(/^\/+/, '')}`;
+
+document.documentElement.style.setProperty('--floor-tile', `url("${publicAsset('assets/tiles/floor-stone.png')}")`);
+document.documentElement.style.setProperty('--room-tile', `url("${publicAsset('assets/tiles/room-stone.png')}")`);
+
 function commit(mutator) {
   mutator(game);
   renderApp(app, game, commit);
