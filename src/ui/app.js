@@ -172,6 +172,57 @@ function enemyScoutLines(stage) {
   }).join('');
 }
 
+function stageEnemyTemplates(stage) {
+  return [...new Set(stage.waves.flat().map((spawn) => spawn.kind))]
+    .map((kind) => enemyTemplates[kind])
+    .filter(Boolean);
+}
+
+function stageChipAdviceEntries(stage) {
+  const enemies = stageEnemyTemplates(stage);
+  const entries = [];
+  const push = (chipId, reason, priority) => {
+    if (!chips[chipId] || entries.some((entry) => entry.chipId === chipId)) return;
+    entries.push({ chipId, reason, priority });
+  };
+  if (enemies.some((enemy) => (enemy.stats?.range ?? 1) > 1)) {
+    push('focusRanged', '遠距離職を先に止める', 9);
+  }
+  if (enemies.some((enemy) => ['mage', 'cleric', 'alchemist', 'sage'].includes(enemy.id))) {
+    push('focusMage', '術師系の妨害を優先', 8);
+  }
+  if (enemies.some((enemy) => (enemy.capture?.difficulty ?? 1) >= 3)) {
+    push('focusRare', '捕獲価値の高い敵を逃さない', 7);
+    push('carryDowned', '短いダウン猶予を拾う', 6);
+  }
+  if (enemies.some((enemy) => (enemy.stats?.hp ?? 0) >= 50)) {
+    push('focusWeak', '硬い敵を削り切る', 5);
+  }
+  if (enemies.some((enemy) => (enemy.stats?.spd ?? 0) >= 1.05)) {
+    push('chaseNearest', '速い敵の探索を止める', 4);
+  }
+  return entries.sort((a, b) => b.priority - a.priority).slice(0, 4);
+}
+
+function stageChipAdvice(game) {
+  const entries = stageChipAdviceEntries(currentStage(game));
+  if (!entries.length) return '';
+  return `<div class="stage-chip-advice">
+    <b>次敵対策</b>
+    ${entries.map(({ chipId, reason }) => {
+      const chip = chips[chipId];
+      const owned = game.chipBag?.[chipId] ?? 0;
+      const category = chipCategories[chip.category] ?? { name: '作戦', icon: '▣' };
+      const known = owned > 0 || game.collections?.chips?.has?.(chipId);
+      return `<button class="stage-chip-advice-row ${game.selectedChipId === chipId ? 'on' : ''}" data-advice-chip="${chipId}" ${owned > 0 ? '' : 'disabled'}>
+        <span>${known ? `${chip.icon} ${chip.name}` : `${category.icon} ${category.name}系????`}</span>
+        <small>${reason}</small>
+        <em>${owned > 0 ? `所持x${owned}` : '未所持'}</em>
+      </button>`;
+    }).join('')}
+  </div>`;
+}
+
 function setupWarnings(game) {
   const warnings = [];
   const hasCarrier = game.allies.some((unit) => unit.chips.includes('carryDowned') && unit.carry > 0);
@@ -196,6 +247,7 @@ function nextEnemyPanel(game) {
     <b>次の敵情報</b>
     <span>${stage.id}/${stages.length} ${stage.name}</span>
     <small>${waveSummary(stage)}</small>
+    ${stageChipAdvice(game)}
     ${enemyScoutLines(stage)}
     <small>${reward}</small>
   </div>`;
@@ -845,6 +897,7 @@ function setupPanel(game) {
     <div class="unit-picker" aria-label="配下選択">
       <div class="unit-list">${game.allies.map((ally) => unitCard(ally, game)).join('')}</div>
     </div>
+    ${stageChipAdvice(game)}
     <div class="chips-box" aria-label="チップ">
       <div class="chip-meter">${unit.chips.length}/${unit.int}</div>
       <div class="chip-grid scroll-rail">${visibleChipIds(game, unit).map((id) => chipButton(id, unit, game)).join('')}</div>
@@ -1060,6 +1113,10 @@ export function renderApp(root, game, commit) {
     } else if (available > 0 && previous && unit.chips.includes(previous)) {
       unit.chips = unit.chips.map((id) => (id === previous ? chipId : id));
     }
+  })));
+  root.querySelectorAll('[data-advice-chip]').forEach((button) => button.addEventListener('click', () => commit((state) => {
+    state.selectedChipId = button.dataset.adviceChip;
+    state.uiPanel = 'chips';
   })));
   root.querySelectorAll('[data-captured-select]').forEach((button) => button.addEventListener('click', () => commit((state) => {
     state.selectedCapturedId = button.dataset.capturedSelect;

@@ -756,6 +756,58 @@ img { image-rendering: pixelated; }
   color: #cbb99c;
   font-size: 10px;
 }
+.stage-chip-advice {
+  display: grid;
+  gap: 5px;
+  padding: 6px;
+  border: 1px solid rgba(90, 191, 199, .22);
+  background: rgba(10, 18, 20, .28);
+}
+.stage-chip-advice > b {
+  margin: 0 !important;
+  color: #91e2df;
+  font-size: 11px !important;
+}
+.stage-chip-advice-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 7px;
+  min-height: 38px;
+  padding: 5px 6px;
+  text-align: left;
+  border: 1px solid rgba(245, 220, 170, .12);
+  background: rgba(255,255,255,.05);
+}
+.stage-chip-advice-row.on {
+  border-color: var(--gold);
+}
+.stage-chip-advice-row span,
+.stage-chip-advice-row small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.stage-chip-advice-row span {
+  font-weight: 900;
+}
+.stage-chip-advice-row small {
+  color: #cbb99c;
+  font-size: 10px;
+}
+.stage-chip-advice-row em {
+  align-self: start;
+  color: #111;
+  background: var(--gold);
+  padding: 2px 5px;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 900;
+}
+.stage-chip-advice-row:disabled em {
+  color: #cbb99c;
+  background: rgba(255,255,255,.08);
+}
 .stats {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(46px, 1fr));

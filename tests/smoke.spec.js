@@ -402,6 +402,9 @@ test('setup scout panel exposes high-value intelligence capture targets', async 
   });
   const scout = page.locator('.next-enemies');
   await expect(scout.getByText('12/20 賢者の下見')).toBeVisible();
+  await expect(scout.getByText('次敵対策')).toBeVisible();
+  await expect(scout.getByText('遠距離職を先に止める')).toBeVisible();
+  await expect(scout.getByText('短いダウン猶予を拾う')).toBeVisible();
   await expect(scout.getByText(/賢者 捕獲5 残7s .*落 G55 賢者のインク 魔素の粉 .*眷属 影託者 .*養分 攻撃\+1 知識\+6/)).toBeVisible();
   await assertNoDocumentScroll(page);
 });
@@ -1260,6 +1263,10 @@ test('chip research prioritizes undiscovered chips before known upgrades', async
   });
   expect(equippedState.selectedName).toBe('スライム');
   expect(equippedState.slimeChips).toContain('focusRare');
+  await expect(page.locator('.stage-chip-advice')).toContainText('次敵対策');
+  await page.locator('[data-advice-chip="focusMage"]').click();
+  await expect(page.locator('.chip-detail')).toContainText('術師狙い');
+  expect(await page.evaluate(() => window.__MAOU_GAME__.selectedChipId)).toBe('focusMage');
 });
 
 test('risky rooms trigger concrete tradeoffs when invaders enter', async ({ page }) => {
