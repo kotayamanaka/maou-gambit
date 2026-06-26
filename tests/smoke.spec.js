@@ -1038,6 +1038,84 @@ test('carrier returns to assigned room after jail delivery', async ({ page }) =>
   await assertNoDocumentScroll(page);
 });
 
+test('carrier prioritizes urgent high-value downed enemies before continuing attacks', async ({ page }) => {
+  await page.goto('/');
+  await page.evaluate(() => {
+    window.__MAOU_COMMIT__((game) => {
+      const goblin = game.allies.find((ally) => ally.name === 'ゴブリン');
+      Object.assign(goblin, {
+        room: 'atrium',
+        homeRoom: 'atrium',
+        x: 640,
+        y: 360,
+        chips: ['attack', 'carryDowned'],
+        carrying: null,
+        movingTo: null,
+        attackClock: 0
+      });
+      game.phase = 'battle';
+      game.speed = 1;
+      game.waveQueue = [];
+      game.enemies = [{
+        uid: 'enemy-live-pressure',
+        templateId: 'warrior',
+        name: '戦士',
+        type: 'enemy',
+        sprite: 'assets/sprites/warrior.png',
+        maxHp: 60,
+        hp: 60,
+        atk: 1,
+        spd: 0.5,
+        range: 1,
+        chips: ['engageGuard'],
+        convertTo: 'fallenWarrior',
+        capture: { difficulty: 1, ttl: 12 },
+        drop: { gold: 0, items: [] },
+        room: 'atrium',
+        x: 648,
+        y: 360,
+        facing: 'left',
+        anim: 'idle',
+        animTtl: 0,
+        movingTo: null,
+        attackClock: 0,
+        searchClock: 0,
+        knowsThrone: false
+      }];
+      game.downed = [{
+        uid: 'downed-urgent-sage',
+        templateId: 'sage',
+        name: '賢者',
+        sprite: 'assets/sprites/sage.png',
+        convertTo: 'oracleShade',
+        capture: { difficulty: 5, ttl: 7 },
+        drop: { gold: 55, items: ['sageInk'] },
+        room: 'atrium',
+        x: 636,
+        y: 360,
+        ttl: 7,
+        carriedBy: null
+      }];
+      game.captured = [];
+      game.captureStats = { opportunities: 1, captured: 0, expired: 0, interrupted: 0 };
+    });
+  });
+  await page.waitForFunction(() => {
+    const game = window.__MAOU_GAME__;
+    const goblin = game?.allies.find((ally) => ally.name === 'ゴブリン');
+    const body = game?.downed.find((item) => item.uid === 'downed-urgent-sage');
+    return goblin?.carrying === 'downed-urgent-sage' && body?.carriedBy === goblin.uid;
+  }, { timeout: 2500 });
+  const state = await page.evaluate(() => {
+    const goblin = window.__MAOU_GAME__.allies.find((ally) => ally.name === 'ゴブリン');
+    const enemy = window.__MAOU_GAME__.enemies.find((unit) => unit.uid === 'enemy-live-pressure');
+    return { carrying: goblin.carrying, enemyHp: enemy.hp };
+  });
+  expect(state.carrying).toBe('downed-urgent-sage');
+  expect(state.enemyHp).toBe(60);
+  await assertNoDocumentScroll(page);
+});
+
 test('result can continue into upgrade flow after a win', async ({ page }) => {
   await page.goto('/');
   await page.locator('[data-action="start"]').click();

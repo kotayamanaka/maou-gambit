@@ -18,6 +18,37 @@ function nearestByDistance(game, unit, enemies) {
   ))[0];
 }
 
+function distanceTo(unit, target) {
+  return Math.hypot((unit.x ?? 0) - (target.x ?? 0), (unit.y ?? 0) - (target.y ?? 0));
+}
+
+function sameRoomDowned(game, unit) {
+  if (unit.carry <= 0) return [];
+  return game.downed.filter((body) => !body.carriedBy && body.room === unit.room);
+}
+
+function downedPriority(unit, body) {
+  const difficulty = body.capture?.difficulty ?? 1;
+  const ttl = body.ttl ?? 12;
+  const urgent = ttl <= 5 ? 2 : 0;
+  return difficulty * 10 + urgent - ttl * 0.08 - distanceTo(unit, body) * 0.01;
+}
+
+function bestDownedTarget(game, unit) {
+  return sameRoomDowned(game, unit)
+    .sort((a, b) => downedPriority(unit, b) - downedPriority(unit, a))[0];
+}
+
+function urgentDownedTarget(game, unit) {
+  return sameRoomDowned(game, unit)
+    .filter((body) => {
+      const difficulty = body.capture?.difficulty ?? 1;
+      const ttl = body.ttl ?? 12;
+      return difficulty >= 4 && ttl <= 7;
+    })
+    .sort((a, b) => downedPriority(unit, b) - downedPriority(unit, a))[0];
+}
+
 function conditionTarget(game, unit, condition) {
   const enemies = liveEnemies(game).filter((enemy) => enemy.room === unit.room);
   if (condition === 'always') return true;
@@ -44,9 +75,7 @@ function conditionTarget(game, unit, condition) {
     return enemies.find((enemy) => enemy.knowsThrone);
   }
   if (condition === 'downedEnemy') {
-    if (unit.carry <= 0) return null;
-    return game.downed.filter((body) => !body.carriedBy && body.room === unit.room)
-      .sort((a, b) => distanceRooms(unit.room, a.room, game) - distanceRooms(unit.room, b.room, game))[0];
+    return bestDownedTarget(game, unit);
   }
   return null;
 }
@@ -55,6 +84,10 @@ export function decideAllyAction(game, unit) {
   if (unit.carrying) return { type: 'carry', targetRoom: 'jail' };
   const homeRoom = unit.homeRoom ?? unit.room;
   if (unit.movingTo) return { type: 'move', targetRoom: unit.movingTo };
+  if (unit.chips.includes('carryDowned')) {
+    const urgentBody = urgentDownedTarget(game, unit);
+    if (urgentBody) return { type: 'pickup', target: urgentBody };
+  }
 
   const orderedChips = [...unit.chips].sort((a, b) => {
     const aAction = chips[a]?.action;
