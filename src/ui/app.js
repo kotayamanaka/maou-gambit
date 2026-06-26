@@ -260,6 +260,11 @@ function capturePrepPanel(game) {
   const carryStock = game.chipBag?.carryDowned ?? 0;
   const availableCarry = carryStock - (assignedCarry.carryDowned ?? 0);
   const targetText = bestTargets.map((enemy) => `${enemy.name} 捕獲${enemy.capture?.difficulty ?? 1} 残${enemy.capture?.ttl ?? 10}s`).join(' / ');
+  const valueText = bestTargets.map((enemy) => {
+    const convert = allyTemplates[enemy.convertTo]?.name ?? '不可';
+    const material = feedMaterials[enemy.id]?.label ?? feedMaterials.default.label;
+    return `${enemy.name}: 身代金G${capturedSaleValue(enemy)} / ${convert} / ${material}`;
+  }).join(' ｜ ');
   const carrierText = carriers.length
     ? `${readyCarriers.length}/${carriers.length}体`
     : '運搬可なし';
@@ -268,6 +273,7 @@ function capturePrepPanel(game) {
     <b>捕獲準備</b>
     <div class="capture-prep-grid">
       <span>狙い<em>${targetText}</em></span>
+      <span class="capture-prep-value">価値<em>${valueText}</em></span>
       <span>搬送役<em>${carrierText}</em></span>
       <span>猶予<em>+${bonus}s</em></span>
     </div>

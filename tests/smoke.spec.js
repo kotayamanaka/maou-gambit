@@ -458,6 +458,9 @@ test('setup scout panel exposes high-value intelligence capture targets', async 
   const prep = page.locator('.capture-prep');
   await expect(prep).toContainText('捕獲準備');
   await expect(prep).toContainText('賢者 捕獲5 残7s');
+  await expect(prep).toContainText('身代金G89');
+  await expect(prep).toContainText('影託者');
+  await expect(prep).toContainText('知識+6');
   await expect(prep).toContainText('搬送役');
   await page.getByRole('button', { name: /ゴブリンに牢屋搬送/ }).click();
   await expect(page.locator('[data-ui-panel="chips"]')).toHaveClass(/on/);
