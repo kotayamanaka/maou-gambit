@@ -1,5 +1,55 @@
 # PROGRESS
 
+## 2026-06-26 配置提案UI
+
+### 目的
+
+次敵対策チップ提案で「何を意識するか」は見えるようになったが、それをどの部屋配置へ落とすかはまだプレイヤー任せだった。次ステージの敵傾向と配下のチップ/能力から、準備画面で配置候補を提示し、編成判断を一段つなげる。
+
+### 修正
+
+- 配置タブに `配置提案` を追加し、配下ごとに推奨部屋と理由を表示するようにした。
+- 次ステージの敵に術師/遠距離/高速/高捕獲難度がいるかを読み、配下の `牢屋搬送`、狙いチップ、速度、射程と合わせて候補部屋を決めるようにした。
+- 提案行をクリックすると、対象配下をその部屋へ配置し、担当部屋 `homeRoom` も更新する。
+- 部屋キャパを見て、満員部屋は避けて次候補へfallbackする。
+- Playwrightで、賢者ステージ前にスライムの配置提案が表示され、クリックで広間へ配置されることを固定した。
+
+### スクリーンショット
+
+- `screenshots/placement-advice-desktop.png`
+
+### 検証結果
+
+- `npm test -- --reporter=line`: 90件成功。
+- `npm run test:balance`: 成功。キャンペーン検収は勝利。
+- `npm run build:pages`: 成功。
+
+## 2026-06-26 キャラクターモーション再検収
+
+### 目的
+
+既存の `idle / walk / attack / downed` x `front/back/left/right` 単一PNG切替を壊さず、`walk` と `attack` の複数フレーム配列が実ファイルから再生成・接続・表示できることを確認する。
+
+### 確認内容
+
+- `scripts/make_micro_animation_frames.py` を再実行し、24スプライトフォルダに `walk` 3フレーム、`attack` 2フレームを生成し直した。
+- `src/data/spriteAnimations.js` は実在フレーム由来のマニフェストとして再生成され、単一PNG fallback と両立している。
+- `scripts/make_sprite_animation_audit.py` で `screenshots/sprite-animation-audit.png` を更新した。
+- PlaywrightでPC幅の戦闘画面を作り、歩行中ゴブリンが `walk-right-0..2.png` のフレームを切り替える状態で `screenshots/sprite-animation-battle-desktop.png` を更新した。
+
+### 検証結果
+
+- `python scripts/make_micro_animation_frames.py`: 24スプライトフォルダ、480フレーム生成・接続。
+- `python scripts/make_sprite_animation_audit.py`: 成功。
+- `npm test -- --reporter=line`: 90件成功。
+- `npm run test:balance`: 成功。キャンペーン検収は勝利。
+- `npm run build:pages`: 成功。
+
+### 残課題
+
+- 現在の微差分フレームは基盤検証用であり、本番絵ではない。
+- 攻撃は近接/弓/魔法ごとの専用構え差分へ置き換える余地がある。射出物は引き続きキャラ絵ではなくエフェクト側で表現する。
+
 ## 2026-06-26 次敵対策チップ提案
 
 ### 目的

@@ -808,6 +808,59 @@ img { image-rendering: pixelated; }
   color: #cbb99c;
   background: rgba(255,255,255,.08);
 }
+.placement-advice {
+  display: grid;
+  gap: 5px;
+  padding: 6px;
+  border: 1px solid rgba(216, 170, 74, .24);
+  background: rgba(33, 25, 14, .32);
+}
+.placement-advice > b {
+  margin: 0 !important;
+  color: #d8aa4a;
+  font-size: 11px !important;
+}
+.placement-advice-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 7px;
+  min-height: 40px;
+  padding: 5px 6px;
+  text-align: left;
+  border: 1px solid rgba(245, 220, 170, .12);
+  background: rgba(255,255,255,.05);
+}
+.placement-advice-row.on {
+  border-color: var(--gold);
+}
+.placement-advice-row span,
+.placement-advice-row small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.placement-advice-row span {
+  font-weight: 900;
+}
+.placement-advice-row span small {
+  display: inline;
+  margin-left: 6px;
+  font-weight: 700;
+}
+.placement-advice-row em {
+  color: #111;
+  background: var(--gold);
+  padding: 2px 5px;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 900;
+}
+.placement-advice-row > small {
+  grid-column: 1 / -1;
+  color: #cbb99c;
+  font-size: 10px;
+}
 .stats {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(46px, 1fr));

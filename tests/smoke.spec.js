@@ -343,6 +343,52 @@ test('setup supports monster selection, placement, and chip editing', async ({ p
   await assertNoDocumentScroll(page);
 });
 
+test('setup placement advice moves allies into suggested rooms', async ({ page }) => {
+  await page.goto('/');
+  await page.evaluate(() => {
+    window.__MAOU_COMMIT__((game) => {
+      const base = game.allies[0];
+      game.stageIndex = 11;
+      game.uiPanel = 'place';
+      game.allies.push({
+        ...base,
+        uid: 'slime-placement-test',
+        templateId: 'slime',
+        name: 'スライム',
+        sprite: 'assets/sprites/slime/idle-front.png',
+        room: 'storage',
+        homeRoom: 'storage',
+        maxHp: 68,
+        hp: 68,
+        atk: 5,
+        spd: 0.65,
+        int: 1,
+        carry: 1,
+        range: 1,
+        chips: ['chaseNearest'],
+        carrying: null,
+        movingTo: null,
+        status: []
+      });
+    });
+  });
+  await expect(page.locator('.placement-advice')).toContainText('配置提案');
+  await expect(page.locator('.placement-advice')).toContainText('遠距離/術師を広間で受ける');
+  await page.locator('[data-place-advice-unit="slime-placement-test"]').click();
+  const state = await page.evaluate(() => {
+    const slime = window.__MAOU_GAME__.allies.find((ally) => ally.uid === 'slime-placement-test');
+    return {
+      room: slime.room,
+      homeRoom: slime.homeRoom,
+      selectedName: window.__MAOU_GAME__.allies.find((ally) => ally.uid === window.__MAOU_GAME__.selectedUnitId)?.name
+    };
+  });
+  expect(state.room).toBe('atrium');
+  expect(state.homeRoom).toBe('atrium');
+  expect(state.selectedName).toBe('スライム');
+  await assertNoDocumentScroll(page);
+});
+
 test('setup enforces room capacity', async ({ page }) => {
   await page.goto('/');
   await page.evaluate(() => {

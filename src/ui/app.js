@@ -223,6 +223,57 @@ function stageChipAdvice(game) {
   </div>`;
 }
 
+function stageThreatProfile(stage) {
+  const enemies = stageEnemyTemplates(stage);
+  return {
+    caster: enemies.some((enemy) => ['mage', 'cleric', 'alchemist', 'sage'].includes(enemy.id)),
+    fast: enemies.some((enemy) => (enemy.stats?.spd ?? 0) >= 1.05),
+    rare: enemies.some((enemy) => (enemy.capture?.difficulty ?? 1) >= 3),
+    ranged: enemies.some((enemy) => (enemy.stats?.range ?? 1) > 1)
+  };
+}
+
+function firstPlaceableRoom(game, unit, candidates) {
+  return candidates.find((roomId) => canPlaceAlly(game, roomId, unit)) ?? rooms.find((room) => canPlaceAlly(game, room.id, unit))?.id;
+}
+
+function placementPlanForUnit(game, unit) {
+  const threats = stageThreatProfile(currentStage(game));
+  const hasChip = (id) => unit.chips.includes(id);
+  if (hasChip('carryDowned') && (unit.carry ?? 0) > 0 && threats.rare) {
+    return { roomId: firstPlaceableRoom(game, unit, ['atrium', 'storage']), reason: '高難度捕獲を牢屋へ運びやすい' };
+  }
+  if ((hasChip('focusRanged') && threats.ranged) || (hasChip('focusMage') && threats.caster) || (hasChip('focusRare') && threats.rare)) {
+    return { roomId: firstPlaceableRoom(game, unit, ['atrium', 'storage']), reason: '狙いチップを主戦場で活かす' };
+  }
+  if ((unit.spd ?? 0) >= 1.05 || (hasChip('chaseNearest') && threats.fast)) {
+    return { roomId: firstPlaceableRoom(game, unit, ['storage', 'hallA', 'atrium']), reason: '速い敵を入口寄りで止める' };
+  }
+  if ((unit.range ?? 1) > 1 || threats.ranged || threats.caster) {
+    return { roomId: firstPlaceableRoom(game, unit, ['atrium', 'storage']), reason: '遠距離/術師を広間で受ける' };
+  }
+  return { roomId: firstPlaceableRoom(game, unit, ['storage', 'atrium']), reason: '初動迎撃を厚くする' };
+}
+
+function placementAdvice(game) {
+  const rows = game.allies
+    .map((unit) => ({ unit, plan: placementPlanForUnit(game, unit) }))
+    .filter(({ plan }) => plan.roomId);
+  if (!rows.length) return '';
+  return `<div class="placement-advice">
+    <b>配置提案</b>
+    ${rows.map(({ unit, plan }) => {
+      const room = roomById[plan.roomId];
+      const current = unit.homeRoom === plan.roomId;
+      return `<button class="placement-advice-row ${current ? 'on' : ''}" data-place-advice-unit="${unit.uid}" data-place-advice-room="${plan.roomId}">
+        <span>${unit.name}<small>${room?.name ?? plan.roomId}</small></span>
+        <em>${current ? '配置中' : '配置'}</em>
+        <small>${plan.reason}</small>
+      </button>`;
+    }).join('')}
+  </div>`;
+}
+
 function setupWarnings(game) {
   const warnings = [];
   const hasCarrier = game.allies.some((unit) => unit.chips.includes('carryDowned') && unit.carry > 0);
@@ -887,6 +938,7 @@ function setupPanel(game) {
     <div class="unit-picker" aria-label="配下選択">
       <div class="unit-list">${game.allies.map((ally) => unitCard(ally, game)).join('')}</div>
     </div>
+    ${placementAdvice(game)}
     <div class="room-picker" aria-label="配置先">
       <div class="scroll-rail">${rooms.filter((room) => room.capacity > 0 && isRoomBuilt(game, room.id)).map((room) =>
         roomChoice(room, unit, game)
@@ -1091,6 +1143,9 @@ export function renderApp(root, game, commit) {
   })));
   root.querySelectorAll('[data-place]').forEach((button) => button.addEventListener('click', () => commit((state) => {
     placeUnitInRoom(state, state.selectedUnitId, button.dataset.place);
+  })));
+  root.querySelectorAll('[data-place-advice-unit]').forEach((button) => button.addEventListener('click', () => commit((state) => {
+    placeUnitInRoom(state, button.dataset.placeAdviceUnit, button.dataset.placeAdviceRoom);
   })));
   root.querySelectorAll('[data-room]').forEach((button) => button.addEventListener('click', () => commit((state) => {
     state.selectedRoomId = button.dataset.room;
