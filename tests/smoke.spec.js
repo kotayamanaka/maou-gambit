@@ -1017,6 +1017,7 @@ test('capture report summarizes missed capture opportunities', async ({ page }) 
     window.__MAOU_COMMIT__((game) => {
       game.phase = 'result';
       game.captured = [];
+      game.inventory = { silverChain: 1 };
       game.captureStats = { opportunities: 3, captured: 1, expired: 2, interrupted: 0 };
       game.result = {
         won: true,
@@ -1032,6 +1033,15 @@ test('capture report summarizes missed capture opportunities', async ({ page }) 
   await expect(page.locator('.capture-report')).toContainText('機会');
   await expect(page.locator('.capture-report')).toContainText('成功率');
   await expect(page.locator('.capture-report')).toContainText('ダウン猶予切れ');
+  await page.getByRole('button', { name: /銀の拘束具を使う/ }).click();
+  await expect(page.locator('[data-ui-panel="loot"]')).toHaveClass(/on/);
+  await expect(page.locator('[data-use-item-room="silverChain"]')).toBeVisible();
+  expect(await page.evaluate(() => window.__MAOU_GAME__.selectedRoomId)).toBe('jail');
+  await page.evaluate(() => {
+    window.__MAOU_COMMIT__((game) => {
+      game.phase = 'result';
+    });
+  });
   await page.getByRole('button', { name: /捕獲処理へ/ }).click();
   await expect(page.locator('.capture-report')).toContainText('消滅');
   await expect(page.locator('.capture-report')).toContainText('銀の拘束具');

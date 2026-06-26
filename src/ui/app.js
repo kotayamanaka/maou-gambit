@@ -1197,6 +1197,10 @@ function captureReport(game) {
   const stats = game.result?.captureStats ?? game.captureStats ?? { opportunities: 0, captured: game.captured.length, expired: 0, interrupted: 0 };
   const missed = Math.max(0, (stats.opportunities ?? 0) - (stats.captured ?? 0));
   const rate = stats.opportunities ? Math.round(((stats.captured ?? 0) / stats.opportunities) * 100) : 0;
+  const canUseSilverChain = missed > 0
+    && (stats.expired ?? 0) > 0
+    && (game.inventory?.silverChain ?? 0) > 0
+    && isRoomBuilt(game, 'jail');
   const reason = stats.opportunities <= 0 ? '敵をダウンさせると捕獲機会が生まれる'
     : missed <= 0 ? '捕獲機会を逃さず牢屋へ運べた'
       : (stats.expired ?? 0) > 0 ? 'ダウン猶予切れ。牢屋搬送役や銀の拘束具が効く'
@@ -1211,6 +1215,7 @@ function captureReport(game) {
       <span>成功率<em>${rate}%</em></span>
     </div>
     <small>${reason}</small>
+    ${canUseSilverChain ? '<button class="capture-report-action" data-capture-report-action="silverChain">銀の拘束具を使う</button>' : ''}
   </div>`;
 }
 
@@ -1423,6 +1428,13 @@ export function renderApp(root, game, commit) {
       state.selectedBuildRoom = button.dataset.investAdviceBuild;
       const slot = buildSlotList(state).find((item) => !buildSlotBlocked(state, item.id, button.dataset.investAdviceBuild));
       if (slot) state.selectedBuildSlot = slot.id;
+    }
+  })));
+  root.querySelectorAll('[data-capture-report-action]').forEach((button) => button.addEventListener('click', () => commit((state) => {
+    if (button.dataset.captureReportAction === 'silverChain') {
+      state.phase = 'upgrade';
+      state.uiPanel = 'loot';
+      state.selectedRoomId = 'jail';
     }
   })));
   root.querySelectorAll('[data-set-speed]').forEach((button) => bindFastButton(button, () => commit((state) => {

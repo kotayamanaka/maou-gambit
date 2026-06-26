@@ -12,6 +12,7 @@
 - 敵をダウンさせた時点で捕獲機会を記録し、牢屋搬送成功、ダウン猶予切れ、運搬役の死亡/無効化による中断を集計するようにした。
 - 戦闘結果と戦後処理に `捕獲レポート` を表示し、機会、成功、消滅、成功率、失敗理由を確認できるようにした。
 - ダウン猶予切れが多い場合は、牢屋搬送役や `銀の拘束具` を示唆する文言を出し、捕獲改善の投資判断へつなげる。
+- `銀の拘束具` を所持していて牢屋が使える場合は、捕獲レポートから戦後処理の戦利品タブへ直接移り、牢屋への使用候補を確認できるようにした。
 - Playwrightで、捕獲機会を逃した結果画面から戦後処理へ進んでも、捕獲レポートが表示され続けることを固定した。
 
 ### スクリーンショット
@@ -20,7 +21,7 @@
 
 ### 検証結果
 
-- `npm test -- --reporter=line -g "capture report|result can continue|carrier returns"`: 6件成功。
+- `npm test -- --reporter=line -g "capture report|upgrade investment|upgrade management"`: 6件成功。
 - `npm test -- --reporter=line`: 94件成功。
 - `npm run test:balance`: 成功。キャンペーン検収は勝利。
 - `npm run build:pages`: 成功。
