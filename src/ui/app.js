@@ -685,6 +685,72 @@ function chipButton(chipId, unit, game) {
   </button>`;
 }
 
+function chipFit(unit, chipId, game) {
+  const chip = chips[chipId];
+  const used = assignedChipCounts(game, unit.uid)[chipId] ?? 0;
+  const owned = game.chipBag?.[chipId] ?? 0;
+  const available = owned - used;
+  const equipped = unit.chips.includes(chipId);
+  const openSlot = unit.chips.length < unit.int;
+  const notes = [];
+  let score = 0;
+
+  if (equipped) {
+    score += 5;
+    notes.push('装備中');
+  } else if (available <= 0) {
+    notes.push('在庫なし');
+  } else if (openSlot) {
+    score += 2;
+    notes.push('空き枠あり');
+  } else {
+    score += 1;
+    notes.push('入替候補');
+  }
+
+  if (chip?.action === 'carryToJail') {
+    if ((unit.carry ?? 0) > 0) {
+      score += 4;
+      notes.push('運搬可');
+    } else {
+      score -= 4;
+      notes.push('運搬不可');
+    }
+  } else if (chip?.category === 'attack') {
+    score += Math.min(4, Math.round((unit.atk ?? 0) / 4));
+    if ((unit.range ?? 1) > 1) notes.push('射程あり');
+    else notes.push('前衛火力');
+  } else if (chip?.category === 'target') {
+    score += unit.chips.includes('attack') ? 3 : 1;
+    if ((unit.int ?? 0) >= 2) notes.push('判断枠あり');
+    if (unit.chips.includes('attack')) notes.push('攻撃役');
+  } else if (chip?.category === 'move') {
+    score += Math.round((unit.spd ?? 1) * 2);
+    notes.push((unit.spd ?? 1) >= 1 ? '移動向き' : '帰還保険');
+  }
+
+  const label = equipped ? '使用中'
+    : available <= 0 ? '不可'
+      : score >= 6 ? '相性高'
+        : score >= 3 ? '有効'
+          : '要検討';
+  return { label, notes: [...new Set(notes)].slice(0, 3), score, canEquip: equipped || available > 0 };
+}
+
+function chipFitList(game, chipId) {
+  const rows = game.allies
+    .map((unit) => ({ unit, fit: chipFit(unit, chipId, game) }))
+    .sort((a, b) => b.fit.score - a.fit.score);
+  return `<div class="chip-fit-list">
+    <b>配下相性</b>
+    ${rows.map(({ unit, fit }) => `<button class="chip-fit-row ${unit.uid === game.selectedUnitId ? 'on' : ''}" data-chip-fit-unit="${unit.uid}" data-chip-fit-chip="${chipId}" ${fit.canEquip ? '' : 'disabled'}>
+      <span>${unit.name}<small>知性${unit.int} ${unit.chips.length}/${unit.int}</small></span>
+      <em>${fit.label}</em>
+      <small>${fit.notes.join(' / ')}</small>
+    </button>`).join('')}
+  </div>`;
+}
+
 function visibleChipIds(game, unit) {
   return Object.keys(chips);
 }
@@ -708,6 +774,7 @@ function chipDetail(game, unit) {
     <div class="detail-title"><b>${chip.icon} ${chip.name}</b><small>${owned > 0 || equipped ? `所持 ${owned}` : '未発見'}</small></div>
     <p>${chip.description}</p>
     <div class="mini-stat">条件 ${chip.condition} / 行動 ${chip.action} / ${equipped ? '装備中' : '未装備'}</div>
+    ${chipFitList(game, chipId)}
   </div>`;
 }
 
@@ -1061,6 +1128,9 @@ export function renderApp(root, game, commit) {
   })));
   root.querySelectorAll('[data-develop-chip]').forEach((button) => button.addEventListener('click', () => commit((state) => {
     developKnownChip(state, button.dataset.developChip);
+  })));
+  root.querySelectorAll('[data-chip-fit-unit]').forEach((button) => button.addEventListener('click', () => commit((state) => {
+    equipChipToUnit(state, button.dataset.chipFitUnit, button.dataset.chipFitChip);
   })));
   root.querySelectorAll('[data-research-monster]').forEach((button) => button.addEventListener('click', () => commit((state) => {
     researchMonster(state);

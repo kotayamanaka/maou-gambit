@@ -1248,6 +1248,18 @@ test('chip research prioritizes undiscovered chips before known upgrades', async
   expect(setupState.stageIndex).toBe(1);
   await expect(page.locator('.chip-detail')).toContainText('希少狙い');
   await expect(page.locator('[data-chip="focusRare"]')).toHaveClass(/selected-chip/);
+  await expect(page.locator('.chip-fit-list')).toContainText('配下相性');
+  await expect(page.locator('.chip-fit-list')).toContainText('スライム');
+  await page.locator('[data-chip-fit-unit]').filter({ hasText: 'スライム' }).click();
+  const equippedState = await page.evaluate(() => {
+    const slime = window.__MAOU_GAME__.allies.find((ally) => ally.name === 'スライム');
+    return {
+      selectedName: window.__MAOU_GAME__.allies.find((ally) => ally.uid === window.__MAOU_GAME__.selectedUnitId)?.name,
+      slimeChips: slime?.chips ?? []
+    };
+  });
+  expect(equippedState.selectedName).toBe('スライム');
+  expect(equippedState.slimeChips).toContain('focusRare');
 });
 
 test('risky rooms trigger concrete tradeoffs when invaders enter', async ({ page }) => {

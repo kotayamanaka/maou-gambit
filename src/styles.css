@@ -705,6 +705,57 @@ img { image-rendering: pixelated; }
 .unit-card em { display: block; font-style: normal; letter-spacing: 1px; line-height: 1; font-size: 12px; margin-top: 3px; }
 
 .detail-title { display: flex; gap: 8px; align-items: center; }
+.chip-fit-list {
+  display: grid;
+  gap: 5px;
+  margin-top: 7px;
+}
+.chip-fit-list > b {
+  margin: 0 !important;
+  color: #d8aa4a;
+  font-size: 11px !important;
+}
+.chip-fit-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 7px;
+  min-height: 42px;
+  padding: 6px 7px;
+  text-align: left;
+  border: 1px solid rgba(245, 220, 170, .14);
+  background: rgba(255,255,255,.055);
+}
+.chip-fit-row.on {
+  border-color: var(--gold);
+}
+.chip-fit-row span,
+.chip-fit-row small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.chip-fit-row span {
+  font-weight: 900;
+}
+.chip-fit-row span small {
+  display: inline;
+  margin-left: 6px;
+  font-weight: 700;
+}
+.chip-fit-row em {
+  color: #111;
+  background: var(--gold);
+  padding: 2px 5px;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 900;
+}
+.chip-fit-row > small {
+  grid-column: 1 / -1;
+  color: #cbb99c;
+  font-size: 10px;
+}
 .stats {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(46px, 1fr));
