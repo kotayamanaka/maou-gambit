@@ -10,7 +10,7 @@ export const rooms = [
     h: 390,
     built: true,
     connectionLimit: 1,
-    connections: ['hallA']
+    connections: ['storage']
   },
   {
     id: 'hallA',
@@ -21,7 +21,8 @@ export const rooms = [
     y: 630,
     w: 540,
     h: 390,
-    built: true,
+    built: false,
+    buildCost: 140,
     connectionLimit: 4,
     upgradeCost: 120,
     connections: ['entrance', 'storage', 'atrium']
@@ -36,9 +37,9 @@ export const rooms = [
     w: 570,
     h: 390,
     built: true,
-    connectionLimit: 1,
+    connectionLimit: 2,
     upgradeCost: 90,
-    connections: ['hallA']
+    connections: ['entrance', 'atrium']
   },
   {
     id: 'atrium',
@@ -52,7 +53,7 @@ export const rooms = [
     built: true,
     connectionLimit: 4,
     upgradeCost: 160,
-    connections: ['hallA', 'jail', 'deadEnd', 'hallB']
+    connections: ['storage', 'jail', 'throne']
   },
   {
     id: 'jail',
@@ -126,7 +127,8 @@ export const rooms = [
     y: 1155,
     w: 630,
     h: 420,
-    built: true,
+    built: false,
+    buildCost: 150,
     connectionLimit: 4,
     upgradeCost: 150,
     connections: ['atrium', 'treasure', 'throne']
@@ -146,7 +148,7 @@ export const rooms = [
     upgradeCost: 180,
     effect: { kind: 'inventoryLimit', value: 4 },
     risk: { kind: 'plunder' },
-    connections: ['hallB']
+    connections: ['atrium']
   },
   {
     id: 'armory',
@@ -163,7 +165,7 @@ export const rooms = [
     upgradeCost: 170,
     effect: { kind: 'allyAtkRoom', value: 1 },
     risk: { kind: 'armedInvader' },
-    connections: ['hallB']
+    connections: ['atrium']
   },
   {
     id: 'throne',
@@ -176,7 +178,7 @@ export const rooms = [
     h: 480,
     built: true,
     connectionLimit: 1,
-    connections: ['hallB']
+    connections: ['atrium']
   }
 ];
 

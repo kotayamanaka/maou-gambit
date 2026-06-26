@@ -130,7 +130,7 @@ function setupWarnings(game) {
   const warnings = [];
   const hasCarrier = game.allies.some((unit) => unit.chips.includes('carryDowned') && unit.carry > 0);
   const emptySlots = game.allies.filter((unit) => unit.chips.length < unit.int);
-  const frontRooms = ['hallA', 'atrium', 'hallB'];
+  const frontRooms = ['hallA', 'atrium', 'hallB'].filter((room) => isRoomBuilt(game, room));
   const emptyFront = frontRooms.filter((room) => !game.allies.some((unit) => unit.room === room));
   if (emptySlots.length) warnings.push(`チップ枠余り: ${emptySlots.map((unit) => unit.name).join(' / ')}`);
   if (!hasCarrier) warnings.push('搬送役がいない');
@@ -588,7 +588,7 @@ function setupPanel(game) {
       <div class="unit-list">${game.allies.map((ally) => unitCard(ally, game)).join('')}</div>
     </div>
     <div class="room-picker" aria-label="配置先">
-      <div class="scroll-rail">${rooms.filter((room) => room.capacity > 0).map((room) =>
+      <div class="scroll-rail">${rooms.filter((room) => room.capacity > 0 && isRoomBuilt(game, room.id)).map((room) =>
         roomChoice(room, unit, game)
       ).join('')}</div>
     </div>
@@ -846,9 +846,13 @@ export function renderApp(root, game, commit) {
   root.querySelectorAll('[data-ui-panel]').forEach((button) => button.addEventListener('click', () => commit((state) => {
     state.uiPanel = button.dataset.uiPanel;
   })));
-  root.querySelectorAll('[data-set-speed]').forEach((button) => button.addEventListener('click', () => commit((state) => {
-    state.speed = Number(button.dataset.setSpeed);
-  })));
+  root.querySelectorAll('[data-set-speed]').forEach((button) => button.addEventListener('click', (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    commit((state) => {
+      state.speed = Number(button.dataset.setSpeed);
+    });
+  }));
   root.querySelectorAll('[data-action]').forEach((button) => button.addEventListener('click', () => commit((state) => {
     if (button.dataset.action === 'start') {
       startStage(state);

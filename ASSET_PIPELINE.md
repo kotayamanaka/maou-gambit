@@ -16,6 +16,8 @@ assets/generated/
   characters/
     enemy-adventurers/
       sheet-v1.png
+    guard/
+      sheet-v2-4dir.png
     demonLord/
       source-v1.png
       demonLord-alpha-v1.png
@@ -84,6 +86,12 @@ assets/generated/
 - 原本切り出し先: `assets/generated/characters/<unit-id>/`
 - ゲーム参照先: `public/assets/sprites/<unit-id>/`
 - これは本格専用生成前の暫定多様化。ゲーム中で職が判別できることを優先し、後で職ごとの専用シートに差し替える。
+- 専用生成した敵職シートは `scripts/slice_dedicated_enemy_sheets.py` で、各ユニットごとの 4方向 x 4動作に切り出す。
+- 入力例: `assets/generated/characters/guard/sheet-v2-4dir.png`
+- 対象: `guard`
+- 原本切り出し先: `assets/generated/characters/<unit-id>/`
+- ゲーム参照先: `public/assets/sprites/<unit-id>/`
+- 背景の `#ff00ff` は透明化し、ゲーム表示用に縮小する。暫定色替えから専用シルエットへ置き換える敵職はこの流れで追加する。
 - 魔王は `assets/generated/characters/demonLord/source-v1.png` を生成原本にし、クロマキー除去後の `demonLord-alpha-v1.png` から `public/assets/sprites/demonLord/idle-front.png` へ縮小・余白調整して使う。
 - ダンジョン床タイルの生成シートは `scripts/slice_dungeon_tiles.py` で、横3枚のタイルに切り出す。
 - 入力: `assets/generated/dungeon/tiles/sheet-v1.png`
@@ -108,14 +116,14 @@ assets/generated/
 
 - `goblin` と `goblinChief` は `spriteSet` として `idle`、`walk`、`attack`、`downed` の上下左右スプライトを参照する。
 - `slime`、`poisonSlime`、`darkSlime`、`plagueSlime` は `spriteSet` として生成スライム素材を参照する。`plagueSlime` は暫定で `poisonSlime` と同じ素材を使う。
-- `warrior`、`rogue`、`mage` は生成した冒険者素材を参照する。後半敵の `guard`、`ranger`、`cleric`、`knight`、`alchemist`、`beastTamer`、`paladin`、`sage`、`hero` は、ベース3職から作った色違い亜種スプライトを参照する。
+- `warrior`、`rogue`、`mage` は生成した冒険者素材を参照する。後半敵の `guard` は専用生成シートを参照する。`ranger`、`cleric`、`knight`、`alchemist`、`beastTamer`、`paladin`、`sage`、`hero` は、ベース3職から作った色違い亜種スプライトを参照する。
 - `bat`、`fallenWarrior`、`shadeRunner`、`darkMage`、`boneGuard`、`impArcher`、`oracleShade` は生成した味方魔物素材を参照する。
 - `demonLord` は専用生成素材 `public/assets/sprites/demonLord/idle-front.png` を参照する。
 - ダンジョンマップは `floor-stone` を背景床、`room-stone` を部屋床、`corridor-stone` を通路床として参照する。
 - 通路は部屋中心同士の斜め直線ではなく、部屋の扉から水平・垂直の直角セグメントとして描画する。
 - ゲーム中は座標移動の向きから `front/back/left/right` を更新し、移動中は `walk`、攻撃直後は `attack` を表示する。
 - 遠距離攻撃は `attack` スプライトを直接見せず、キャラ本体は構え姿勢、射出物は `projectile arrow/magic` エフェクトで別表示する。キャラ絵とエフェクトで矢/魔法玉を重複させない。
-- まだ完全専用生成されていない後半敵職は、既存生成素材をベースにした色違い亜種として運用する。
+- まだ完全専用生成されていない後半敵職は、既存生成素材をベースにした色違い亜種として運用し、順次 `slice_dedicated_enemy_sheets.py` で専用シートへ差し替える。
 
 ## 初期生成対象
 

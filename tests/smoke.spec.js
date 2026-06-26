@@ -59,12 +59,19 @@ test('map uses generated dungeon texture tiles and continuous corridors', async 
 test('setup reveals only the selected menu section', async ({ page }) => {
   await page.goto('/');
   await expect(page.locator('.setup-section')).toHaveCount(1);
+  await expect(page.locator('[data-room="hallA"]')).toHaveCount(0);
+  await expect(page.locator('[data-room="hallB"]')).toHaveCount(0);
+  await expect(page.locator('[data-room="atrium"]')).toBeVisible();
+  await expect(page.locator('[data-room="storage"]')).toBeVisible();
+  await expect(page.locator('[data-room="jail"]')).toBeVisible();
   await expect(page.locator('[data-ui-panel="unit"]')).toContainText('配下');
   await expect(page.locator('[data-ui-panel="place"]')).toContainText('配置');
   await expect(page.locator('[data-ui-panel="chips"]')).toContainText('チップ');
   await expect(page.locator('[data-place="storage"]')).toHaveCount(0);
   await page.locator('[data-ui-panel="place"]').click();
   await expect(page.locator('[data-place="storage"]')).toBeVisible();
+  await expect(page.locator('[data-place="hallA"]')).toHaveCount(0);
+  await expect(page.locator('[data-place="hallB"]')).toHaveCount(0);
   await expect(page.locator('[data-chip="attack"]')).toHaveCount(0);
   await page.locator('[data-ui-panel="chips"]').click();
   await expect(page.locator('[data-chip="attack"]')).toBeVisible();
@@ -159,7 +166,7 @@ test('corridors use orthogonal door segments and build slots', async ({ page }) 
 test('setup supports monster selection, placement, and chip editing', async ({ page }) => {
   await page.goto('/');
   await expect(page.locator('.unit-picker')).toBeVisible();
-  await expect(page.locator('[data-unit]')).toHaveCount(1);
+  await expect(page.locator('[data-unit]')).toHaveCount(2);
   await page.locator('.actor.ally').first().click();
   await page.locator('[data-ui-panel="place"]').click();
   await page.locator('[data-place="storage"]').click();
@@ -399,6 +406,12 @@ test('stage runs and reaches result screen', async ({ page }) => {
   await page.goto('/');
   await page.locator('[data-action="start"]').click();
   await expect(page.getByText('防衛中')).toBeVisible();
+  await page.locator('[data-set-speed="4"]').click();
+  await expect(page.locator('[data-set-speed="4"]')).toHaveClass(/on/);
+  expect(await page.evaluate(() => window.__MAOU_GAME__.speed)).toBe(4);
+  await page.locator('[data-set-speed="1"]').click();
+  await expect(page.locator('[data-set-speed="1"]')).toHaveClass(/on/);
+  expect(await page.evaluate(() => window.__MAOU_GAME__.speed)).toBe(1);
   await page.locator('[data-set-speed="2"]').click();
   await expect(page.locator('[data-set-speed="2"]')).toHaveClass(/on/);
   expect(await page.evaluate(() => window.__MAOU_GAME__.speed)).toBe(2);
@@ -468,6 +481,9 @@ test('melee units must close distance inside the same room before attacking', as
         attackClock: 0,
         movingTo: null
       });
+      game.allies = [goblin];
+      game.selectedUnitId = goblin.uid;
+      game.selectedEntity = { type: 'ally', id: goblin.uid };
       game.phase = 'battle';
       game.speed = 1;
       game.waveQueue = [];
@@ -853,7 +869,7 @@ test('monster fusion consumes an ally to grow the selected monster', async ({ pa
       log: window.__MAOU_GAME__.log[0]
     };
   });
-  expect(state.allyNames).toEqual(['ゴブリン']);
+  expect(state.allyNames).toEqual(['ゴブリン', 'スライム']);
   expect(state.goblin.exp).toBe(12);
   expect(state.goblin.intExp).toBe(1);
   expect(state.goblin.maxHp).toBe(64);

@@ -14,8 +14,17 @@ function initialRoomConnections() {
   return Object.fromEntries(entries);
 }
 
-function unitFromTemplate(template, room, chips = []) {
-  const start = roomView(null, room);
+function initialUnitPoint(roomId, slot = 0) {
+  const room = roomView(null, roomId);
+  const lane = [-0.18, 0.18, 0, -0.34, 0.34][slot % 5];
+  return {
+    x: room.x + room.w * 0.28,
+    y: room.y + lane * room.h * 0.5
+  };
+}
+
+function unitFromTemplate(template, room, chips = [], slot = 0) {
+  const point = initialUnitPoint(room, slot);
   return {
     uid: `${template.id}-${nextId++}`,
     templateId: template.id,
@@ -38,8 +47,8 @@ function unitFromTemplate(template, room, chips = []) {
     traits: [...(template.traits ?? [])],
     room,
     homeRoom: room,
-    x: start.x,
-    y: start.y,
+    x: point.x,
+    y: point.y,
     facing: 'front',
     anim: 'idle',
     animTtl: 0,
@@ -55,7 +64,8 @@ function unitFromTemplate(template, room, chips = []) {
 export function createGame() {
   nextId = 1;
   const allies = [
-    unitFromTemplate(allyTemplates.goblin, 'atrium', ['chaseNearest', 'attack', 'carryDowned'])
+    unitFromTemplate(allyTemplates.goblin, 'atrium', ['chaseNearest', 'attack', 'carryDowned'], 0),
+    unitFromTemplate(allyTemplates.slime, 'atrium', ['chaseNearest', 'attack'], 1)
   ];
 
   return {
@@ -73,7 +83,7 @@ export function createGame() {
     elapsed: 0,
     log: ['魔王軍、配置待機。'],
     chipBag: { ...initialChipBag },
-    chipUnlocks: ['接近 x1', '攻撃 x1', '牢屋搬送 x1'],
+    chipUnlocks: ['接近 x2', '攻撃 x2', '牢屋搬送 x1'],
     collections: {
       allies: new Set(allies.map((ally) => ally.templateId)),
       enemies: new Set(),
@@ -146,10 +156,13 @@ export function resetToSetup(game) {
   game.enemies = [];
   game.downed = [];
   game.effects = [];
+  const roomSlots = new Map();
   game.allies.forEach((unit) => {
     const room = unit.homeRoom ?? unit.room;
+    const slot = roomSlots.get(room) ?? 0;
+    roomSlots.set(room, slot + 1);
     unit.room = room;
-    const position = roomView(game, room);
+    const position = initialUnitPoint(room, slot);
     unit.x = position.x;
     unit.y = position.y;
     unit.anim = 'idle';

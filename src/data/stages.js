@@ -3,7 +3,7 @@ export const stages = [
     id: 1,
     name: '第一侵入隊',
     waves: [
-      [{ kind: 'warrior', delay: 0 }, { kind: 'rogue', delay: 7 }]
+      [{ kind: 'warrior', delay: 0 }, { kind: 'rogue', delay: 14 }]
     ],
     reward: { chips: ['focusWeak', 'chaseNearest', 'attack'], gold: 30 }
   },
