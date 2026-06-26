@@ -368,7 +368,7 @@ export function upgradeRoom(game, roomId) {
 export function researchChip(game) {
   const cost = researchCost(game, CHIP_RESEARCH_COST, 'chip');
   if (!spendGold(game, cost)) return false;
-  const candidates = Object.keys(chips).filter((id) => (game.chipBag[id] ?? 0) < 3);
+  const candidates = chipResearchCandidates(game);
   const chipId = candidates[Math.floor(Math.random() * candidates.length)];
   if (!chipId) {
     game.gold += cost;
@@ -377,6 +377,12 @@ export function researchChip(game) {
   discoverChip(game, chipId, '研究');
   addLog(game, `チップ研究で${chips[chipId].name}を獲得。G-${cost}。`);
   return true;
+}
+
+export function chipResearchCandidates(game) {
+  const unknown = Object.keys(chips).filter((id) => (game.chipBag?.[id] ?? 0) <= 0);
+  if (unknown.length) return unknown;
+  return Object.keys(chips).filter((id) => (game.chipBag?.[id] ?? 0) < 3);
 }
 
 export function chipDevelopmentCost(game, chipId) {

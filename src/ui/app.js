@@ -12,6 +12,7 @@ import {
   buildRoom,
   capturedSaleValue,
   capturedResearchPreview,
+  chipResearchCandidates,
   chipDevelopmentCost,
   CHIP_RESEARCH_COST,
   consumeCaptured,
@@ -298,7 +299,7 @@ function convertPreview(captured) {
 }
 
 function researchPreview(game, limit = Infinity) {
-  const candidates = Object.keys(chips).filter((id) => (game.chipBag[id] ?? 0) < 3);
+  const candidates = chipResearchCandidates(game);
   const labels = candidates.map((id) => {
     const chip = chips[id];
     const category = chipCategories[chip.category] ?? { name: '不明' };

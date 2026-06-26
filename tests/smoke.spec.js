@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import fs from 'node:fs';
 import path from 'node:path';
+import { chips } from '../src/data/chips.js';
 import { roomById, worldSize } from '../src/data/rooms.js';
 import { spriteAnimations } from '../src/data/spriteAnimations.js';
 import { allyTemplates, demonLord, enemyTemplates } from '../src/data/units.js';
@@ -1202,6 +1203,32 @@ test('upgrade management supports selling, building, room upgrades, and research
   expect(state.knownChips).toBeGreaterThan(2);
   expect(state.allyCount).toBeGreaterThan(1);
   await assertNoDocumentScroll(page);
+});
+
+test('chip research prioritizes undiscovered chips before known upgrades', async ({ page }) => {
+  await page.goto('/');
+  const allChipIds = Object.keys(chips);
+  await page.evaluate((chipIds) => {
+    window.__MAOU_COMMIT__((game) => {
+      game.phase = 'upgrade';
+      game.uiPanel = 'research';
+      game.gold = 1000;
+      game.chipBag = Object.fromEntries(chipIds.map((id) => [id, 1]));
+      game.chipBag.focusRare = 0;
+      game.collections.chips = new Set(chipIds.filter((id) => id !== 'focusRare'));
+    });
+  }, allChipIds);
+
+  await expect(page.locator('.research-actions')).toContainText('攻撃対象系????');
+  await page.locator('[data-research-chip]').click();
+  const state = await page.evaluate(() => ({
+    focusRare: window.__MAOU_GAME__.chipBag.focusRare,
+    knownFocusRare: window.__MAOU_GAME__.collections.chips.has('focusRare'),
+    unlock: window.__MAOU_GAME__.chipUnlocks[0]
+  }));
+  expect(state.focusRare).toBe(1);
+  expect(state.knownFocusRare).toBe(true);
+  expect(state.unlock).toContain('希少狙い');
 });
 
 test('risky rooms trigger concrete tradeoffs when invaders enter', async ({ page }) => {
