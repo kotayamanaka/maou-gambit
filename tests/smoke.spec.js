@@ -441,7 +441,7 @@ test('stage runs and reaches result screen', async ({ page }) => {
   const speed2 = page.locator('.battle-speedbar [data-set-speed="2"]');
   await expect(page.locator('.battle-speedbar')).toBeVisible();
   await expect(speed4).toBeVisible();
-  const speedTargets = await page.evaluate(() => [...document.querySelectorAll('.battle-speedbar [data-set-speed], .battle-speedbar [data-action="pause"]')].map((button) => {
+  const speedTargets = await page.evaluate(() => [...document.querySelectorAll('.battle-speedbar [data-set-speed], .battle-speedbar [data-speed-pause]')].map((button) => {
     const rect = button.getBoundingClientRect();
     const top = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
     return { width: rect.width, height: rect.height, topIsSelf: top === button };
@@ -459,6 +459,36 @@ test('stage runs and reaches result screen', async ({ page }) => {
   await page.evaluate(() => { window.__MAOU_GAME__.speed = 10; });
   await expect(page.getByText(/探索中|発見済/)).toBeVisible();
   await expect(page.getByText(/撃退成功|魔王敗北/)).toBeVisible({ timeout: 55000 });
+  await assertNoDocumentScroll(page);
+});
+
+test('battle speed controls remain selectable on narrow screens', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 568 });
+  await page.goto('/');
+  await page.locator('[data-action="start"]').click();
+
+  const speedbar = page.locator('.battle-speedbar');
+  await expect(speedbar).toBeVisible();
+  const targets = await page.evaluate(() => [...document.querySelectorAll('.battle-speedbar [data-set-speed], .battle-speedbar [data-speed-pause]')].map((button) => {
+    const rect = button.getBoundingClientRect();
+    const top = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+    return {
+      action: button.dataset.setSpeed ?? 'pause',
+      width: rect.width,
+      height: rect.height,
+      topIsSelf: top === button
+    };
+  }));
+  expect(targets).toHaveLength(4);
+  expect(targets.every((target) => target.width >= 44 && target.height >= 44 && target.topIsSelf)).toBe(true);
+
+  await page.locator('.battle-speedbar [data-set-speed="4"]').click();
+  expect(await page.evaluate(() => window.__MAOU_GAME__.speed)).toBe(4);
+  await page.locator('.battle-speedbar [data-speed-pause]').click();
+  expect(await page.evaluate(() => window.__MAOU_GAME__.speed)).toBe(0);
+  await page.locator('.battle-speedbar [data-set-speed="2"]').click();
+  await expect(page.locator('.battle-speedbar [data-set-speed="2"]')).toHaveClass(/on/);
+  expect(await page.evaluate(() => window.__MAOU_GAME__.speed)).toBe(2);
   await assertNoDocumentScroll(page);
 });
 
@@ -1091,7 +1121,7 @@ test('battle supports unit selection and map zoom without direct commands', asyn
 test('battle supports pause, log toggle, retry, and map focus controls', async ({ page }) => {
   await page.goto('/');
   await page.locator('[data-action="start"]').click();
-  await page.locator('[data-action="pause"]').click();
+  await page.locator('[data-speed-pause]').click();
   expect(await page.evaluate(() => window.__MAOU_GAME__.speed)).toBe(0);
   await page.locator('[data-action="toggleLog"]').click();
   expect(await page.evaluate(() => window.__MAOU_GAME__.showLog)).toBe(false);

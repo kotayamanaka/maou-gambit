@@ -341,28 +341,43 @@ img { image-rendering: pixelated; }
   top: 12px;
   z-index: 12;
   display: flex;
+  align-items: center;
   gap: 6px;
   padding: 6px;
   border: 1px solid var(--line);
   background: rgba(20, 17, 15, .72);
   backdrop-filter: blur(8px);
   box-shadow: 0 12px 30px rgba(0,0,0,.34);
+  pointer-events: auto;
+  touch-action: manipulation;
+  user-select: none;
+}
+.battle-speedbar .speed-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(48px, 1fr));
+  gap: 5px;
 }
 .battle-speedbar button {
-  min-width: 46px;
-  min-height: 44px;
+  min-width: 48px;
+  min-height: 46px;
   padding: 0 10px;
   border: 1px solid var(--line);
   background: rgba(255,255,255,.07);
   color: #f5ead8;
   font-weight: 900;
+  touch-action: manipulation;
 }
 .battle-speedbar button.on {
   color: #111;
   background: var(--gold);
 }
 .battle-speedbar .speed-pause {
-  min-width: 44px;
+  min-width: 46px;
+  border-color: rgba(90, 191, 199, .38);
+}
+.battle-speedbar .speed-pause[aria-pressed="true"] {
+  background: rgba(90, 191, 199, .26);
+  color: #dbfbff;
 }
 
 .fx {
@@ -872,14 +887,17 @@ img { image-rendering: pixelated; }
   .battle-speedbar {
     left: 8px;
     top: 8px;
-    max-width: calc(100vw - 96px);
+    max-width: calc(100vw - 16px);
     gap: 5px;
     padding: 5px;
+  }
+  .battle-speedbar .speed-options {
+    grid-template-columns: repeat(3, minmax(44px, 1fr));
   }
   .battle-speedbar button {
     min-width: 44px;
     min-height: 44px;
-    padding: 0 8px;
+    padding: 0 7px;
   }
   .unit-picker { padding: 5px; }
   .unit-card {

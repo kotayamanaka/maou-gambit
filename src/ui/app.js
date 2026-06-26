@@ -748,10 +748,12 @@ function battlePanel(game) {
 function battleSpeedbar(game) {
   if (game.phase !== 'battle') return '';
   return `<div class="battle-speedbar" aria-label="戦闘速度">
-    <button class="speed-pause" data-action="pause" title="${game.speed === 0 ? '再開' : '一時停止'}">${game.speed === 0 ? '▶' : 'Ⅱ'}</button>
-    <button class="${game.speed === 1 ? 'on' : ''}" data-set-speed="1" title="等速">1x</button>
-    <button class="${game.speed === 2 ? 'on' : ''}" data-set-speed="2" title="2倍速">2x</button>
-    <button class="${game.speed === 4 ? 'on' : ''}" data-set-speed="4" title="4倍速">4x</button>
+    <button type="button" class="speed-pause" data-speed-pause="true" title="${game.speed === 0 ? '再開' : '一時停止'}" aria-pressed="${game.speed === 0}">${game.speed === 0 ? '▶' : 'Ⅱ'}</button>
+    <div class="speed-options" role="group" aria-label="倍率">
+      <button type="button" class="${game.speed === 1 ? 'on' : ''}" data-set-speed="1" title="等速" aria-pressed="${game.speed === 1}">1x</button>
+      <button type="button" class="${game.speed === 2 ? 'on' : ''}" data-set-speed="2" title="2倍速" aria-pressed="${game.speed === 2}">2x</button>
+      <button type="button" class="${game.speed === 4 ? 'on' : ''}" data-set-speed="4" title="4倍速" aria-pressed="${game.speed === 4}">4x</button>
+    </div>
   </div>`;
 }
 
@@ -833,6 +835,24 @@ export function renderApp(root, game, commit) {
       ${panel}
     </section>
   </main>`;
+
+  function bindFastButton(button, handler) {
+    button.addEventListener('pointerdown', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      button.dataset.pointerHandled = '1';
+      handler();
+    });
+    button.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (button.dataset.pointerHandled === '1') {
+        delete button.dataset.pointerHandled;
+        return;
+      }
+      handler();
+    });
+  }
 
   root.querySelectorAll('[data-unit]').forEach((button) => button.addEventListener('click', () => commit((state) => {
     state.selectedUnitId = button.dataset.unit;
@@ -923,19 +943,17 @@ export function renderApp(root, game, commit) {
   root.querySelectorAll('[data-ui-panel]').forEach((button) => button.addEventListener('click', () => commit((state) => {
     state.uiPanel = button.dataset.uiPanel;
   })));
-  root.querySelectorAll('[data-set-speed]').forEach((button) => button.addEventListener('click', (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    commit((state) => {
-      state.speed = Number(button.dataset.setSpeed);
-    });
-  }));
+  root.querySelectorAll('[data-set-speed]').forEach((button) => bindFastButton(button, () => commit((state) => {
+    state.speed = Number(button.dataset.setSpeed);
+  })));
+  root.querySelectorAll('[data-speed-pause]').forEach((button) => bindFastButton(button, () => commit((state) => {
+    state.speed = state.speed === 0 ? 1 : 0;
+  })));
   root.querySelectorAll('[data-action]').forEach((button) => button.addEventListener('click', () => commit((state) => {
     if (button.dataset.action === 'start') {
       startStage(state);
       focusCameraOn(state, selectedEntity(state), detailZoom());
     }
-    if (button.dataset.action === 'pause') state.speed = state.speed === 0 ? 1 : 0;
     if (button.dataset.action === 'retry') {
       startStage(state);
       focusCameraOn(state, selectedEntity(state), detailZoom());
