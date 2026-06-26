@@ -240,6 +240,19 @@ function unlockHistory(game) {
   </div>`;
 }
 
+function chipDiscoveryCard(game) {
+  const discovery = game.lastChipDiscovery;
+  const chip = chips[discovery?.chipId];
+  if (!discovery || !chip) return '';
+  const category = chipCategories[chip.category] ?? { name: '作戦', icon: '▣' };
+  return `<div class="chip-discovery-card">
+    <span>${discovery.wasKnown ? '追加開発' : '新発見'}</span>
+    <b>${chip.icon} ${chip.name}</b>
+    <small>${category.name}系 / 所持x${discovery.count} / ${discovery.label}</small>
+    <p>${chip.description}</p>
+  </div>`;
+}
+
 function unitCard(unit, game) {
   return `<button class="unit-card ${unit.uid === game.selectedUnitId ? 'on' : ''}" data-unit="${unit.uid}" data-drop-unit="${unit.uid}" draggable="true">
     <img src="${unit.sprite}" alt="${unit.name}" />
@@ -307,7 +320,7 @@ function researchPreview(game, limit = Infinity) {
   });
   if (!labels.length) return '候補なし';
   const visible = labels.slice(0, limit);
-  return `${visible.join(' / ')}${labels.length > limit ? ` / ほか${labels.length - limit}` : ''}`;
+  return `${visible.join(' / ')}${labels.length > limit ? ` / 他${labels.length - limit}` : ''}`;
 }
 
 function roomManagementPanel(game) {
@@ -471,6 +484,7 @@ function researchPanel(game) {
     .join('');
   return `<div class="info-box management-box">
     <b>研究</b>
+    ${chipDiscoveryCard(game)}
     <div class="research-actions">
       <button class="mini decision-card" data-research-chip ${(game.gold ?? 0) < chipCost ? 'disabled' : ''}>
         <span class="choice-top">▣ チップ研究<em>G${chipCost}</em></span>
@@ -505,6 +519,7 @@ function investmentPanel(game) {
   const canPay = (cost) => Number.isFinite(cost) && (game.gold ?? 0) >= cost;
   return `${treasuryPanel(game)}<div class="info-box management-box investment-box">
     <b>投資</b>
+    ${chipDiscoveryCard(game)}
     <div class="investment-grid">
       <button class="mini decision-card" data-research-chip ${!canPay(chipCost) ? 'disabled' : ''}>
         <span class="choice-top">▣ チップ研究<em>G${chipCost}</em></span>

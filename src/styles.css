@@ -838,6 +838,39 @@ img { image-rendering: pixelated; }
 .research-summary {
   margin-top: 5px !important;
 }
+.chip-discovery-card {
+  display: grid;
+  gap: 3px;
+  margin-top: 6px;
+  padding: 8px;
+  border: 1px solid rgba(216, 170, 74, .46);
+  background: linear-gradient(135deg, rgba(216, 170, 74, .18), rgba(40, 31, 23, .64));
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.04), 0 8px 22px rgba(0,0,0,.22);
+}
+.chip-discovery-card span {
+  width: fit-content;
+  padding: 2px 5px;
+  border: 1px solid rgba(245, 220, 170, .18);
+  color: #111;
+  background: var(--gold);
+  font-size: 10px;
+  font-weight: 900;
+}
+.chip-discovery-card b {
+  margin: 0 !important;
+  color: #fff2c9;
+  font-size: 13px !important;
+}
+.chip-discovery-card small {
+  margin: 0 !important;
+}
+.chip-discovery-card p {
+  margin: 1px 0 0;
+  color: #eadbc0;
+  font-size: 11px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
 .decision-meta,
 .focus-strip span {
   display: inline-flex;

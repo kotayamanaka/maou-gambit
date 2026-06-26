@@ -1,5 +1,29 @@
 # PROGRESS
 
+## 2026-06-26 チップ発見カード
+
+### 目的
+
+チップ研究で `????` が判明しても、これまでは小さな履歴とログに埋もれやすかった。段階的に作戦チップが増える体験を強めるため、直近で解放されたチップの名前、カテゴリ、所持数、説明を研究/投資パネル内で読めるようにする。
+
+### 修正
+
+- `lastChipDiscovery` をゲーム状態に追加し、研究、開発、捕獲研究、報酬で増えた直近チップを保持するようにした。
+- 研究パネルと投資パネルに `chip-discovery-card` を追加し、新発見/追加開発、カテゴリ、所持数、説明を表示するようにした。
+- 研究候補の省略表示を `ほか6` から `他6` に短縮し、狭いカード内で不自然に改行されにくくした。
+- Playwrightで、未発見チップ研究後に発見カードと `lastChipDiscovery` が更新されることを固定した。
+
+### スクリーンショット
+
+- `screenshots/chip-discovery-card-desktop.png`
+
+### 検証結果
+
+- `npm test -- --reporter=line -g "chip research|upgrade management|captured enemy research"`: 6件成功。
+- `npm test -- --reporter=line`: 88件成功。
+- `npm run test:balance`: 成功。キャンペーン検収は勝利。
+- `npm run build:pages`: 成功。
+
 ## 2026-06-26 チップ研究の未発見優先
 
 ### 目的

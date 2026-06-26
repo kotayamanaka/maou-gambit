@@ -83,6 +83,7 @@ export function createGame() {
     log: ['魔王軍、配置待機。'],
     chipBag: { ...initialChipBag },
     chipUnlocks: ['接近 x1', '攻撃 x1', '牢屋搬送 x1'],
+    lastChipDiscovery: null,
     collections: {
       allies: new Set(allies.map((ally) => ally.templateId)),
       enemies: new Set(),

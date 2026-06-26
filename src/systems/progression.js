@@ -90,9 +90,16 @@ function createAllyFromTemplate(game, template, sourceLabel = '召喚') {
 
 function discoverChip(game, chipId, label) {
   if (!chips[chipId]) return false;
+  const wasKnown = (game.chipBag?.[chipId] ?? 0) > 0;
   game.chipBag[chipId] = (game.chipBag[chipId] ?? 0) + 1;
   game.collections?.chips?.add?.(chipId);
   game.chipUnlocks = [`${label}: ${chips[chipId].name} +1`, ...(game.chipUnlocks ?? [])].slice(0, 6);
+  game.lastChipDiscovery = {
+    chipId,
+    label,
+    wasKnown,
+    count: game.chipBag[chipId]
+  };
   return true;
 }
 
