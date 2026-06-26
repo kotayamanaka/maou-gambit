@@ -444,6 +444,9 @@ test('setup scout panel exposes high-value intelligence capture targets', async 
     window.__MAOU_COMMIT__((game) => {
       game.stageIndex = 11;
       game.uiPanel = 'info';
+      const goblin = game.allies.find((ally) => ally.templateId === 'goblin');
+      goblin.chips = ['chaseNearest', 'attack'];
+      game.chipBag.carryDowned = 1;
     });
   });
   const scout = page.locator('.next-enemies');
@@ -452,6 +455,14 @@ test('setup scout panel exposes high-value intelligence capture targets', async 
   await expect(scout.getByText('遠距離職を先に止める')).toBeVisible();
   await expect(scout.getByText('短いダウン猶予を拾う')).toBeVisible();
   await expect(scout.getByText(/賢者 捕獲5 残7s .*落 G55 賢者のインク 魔素の粉 .*眷属 影託者 .*養分 攻撃\+1 知識\+6/)).toBeVisible();
+  const prep = page.locator('.capture-prep');
+  await expect(prep).toContainText('捕獲準備');
+  await expect(prep).toContainText('賢者 捕獲5 残7s');
+  await expect(prep).toContainText('搬送役');
+  await page.getByRole('button', { name: /ゴブリンに牢屋搬送/ }).click();
+  await expect(page.locator('[data-ui-panel="chips"]')).toHaveClass(/on/);
+  const goblinChips = await page.evaluate(() => window.__MAOU_GAME__.allies.find((ally) => ally.templateId === 'goblin').chips);
+  expect(goblinChips).toContain('carryDowned');
   await assertNoDocumentScroll(page);
 });
 

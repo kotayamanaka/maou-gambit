@@ -861,6 +861,46 @@ img { image-rendering: pixelated; }
   color: #cbb99c;
   font-size: 10px;
 }
+.capture-prep {
+  display: grid;
+  gap: 6px;
+  padding: 6px;
+  border: 1px solid rgba(99, 194, 124, .24);
+  background: rgba(13, 27, 18, .22);
+}
+.capture-prep > b {
+  color: #a8e8a8;
+  font-size: 11px;
+}
+.capture-prep-grid {
+  display: grid;
+  gap: 5px;
+}
+.capture-prep-grid span {
+  min-width: 0;
+  padding: 5px 6px;
+  background: rgba(255,255,255,.055);
+  color: #cbb99c;
+  font-size: 10px;
+}
+.capture-prep-grid em {
+  display: block;
+  margin-top: 2px;
+  color: #f5ead8;
+  font-style: normal;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+.capture-prep-action {
+  justify-self: start;
+  min-height: 30px;
+  padding: 4px 8px;
+  border: 1px solid rgba(99, 194, 124, .36);
+  background: rgba(99, 194, 124, .14);
+  color: #d7ffd7;
+  font-size: 11px;
+  font-weight: 900;
+}
 .investment-advice {
   display: grid;
   gap: 5px;
