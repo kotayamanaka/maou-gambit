@@ -138,8 +138,8 @@ img { image-rendering: pixelated; }
 
 .actor {
   position: relative;
-  width: 44px;
-  height: 44px;
+  width: 58px;
+  height: 58px;
   border-radius: 4px;
   background: rgba(0,0,0,.18);
   display: grid;
@@ -157,17 +157,18 @@ img { image-rendering: pixelated; }
 
 .actor-layer .actor {
   position: absolute;
-  margin-left: -22px;
-  margin-top: -22px;
+  margin-left: -29px;
+  margin-top: -29px;
   animation: mapBob 0.9s steps(2) infinite;
   pointer-events: auto;
 }
 
 .actor img {
-  width: 40px;
-  height: 40px;
+  width: 54px;
+  height: 54px;
   object-fit: contain;
   image-rendering: pixelated;
+  transform-origin: 50% 80%;
 }
 
 .actor.ally { box-shadow: 0 0 0 1px rgba(99, 194, 124, .35); }
@@ -176,13 +177,20 @@ img { image-rendering: pixelated; }
 .actor.selected { box-shadow: 0 0 0 2px var(--gold); }
 .actor.enemy.selected { box-shadow: 0 0 0 2px var(--red); }
 .actor.downed { opacity: .76; filter: grayscale(.35); animation: blink 0.7s steps(2) infinite; }
+.actor.anim-walk img { animation: walkStep .42s steps(2) infinite; }
+.actor.anim-attack img { animation: attackSnap .34s steps(2) both; }
+.actor.anim-downed img { transform: translateY(5px) rotate(-8deg) scale(1.04); }
+.actor.face-left.anim-attack img { --attack-x: -7px; }
+.actor.face-right.anim-attack img { --attack-x: 7px; }
+.actor.face-front.anim-attack img { --attack-y: 7px; }
+.actor.face-back.anim-attack img { --attack-y: -7px; }
 
 .mini-hp {
   position: absolute;
-  left: 3px;
-  right: 3px;
-  bottom: -2px;
-  height: 4px;
+  left: 4px;
+  right: 4px;
+  bottom: -3px;
+  height: 5px;
   background: #3c1717;
 }
 .mini-hp::after {
@@ -681,6 +689,15 @@ img { image-rendering: pixelated; }
 
 @keyframes bob { 50% { transform: translateY(-2px); } }
 @keyframes mapBob { 50% { transform: translateY(-2px); } }
+@keyframes walkStep {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-3px) scale(1.03, .98); }
+}
+@keyframes attackSnap {
+  0% { transform: translate(0, 0) scale(1); filter: brightness(1); }
+  42% { transform: translate(var(--attack-x, 0), var(--attack-y, 0)) scale(1.12); filter: brightness(1.45); }
+  100% { transform: translate(0, 0) scale(1); filter: brightness(1); }
+}
 @keyframes blink { 50% { opacity: .45; } }
 @keyframes pop { from { opacity: 0; transform: translate(-50%, 10px) scale(.8); } to { opacity: 1; transform: translate(-50%, -28px) scale(1); } }
 @keyframes hitPop {
@@ -705,9 +722,9 @@ img { image-rendering: pixelated; }
     padding: 4px;
   }
   .room-name { font-size: 10px; }
-  .actor { width: 34px; height: 34px; }
-  .actor-layer .actor { margin-left: -17px; margin-top: -17px; }
-  .actor img { width: 31px; height: 31px; }
+  .actor { width: 48px; height: 48px; }
+  .actor-layer .actor { margin-left: -24px; margin-top: -24px; }
+  .actor img { width: 44px; height: 44px; }
   .panel {
     left: 7px;
     right: 7px;
@@ -751,9 +768,9 @@ img { image-rendering: pixelated; }
 @media (max-width: 430px) {
   .room { padding: 4px; }
   .room-name { font-size: 9px; }
-  .actor { width: 31px; height: 31px; }
-  .actor-layer .actor { margin-left: -15px; margin-top: -15px; }
-  .actor img { width: 28px; height: 28px; }
+  .actor { width: 48px; height: 48px; }
+  .actor-layer .actor { margin-left: -24px; margin-top: -24px; }
+  .actor img { width: 44px; height: 44px; }
   .panel-head { font-size: 13px; }
   .stage-pill, .boss-box, .detail-card, .unit-picker, .room-picker, .chips-box, .log, .empty { padding: 6px; }
   .mini, .chip, .upgrade-actions button, .panel button { min-height: 34px; }

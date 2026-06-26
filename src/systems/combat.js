@@ -63,10 +63,10 @@ export function roomPoint(roomId, unit, game = null) {
   const room = roomView(game, roomId);
   if (!room) return { x: unit.x ?? 0, y: unit.y ?? 0 };
   const lane = hashOffset(unit.uid ?? unit.id ?? unit.name) - 0.5;
-  const side = unit.type === 'enemy' ? -0.3 : unit.type === 'boss' ? 0.18 : 0.24;
+  const side = unit.type === 'enemy' ? -0.34 : unit.type === 'boss' ? 0.22 : 0.3;
   return {
-    x: room.x + Math.min(room.w * Math.abs(side), 48) * Math.sign(side),
-    y: room.y + lane * Math.min(room.h * 0.38, 34)
+    x: room.x + Math.min(room.w * Math.abs(side), 66) * Math.sign(side),
+    y: room.y + lane * Math.min(room.h * 0.42, 52)
   };
 }
 

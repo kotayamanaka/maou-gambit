@@ -1,4 +1,4 @@
-import { buildSlots, rooms, roomById, roomView, slotTaken } from '../data/rooms.js';
+import { buildSlots, rooms, roomById, roomView, slotTaken, worldSize } from '../data/rooms.js';
 import { chips } from '../data/chips.js';
 import { chipCategories } from '../data/chips.js';
 import { enemyChips } from '../data/enemyChips.js';
@@ -59,6 +59,51 @@ function selectedEntity(game) {
   if (selected.type === 'downed') return game.downed.find((unit) => unit.uid === selected.id);
   if (selected.type === 'lord') return game.demonLord;
   return selectedUnit(game);
+}
+
+const cameraLimits = { min: 0.32, max: 2.6 };
+
+function clampZoom(zoom) {
+  return Math.max(cameraLimits.min, Math.min(cameraLimits.max, zoom));
+}
+
+function viewportSize() {
+  return {
+    width: window.innerWidth || 1200,
+    height: window.innerHeight || 760
+  };
+}
+
+function overviewCamera() {
+  const view = viewportSize();
+  const padding = view.width < 720 ? 12 : 30;
+  const zoom = clampZoom(Math.min(
+    (view.width - padding * 2) / worldSize.width,
+    (view.height - padding * 2) / worldSize.height,
+    0.78
+  ));
+  return {
+    zoom: +zoom.toFixed(3),
+    x: Math.round((view.width - worldSize.width * zoom) / 2),
+    y: Math.round((view.height - worldSize.height * zoom) / 2)
+  };
+}
+
+function detailZoom() {
+  const view = viewportSize();
+  return view.width < 720 ? 1.3 : 1.38;
+}
+
+function focusCameraOn(state, entity, preferredZoom = null) {
+  if (!entity) return;
+  const view = viewportSize();
+  const current = state.camera?.zoom ?? detailZoom();
+  const zoom = clampZoom(preferredZoom ?? Math.max(current, detailZoom()));
+  state.camera = {
+    zoom: +zoom.toFixed(3),
+    x: Math.round(view.width * (view.width < 720 ? 0.5 : 0.42) - (entity.x ?? 0) * zoom),
+    y: Math.round(view.height * (view.width < 720 ? 0.34 : 0.45) - (entity.y ?? 0) * zoom)
+  };
 }
 
 function hpBar(current, max) {
@@ -776,11 +821,20 @@ export function renderApp(root, game, commit) {
     state.uiPanel = button.dataset.uiPanel;
   })));
   root.querySelectorAll('[data-action]').forEach((button) => button.addEventListener('click', () => commit((state) => {
-    if (button.dataset.action === 'start') startStage(state);
+    if (button.dataset.action === 'start') {
+      startStage(state);
+      focusCameraOn(state, selectedEntity(state), detailZoom());
+    }
     if (button.dataset.action === 'pause') state.speed = state.speed === 0 ? 1 : 0;
     if (button.dataset.action === 'speed') state.speed = state.speed <= 1 ? 2 : state.speed === 2 ? 4 : 1;
-    if (button.dataset.action === 'retry') startStage(state);
-    if (button.dataset.action === 'retreat') resetToSetup(state);
+    if (button.dataset.action === 'retry') {
+      startStage(state);
+      focusCameraOn(state, selectedEntity(state), detailZoom());
+    }
+    if (button.dataset.action === 'retreat') {
+      resetToSetup(state);
+      state.camera = overviewCamera();
+    }
     if (button.dataset.action === 'toggleLog') state.showLog = !state.showLog;
     if (button.dataset.action === 'upgrade') state.phase = 'upgrade';
     if (button.dataset.action === 'nextStage') finishUpgrade(state);
@@ -793,23 +847,15 @@ export function renderApp(root, game, commit) {
       if (button.dataset.selectType === 'ally') state.selectedUnitId = button.dataset.selectId;
     });
   }));
-  const focusCameraOn = (state, entity) => {
-    if (!entity) return;
-    state.camera ??= { zoom: 0.78, x: 16, y: 16 };
-    const zoom = Math.max(0.72, state.camera.zoom);
-    state.camera.zoom = zoom;
-    state.camera.x = Math.round(window.innerWidth * 0.42 - (entity.x ?? 0) * zoom);
-    state.camera.y = Math.round(window.innerHeight * 0.42 - (entity.y ?? 0) * zoom);
-  };
   root.querySelectorAll('[data-mapaction]').forEach((button) => button.addEventListener('click', () => commit((state) => {
-    state.camera ??= { zoom: 1, x: 0, y: 0 };
-    if (button.dataset.mapaction === 'zoomIn') state.camera.zoom = Math.min(1.65, +(state.camera.zoom + 0.15).toFixed(2));
-    if (button.dataset.mapaction === 'zoomOut') state.camera.zoom = Math.max(0.42, +(state.camera.zoom - 0.15).toFixed(2));
+    state.camera ??= overviewCamera();
+    if (button.dataset.mapaction === 'zoomIn') state.camera.zoom = clampZoom(+(state.camera.zoom + 0.18).toFixed(2));
+    if (button.dataset.mapaction === 'zoomOut') state.camera.zoom = clampZoom(+(state.camera.zoom - 0.18).toFixed(2));
     if (button.dataset.mapaction === 'panLeft') state.camera.x += 72;
     if (button.dataset.mapaction === 'panRight') state.camera.x -= 72;
     if (button.dataset.mapaction === 'panUp') state.camera.y += 72;
     if (button.dataset.mapaction === 'panDown') state.camera.y -= 72;
-    if (button.dataset.mapaction === 'reset') state.camera = { zoom: 0.78, x: 16, y: 16 };
+    if (button.dataset.mapaction === 'reset') state.camera = overviewCamera();
     if (button.dataset.mapaction === 'focusSelected') focusCameraOn(state, selectedEntity(state));
     if (button.dataset.mapaction === 'focusEnemy') focusCameraOn(state, state.enemies[0] ?? state.downed[0]);
   })));
@@ -829,15 +875,22 @@ export function renderApp(root, game, commit) {
     const getCenter = (a, b) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
     mapShell.addEventListener('wheel', (event) => {
       event.preventDefault();
-      const camera = game.camera ?? { zoom: 0.78, x: 16, y: 16 };
-      const next = { ...camera };
+      const camera = game.camera ?? overviewCamera();
+      const rect = mapShell.getBoundingClientRect();
+      const localX = event.clientX - rect.left;
+      const localY = event.clientY - rect.top;
+      const worldX = (localX - camera.x) / camera.zoom;
+      const worldY = (localY - camera.y) / camera.zoom;
       const delta = event.deltaY < 0 ? 0.1 : -0.1;
-      next.zoom = Math.max(0.42, Math.min(1.9, +(next.zoom + delta).toFixed(2)));
+      const nextZoom = clampZoom(+(camera.zoom + delta).toFixed(2));
+      const next = {
+        zoom: nextZoom,
+        x: Math.round(localX - worldX * nextZoom),
+        y: Math.round(localY - worldY * nextZoom)
+      };
       applyCamera(next);
       commit((state) => {
-        state.camera ??= { zoom: 0.78, x: 16, y: 16 };
-        const delta = event.deltaY < 0 ? 0.1 : -0.1;
-        state.camera.zoom = Math.max(0.42, Math.min(1.9, +(state.camera.zoom + delta).toFixed(2)));
+        state.camera = next;
       });
     }, { passive: false });
     mapShell.addEventListener('pointerdown', (event) => {
@@ -848,13 +901,18 @@ export function renderApp(root, game, commit) {
       } catch {
         // Synthetic and some touch events can fail capture; map gestures still work without it.
       }
-      draftCamera = { ...(game.camera ?? { zoom: 0.78, x: 16, y: 16 }) };
+      draftCamera = { ...(game.camera ?? overviewCamera()) };
       if (pointers.size === 2) {
         const [a, b] = [...pointers.values()];
+        const center = getCenter(a, b);
         pinch = {
           distance: getDistance(a, b),
-          center: getCenter(a, b),
-          camera: { ...draftCamera }
+          center,
+          camera: { ...draftCamera },
+          worldCenter: {
+            x: (center.x - draftCamera.x) / draftCamera.zoom,
+            y: (center.y - draftCamera.y) / draftCamera.zoom
+          }
         };
         dragging = false;
         last = null;
@@ -870,10 +928,10 @@ export function renderApp(root, game, commit) {
         const [a, b] = [...pointers.values()];
         const center = getCenter(a, b);
         const distance = Math.max(24, getDistance(a, b));
-        const nextZoom = Math.max(0.42, Math.min(1.9, +(pinch.camera.zoom * (distance / pinch.distance)).toFixed(3)));
+        const nextZoom = clampZoom(+(pinch.camera.zoom * (distance / pinch.distance)).toFixed(3));
         draftCamera.zoom = nextZoom;
-        draftCamera.x = pinch.camera.x + (center.x - pinch.center.x);
-        draftCamera.y = pinch.camera.y + (center.y - pinch.center.y);
+        draftCamera.x = Math.round(center.x - pinch.worldCenter.x * nextZoom);
+        draftCamera.y = Math.round(center.y - pinch.worldCenter.y * nextZoom);
         applyCamera(draftCamera);
         return;
       }

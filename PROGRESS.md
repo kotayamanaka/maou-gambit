@@ -1,5 +1,34 @@
 # PROGRESS
 
+## 2026-06-26 序盤敵スプライトと戦闘近景カメラを改善
+
+### 実装
+
+- 画像生成で戦士、盗賊、魔法使いの3職をまとめた冒険者スプライトシートを作成。
+- 生成原本を `assets/generated/characters/enemy-adventurers/sheet-v1.png` に保存。
+- `scripts/slice_enemy_adventurers_sheet.py` を追加し、3職それぞれを `idle`、`walk`、`attack`、`downed` x `front/back/left/right` に切り出すようにした。
+- `warrior`、`rogue`、`mage` を生成スプライトの `spriteSet` 参照へ切り替えた。
+- 後半敵の人型テンプレートも暫定で `warrior`、`rogue`、`mage` の生成素材を共有するようにした。
+- 戦闘開始時のカメラを選択中ユニットへ近景フォーカスするようにした。PCはズーム1.38、スマホはズーム1.3を基準にする。
+- マップリセットは固定値ではなく、現在の画面サイズに合わせてワールド全体が収まるズームを計算するようにした。
+- ホイールズームとピンチズームは、画面/指の中心を基準に拡大縮小するようにした。
+- キャラ表示サイズを拡大し、歩行と攻撃のCSSモーションを追加。拡大時に動きが読みやすいよう、部屋内の敵味方の立ち位置も少し広げた。
+
+### 検証結果
+
+- `npm test -- --reporter=line -g "battle supports unit selection|map supports pinch|early enemy templates"`: 6件成功
+- `npm run build`: 成功
+- PC近景スクリーンショットで味方キャラ幅約80px、スマホ近景スクリーンショットで約62pxを確認。
+- PC/スマホとも画面全体スクロールなし。リセットで近景から全体図へ戻ることを確認。
+
+### スクリーンショット
+
+- `screenshots/action-scale-desktop.png`
+- `screenshots/action-scale-overview-desktop.png`
+- `screenshots/action-scale-mobile.png`
+- `screenshots/enemy-adventurers-desktop.png`
+- `screenshots/enemy-adventurers-mobile.png`
+
 ## 2026-06-26 直角通路・必要時メニュー・配置スロットを実装
 
 ### 実装

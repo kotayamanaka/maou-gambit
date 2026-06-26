@@ -14,6 +14,8 @@
 ```text
 assets/generated/
   characters/
+    enemy-adventurers/
+      sheet-v1.png
     <unit-id>/
       idle-front.png
       idle-back.png
@@ -57,6 +59,12 @@ assets/generated/
 - 原本切り出し先: `assets/generated/characters/<unit-id>/`
 - ゲーム参照先: `public/assets/sprites/<unit-id>/`
 - 背景の `#ff00ff` は透明化し、ゲーム表示用に半分サイズへ縮小する。
+- 序盤敵冒険者の生成シートは `scripts/slice_enemy_adventurers_sheet.py` で、横3職 x 4方向 x 4動作に切り出す。
+- 入力: `assets/generated/characters/enemy-adventurers/sheet-v1.png`
+- 対象: `warrior`、`rogue`、`mage`
+- 原本切り出し先: `assets/generated/characters/<unit-id>/`
+- ゲーム参照先: `public/assets/sprites/<unit-id>/`
+- 背景の `#ff00ff` は透明化し、ゲーム表示用に半分サイズへ縮小する。
 - ダンジョン床タイルの生成シートは `scripts/slice_dungeon_tiles.py` で、横3枚のタイルに切り出す。
 - 入力: `assets/generated/dungeon/tiles/sheet-v1.png`
 - 対象: `floor-stone`、`room-stone`、`corridor-stone`
@@ -80,6 +88,7 @@ assets/generated/
 
 - `goblin` と `goblinChief` は `spriteSet` として `idle`、`walk`、`attack`、`downed` の上下左右スプライトを参照する。
 - `slime`、`poisonSlime`、`darkSlime`、`plagueSlime` は `spriteSet` として生成スライム素材を参照する。`plagueSlime` は暫定で `poisonSlime` と同じ素材を使う。
+- `warrior`、`rogue`、`mage` は生成した冒険者素材を参照する。後半敵の `guard`、`knight`、`paladin`、`hero` は暫定で `warrior`、`ranger`、`beastTamer` は `rogue`、`cleric`、`alchemist`、`sage` は `mage` の素材を共有する。
 - ダンジョンマップは `floor-stone` を背景床、`room-stone` を部屋床、`corridor-stone` を通路床として参照する。
 - 通路は部屋中心同士の斜め直線ではなく、部屋の扉から水平・垂直の直角セグメントとして描画する。
 - ゲーム中は座標移動の向きから `front/back/left/right` を更新し、移動中は `walk`、攻撃直後は `attack` を表示する。

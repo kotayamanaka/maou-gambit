@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { enemyTemplates } from '../src/data/units.js';
 
 async function assertNoDocumentScroll(page) {
   const metrics = await page.evaluate(() => ({
@@ -227,6 +228,22 @@ test('slime variants use generated directional action sprites', async ({ page })
   });
   await expect(page.locator('.actor.ally.selected img')).toHaveAttribute('src', /slime\/attack-front\.png/);
   await assertNoDocumentScroll(page);
+});
+
+test('early enemy templates use generated directional action sprites', () => {
+  for (const [id, sample] of [
+    ['warrior', 'attack-left'],
+    ['rogue', 'walk-right'],
+    ['mage', 'downed-back']
+  ]) {
+    const [pose, facing] = sample.split('-');
+    expect(enemyTemplates[id].sprite).toBe(`assets/sprites/${id}/idle-front.png`);
+    expect(enemyTemplates[id].spriteSet[pose][facing]).toBe(`assets/sprites/${id}/${sample}.png`);
+    expect(enemyTemplates[id].spriteSet.idle.front).toBe(`assets/sprites/${id}/idle-front.png`);
+  }
+  expect(enemyTemplates.knight.spriteSet.attack.front).toBe('assets/sprites/warrior/attack-front.png');
+  expect(enemyTemplates.ranger.spriteSet.walk.left).toBe('assets/sprites/rogue/walk-left.png');
+  expect(enemyTemplates.sage.spriteSet.attack.right).toBe('assets/sprites/mage/attack-right.png');
 });
 
 test('stage runs and reaches result screen', async ({ page }) => {
@@ -751,6 +768,10 @@ test('battle supports unit selection and map zoom without direct commands', asyn
   await page.goto('/');
   await page.locator('[data-action="start"]').click();
   await expect(page.getByText('防衛中')).toBeVisible();
+  const battleCamera = await page.evaluate(() => window.__MAOU_GAME__.camera);
+  expect(battleCamera.zoom).toBeGreaterThanOrEqual(1.2);
+  const actorBox = await page.locator('.actor.ally').first().boundingBox();
+  expect(actorBox.width).toBeGreaterThanOrEqual(62);
   await page.locator('.actor.ally').first().click();
   await expect(page.getByText(/HP \d+\/\d+ \/ ATK/)).toBeVisible();
   await expect(page.locator('[data-command-room]')).toHaveCount(0);
@@ -758,6 +779,9 @@ test('battle supports unit selection and map zoom without direct commands', asyn
   await page.getByRole('button', { name: '＋' }).click();
   const transform = await page.locator('.map-world').evaluate((el) => getComputedStyle(el).transform);
   expect(transform).not.toBe('none');
+  await page.locator('[data-mapaction="reset"]').click();
+  const overviewCamera = await page.evaluate(() => window.__MAOU_GAME__.camera);
+  expect(overviewCamera.zoom).toBeLessThan(battleCamera.zoom);
   await assertNoDocumentScroll(page);
 });
 
