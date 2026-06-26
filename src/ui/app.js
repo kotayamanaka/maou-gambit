@@ -245,11 +245,13 @@ function chipDiscoveryCard(game) {
   const chip = chips[discovery?.chipId];
   if (!discovery || !chip) return '';
   const category = chipCategories[chip.category] ?? { name: '作戦', icon: '▣' };
+  const canPrepare = game.phase === 'upgrade' && game.stageIndex < stages.length - 1;
   return `<div class="chip-discovery-card">
     <span>${discovery.wasKnown ? '追加開発' : '新発見'}</span>
     <b>${chip.icon} ${chip.name}</b>
     <small>${category.name}系 / 所持x${discovery.count} / ${discovery.label}</small>
     <p>${chip.description}</p>
+    ${canPrepare ? `<button class="mini discovery-equip" data-action="prepareChip" data-prepare-chip="${discovery.chipId}">編成で試す</button>` : ''}
   </div>`;
 }
 
@@ -1094,6 +1096,14 @@ export function renderApp(root, game, commit) {
     if (button.dataset.action === 'toggleLog') state.showLog = !state.showLog;
     if (button.dataset.action === 'upgrade') state.phase = 'upgrade';
     if (button.dataset.action === 'nextStage') finishUpgrade(state);
+    if (button.dataset.action === 'prepareChip') {
+      const chipId = button.dataset.prepareChip;
+      finishUpgrade(state);
+      if (state.phase === 'setup') {
+        state.uiPanel = 'chips';
+        state.selectedChipId = chipId;
+      }
+    }
     if (button.dataset.action === 'restart' || button.dataset.action === 'newRun') location.reload();
   })));
   root.querySelectorAll('[data-select-type]').forEach((button) => button.addEventListener('click', (event) => {

@@ -871,6 +871,15 @@ img { image-rendering: pixelated; }
   line-height: 1.45;
   overflow-wrap: anywhere;
 }
+.chip-discovery-card .discovery-equip {
+  width: fit-content;
+  min-height: 28px;
+  margin-top: 2px;
+  border-color: rgba(216, 170, 74, .58);
+  color: #111;
+  background: var(--gold);
+  font-weight: 900;
+}
 .decision-meta,
 .focus-strip span {
   display: inline-flex;

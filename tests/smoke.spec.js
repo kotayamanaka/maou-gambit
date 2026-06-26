@@ -1235,6 +1235,19 @@ test('chip research prioritizes undiscovered chips before known upgrades', async
   expect(state.unlock).toContain('希少狙い');
   expect(state.discovery.chipId).toBe('focusRare');
   expect(state.discovery.wasKnown).toBe(false);
+  await page.getByRole('button', { name: /編成で試す/ }).click();
+  const setupState = await page.evaluate(() => ({
+    phase: window.__MAOU_GAME__.phase,
+    uiPanel: window.__MAOU_GAME__.uiPanel,
+    selectedChipId: window.__MAOU_GAME__.selectedChipId,
+    stageIndex: window.__MAOU_GAME__.stageIndex
+  }));
+  expect(setupState.phase).toBe('setup');
+  expect(setupState.uiPanel).toBe('chips');
+  expect(setupState.selectedChipId).toBe('focusRare');
+  expect(setupState.stageIndex).toBe(1);
+  await expect(page.locator('.chip-detail')).toContainText('希少狙い');
+  await expect(page.locator('[data-chip="focusRare"]')).toHaveClass(/selected-chip/);
 });
 
 test('risky rooms trigger concrete tradeoffs when invaders enter', async ({ page }) => {
