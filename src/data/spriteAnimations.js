@@ -1,4 +1,28 @@
-const animatedUnits = ['goblin', 'slime', 'warrior', 'rogue', 'mage', 'guard'];
+const animatedUnits = [
+  'alchemist',
+  'bat',
+  'beastTamer',
+  'boneGuard',
+  'cleric',
+  'darkMage',
+  'darkSlime',
+  'fallenWarrior',
+  'goblin',
+  'guard',
+  'hero',
+  'impArcher',
+  'knight',
+  'mage',
+  'oracleShade',
+  'paladin',
+  'poisonSlime',
+  'ranger',
+  'rogue',
+  'sage',
+  'shadeRunner',
+  'slime',
+  'warrior'
+];
 const directions = ['front', 'back', 'left', 'right'];
 
 function actionFrames(unitId, action, direction, count) {

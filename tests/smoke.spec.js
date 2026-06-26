@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 import fs from 'node:fs';
 import path from 'node:path';
 import { roomById, worldSize } from '../src/data/rooms.js';
+import { spriteAnimations } from '../src/data/spriteAnimations.js';
 import { allyTemplates, enemyTemplates } from '../src/data/units.js';
 
 async function assertNoDocumentScroll(page) {
@@ -364,22 +365,18 @@ test('slime variants use generated directional action sprites', async ({ page })
   await assertNoDocumentScroll(page);
 });
 
-test('micro animation sprite frames are generated and connected for starter units', () => {
-  for (const [id, template] of [
-    ['goblin', allyTemplates.goblin],
-    ['slime', allyTemplates.slime],
-    ['warrior', enemyTemplates.warrior],
-    ['rogue', enemyTemplates.rogue],
-    ['mage', enemyTemplates.mage],
-    ['guard', enemyTemplates.guard]
-  ]) {
-    expect(Array.isArray(template.spriteSet.walk.front), `${id} walk front`).toBe(true);
-    expect(Array.isArray(template.spriteSet.attack.front), `${id} attack front`).toBe(true);
-    expect(template.spriteSet.walk.front).toHaveLength(3);
-    expect(template.spriteSet.attack.front).toHaveLength(2);
-    expect(template.spriteSet.idle.front).toBe(`assets/sprites/${id}/idle-front.png`);
+test('micro animation sprite frames are generated and connected for sprite folders', () => {
+  const animatedFolders = Object.keys(spriteAnimations).sort();
+  expect(animatedFolders.length).toBe(23);
+
+  for (const id of animatedFolders) {
+    const animation = spriteAnimations[id];
+    expect(Array.isArray(animation.walk.front), `${id} walk front`).toBe(true);
+    expect(Array.isArray(animation.attack.front), `${id} attack front`).toBe(true);
+    expect(animation.walk.front).toHaveLength(3);
+    expect(animation.attack.front).toHaveLength(2);
     for (const direction of ['front', 'back', 'left', 'right']) {
-      for (const pathName of [...template.spriteSet.walk[direction], ...template.spriteSet.attack[direction]]) {
+      for (const pathName of [...animation.walk[direction], ...animation.attack[direction]]) {
         const file = path.join(process.cwd(), 'public', pathName);
         expect(fs.existsSync(file), `${id}/${pathName}`).toBe(true);
         const size = pngSize(file);
@@ -387,6 +384,15 @@ test('micro animation sprite frames are generated and connected for starter unit
         expect(size.height).toBeGreaterThan(8);
       }
     }
+  }
+
+  for (const [id, template] of Object.entries({ ...allyTemplates, ...enemyTemplates })) {
+    const spritePath = template.spriteSet?.idle?.front ?? '';
+    const folder = spritePath.split('/').at(-2);
+    if (!spriteAnimations[folder]) continue;
+    expect(Array.isArray(template.spriteSet.walk.front), `${id} uses animated ${folder} walk`).toBe(true);
+    expect(Array.isArray(template.spriteSet.attack.front), `${id} uses animated ${folder} attack`).toBe(true);
+    expect(template.spriteSet.idle.front).toBe(`assets/sprites/${folder}/idle-front.png`);
   }
 });
 
@@ -506,7 +512,8 @@ test('generated ally sprite folders contain four directions for each action', ()
   ];
   for (const unitId of ['bat', 'fallenWarrior', 'shadeRunner', 'darkMage', 'boneGuard', 'impArcher', 'oracleShade']) {
     const dir = path.resolve('public', 'assets', 'sprites', unitId);
-    expect(fs.readdirSync(dir).filter((name) => name.endsWith('.png')).sort()).toEqual([...required].sort());
+    const files = fs.readdirSync(dir).filter((name) => name.endsWith('.png'));
+    for (const name of required) expect(files).toContain(name);
     const source = pngSize(path.resolve('assets', 'generated', 'characters', unitId, 'sheet-v1-4dir.png'));
     expect(source.width).toBeGreaterThan(900);
     expect(source.height).toBeGreaterThan(900);

@@ -103,7 +103,7 @@ assets/generated/
 - ゲーム表示用に128px四方へ縮小し、マップ背景・部屋背景・直角通路のテクスチャとして使う。
 - 基盤検証用の微差分アニメーションフレームは `scripts/make_micro_animation_frames.py` で作る。
 - 入力: `public/assets/sprites/<unit-id>/walk-front.png` や `attack-front.png` など既存のゲーム表示用PNG。
-- 対象: `goblin`、`slime`、`warrior`、`rogue`、`mage`、`guard`。
+- 対象: `walk` と `attack` の上下左右PNGが揃っている `public/assets/sprites/<unit-id>/` を自動検出する。現時点では魔王以外の23スプライトフォルダが対象。
 - 出力: `walk-<direction>-0..2.png` と `attack-<direction>-0..1.png`。元PNGは上書きしない。
 - 透明背景を維持し、ドット絵の拡縮/移動はNEAREST前提。walkは軽い上下/左右差分、attackは踏み込み方向への数px移動と軽い明度差分に留める。
 - `scripts/make_sprite_animation_audit.py` で `screenshots/sprite-animation-audit.png` を作成し、walk/attackのフレーム差分を一覧検収する。
@@ -131,7 +131,7 @@ assets/generated/
 - ダンジョンマップは `floor-stone` を背景床、`room-stone` を部屋床、`corridor-stone` を通路床として参照する。
 - 通路は部屋中心同士の斜め直線ではなく、部屋の扉から水平・垂直の直角セグメントとして描画する。
 - ゲーム中は座標移動の向きから `front/back/left/right` を更新し、移動中は `walk`、攻撃直後は `attack` を表示する。
-- `goblin`、`slime`、`warrior`、`rogue`、`mage`、`guard` は、基盤検証用の `walk` 3フレーム、`attack` 2フレーム配列に接続済み。その他のユニットは単一PNG参照のまま従来どおり表示する。
+- 魔王以外の23スプライトフォルダは、基盤検証用の `walk` 3フレーム、`attack` 2フレーム配列に接続済み。`demonLord` は現時点では専用の単体表示素材で、単一PNG fallback の検証対象として扱う。
 - 遠距離攻撃は `attack` スプライトを直接見せず、キャラ本体は構え姿勢、射出物は `projectile arrow/magic` エフェクトで別表示する。キャラ絵とエフェクトで矢/魔法玉を重複させない。
 - まだ完全専用生成されていない後半敵職は、既存生成素材をベースにした色違い亜種として運用し、順次 `slice_dedicated_enemy_sheets.py` で専用シートへ差し替える。
 

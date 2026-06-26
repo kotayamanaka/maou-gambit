@@ -6,7 +6,6 @@ from PIL import Image, ImageDraw, ImageFont
 ROOT = Path(__file__).resolve().parents[1]
 SPRITES = ROOT / "public" / "assets" / "sprites"
 OUT = ROOT / "screenshots" / "sprite-animation-audit.png"
-UNITS = ["goblin", "slime", "warrior", "rogue", "mage", "guard"]
 DIRECTIONS = ["front", "back", "left", "right"]
 ROWS = [
     ("walk", 3),
@@ -17,6 +16,23 @@ LABEL_W = 112
 UNIT_H = 34
 ROW_H = CELL
 MAX_FRAMES = max(count for _, count in ROWS)
+
+
+def has_action_frames(unit_dir):
+    return all(
+        (unit_dir / f"{action}-{direction}-{index}.png").exists()
+        for action, count in ROWS
+        for direction in DIRECTIONS
+        for index in range(count)
+    )
+
+
+def animation_units():
+    return [
+        unit_dir.name
+        for unit_dir in sorted(SPRITES.iterdir())
+        if unit_dir.is_dir() and has_action_frames(unit_dir)
+    ]
 
 
 def frame_path(unit_id, action, direction, index):
@@ -34,14 +50,15 @@ def paste_centered(canvas, image, x, y):
 
 
 def main():
+    units = animation_units()
     font = ImageFont.load_default()
     width = LABEL_W + len(DIRECTIONS) * MAX_FRAMES * CELL
-    height = len(UNITS) * (UNIT_H + len(ROWS) * ROW_H)
+    height = len(units) * (UNIT_H + len(ROWS) * ROW_H)
     canvas = Image.new("RGBA", (width, height), (22, 18, 16, 255))
     draw = ImageDraw.Draw(canvas)
 
     y = 0
-    for unit_id in UNITS:
+    for unit_id in units:
         draw.rectangle((0, y, width, y + UNIT_H), fill=(38, 30, 24, 255))
         draw.text((12, y + 11), unit_id, fill=(244, 223, 176, 255), font=font)
         x = LABEL_W
@@ -69,7 +86,7 @@ def main():
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
     canvas.save(OUT)
-    print(OUT)
+    print(f"{OUT} ({len(units)} units)")
 
 
 if __name__ == "__main__":

@@ -5,7 +5,6 @@ from PIL import Image, ImageEnhance
 
 ROOT = Path(__file__).resolve().parents[1]
 SPRITES = ROOT / "public" / "assets" / "sprites"
-UNITS = ["goblin", "slime", "warrior", "rogue", "mage", "guard"]
 DIRECTIONS = ["front", "back", "left", "right"]
 WALK_OFFSETS = {
     "front": [(0, 0), (-1, -1), (1, 0)],
@@ -19,6 +18,22 @@ ATTACK_OFFSETS = {
     "left": (-4, 0),
     "right": (4, 0),
 }
+
+
+def has_action_set(unit_dir):
+    return all(
+        (unit_dir / f"{action}-{direction}.png").exists()
+        for action in ("walk", "attack")
+        for direction in DIRECTIONS
+    )
+
+
+def animation_units():
+    return [
+        unit_dir.name
+        for unit_dir in sorted(SPRITES.iterdir())
+        if unit_dir.is_dir() and has_action_set(unit_dir)
+    ]
 
 
 def shifted(image, offset, brighten=1.0):
@@ -59,15 +74,13 @@ def write_attack_frames(unit_dir, direction):
 
 def main():
     written = 0
-    for unit_id in UNITS:
+    units = animation_units()
+    for unit_id in units:
         unit_dir = SPRITES / unit_id
-        if not unit_dir.exists():
-            print(f"skip missing {unit_id}")
-            continue
         for direction in DIRECTIONS:
             written += write_walk_frames(unit_dir, direction)
             written += write_attack_frames(unit_dir, direction)
-    print(f"wrote {written} micro animation frames")
+    print(f"wrote {written} micro animation frames for {len(units)} units")
 
 
 if __name__ == "__main__":

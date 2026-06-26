@@ -842,3 +842,35 @@ PC前提の広いダンジョン表示で使う床・部屋・通路タイルを
 - `npm run build:pages`: 成功。タイル参照警告なし。
 - `npm test -- --reporter=line`: 82件成功。
 - `npm run test:balance`: 成功。キャンペーン検収は勝利。
+
+## 2026-06-26 スプライト簡易アニメーション対象拡張
+
+### 目的
+
+歩行/攻撃のフレーム切替基盤を6体限定の実験から、魔王以外の既存スプライト全体へ広げる。
+
+### 修正
+
+- `scripts/make_micro_animation_frames.py` を固定リストではなく、`walk` と `attack` の上下左右PNGが揃ったスプライトフォルダを自動検出する方式にした。
+- `alchemist`、`bat`、`beastTamer`、`boneGuard`、`cleric`、`darkMage`、`darkSlime`、`fallenWarrior`、`goblin`、`guard`、`hero`、`impArcher`、`knight`、`mage`、`oracleShade`、`paladin`、`poisonSlime`、`ranger`、`rogue`、`sage`、`shadeRunner`、`slime`、`warrior` の23フォルダへ `walk` 3フレーム、`attack` 2フレームを生成した。
+- `src/data/spriteAnimations.js` も23フォルダへ拡張し、素材を共有するテンプレートも配列フレームを参照できるようにした。
+- `scripts/make_sprite_animation_audit.py` を、生成済みフレームが揃ったフォルダの自動検出に変更した。
+- `README.md` と `ASSET_PIPELINE.md` を現状に合わせて更新した。
+
+### 生成物
+
+- `public/assets/sprites/<unit-id>/walk-<direction>-0..2.png`
+- `public/assets/sprites/<unit-id>/attack-<direction>-0..1.png`
+- `screenshots/sprite-animation-audit.png` を23体一覧へ更新。
+
+### 検証結果
+
+- スプライト関連のPlaywright絞り込み検証: 16件成功。
+- `npm test -- --reporter=line`: 82件成功。
+- `npm run test:balance`: 成功。キャンペーン検収は勝利。
+- `npm run build:pages`: 成功。
+
+### 残課題
+
+- `demonLord` は単体表示素材のままで、歩行/攻撃フレームは未生成。
+- 今回も自動生成の微差分であり、本番素材としては専用の2〜4フレーム生成/切り出しが必要。
