@@ -98,7 +98,10 @@ export function tickBattle(game, dt) {
   }
 
   resolveCaptures(game, step);
-  game.effects = game.effects.map((effect) => ({ ...effect, ttl: effect.ttl - step })).filter((effect) => effect.ttl > 0);
+  game.effects = game.effects.map((effect) => {
+    if ((effect.delay ?? 0) > 0) return { ...effect, delay: effect.delay - dt };
+    return { ...effect, ttl: effect.ttl - dt };
+  }).filter((effect) => (effect.delay ?? 0) > 0 || effect.ttl > 0);
 
   const allSpawned = game.waveQueue.every((spawn) => spawn.spawned);
   const carriersReturning = game.allies.some((ally) => (

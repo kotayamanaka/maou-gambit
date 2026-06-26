@@ -9,10 +9,15 @@ function entityPose(entity, fallbackPose = 'idle') {
       : fallbackPose;
 }
 
+function spritePose(entity, fallbackPose = 'idle') {
+  const pose = entityPose(entity, fallbackPose);
+  return pose === 'attack' && (entity.range ?? 1) > 1 ? 'idle' : pose;
+}
+
 function entitySprite(entity, fallbackPose = 'idle') {
   const set = entity.spriteSet;
   if (!set) return entity.sprite;
-  const pose = entityPose(entity, fallbackPose);
+  const pose = spritePose(entity, fallbackPose);
   const facing = entity.facing ?? 'front';
   return set[pose]?.[facing] ?? set[pose]?.front ?? set.idle?.[facing] ?? set.idle?.front ?? entity.sprite;
 }
@@ -143,7 +148,7 @@ export function renderMap(game, mode = 'setup') {
     return doorsHtml;
   }).join('');
 
-  const effects = game.effects.map((effect) => {
+  const effects = game.effects.filter((effect) => (effect.delay ?? 0) <= 0).map((effect) => {
     const room = rooms.find((item) => item.id === effect.room);
     if (!room) return '';
     const x = effect.x ?? room.x + 36;

@@ -28,6 +28,13 @@ function attackCooldown(unit) {
   return Math.max(0.62, Math.min(1.45, 1.05 / Math.sqrt(speed)));
 }
 
+function projectileKind(unit) {
+  const id = String(unit.templateId ?? unit.id ?? '');
+  const skills = unit.skills ?? [];
+  if (/mage|sage|oracle|shade/i.test(id) || skills.some((skill) => ['poisonTouch', 'slowTouch', 'inspireOnHit'].includes(skill))) return 'magic';
+  return 'arrow';
+}
+
 function facingFromDelta(dx, dy) {
   if (Math.abs(dx) > Math.abs(dy)) return dx >= 0 ? 'right' : 'left';
   return dy >= 0 ? 'front' : 'back';
@@ -65,8 +72,8 @@ export function roomPoint(roomId, unit, game = null) {
   const lane = hashOffset(unit.uid ?? unit.id ?? unit.name) - 0.5;
   const side = unit.type === 'enemy' ? -0.34 : unit.type === 'boss' ? 0.22 : 0.3;
   return {
-    x: room.x + Math.min(room.w * Math.abs(side), 66) * Math.sign(side),
-    y: room.y + lane * Math.min(room.h * 0.42, 52)
+    x: room.x + room.w * side,
+    y: room.y + lane * room.h * 0.44
   };
 }
 
@@ -171,17 +178,18 @@ export function attack(attacker, target, game, label) {
   attacker.attackClock = attackCooldown(attacker);
   const side = attacker.type === 'enemy' ? 'enemy-hit' : 'ally-hit';
   const ranged = (attacker.range ?? 1) > 1;
+  const hitDelay = ranged ? 0.22 : 0.16;
   if (ranged) {
     const samePoint = Math.hypot((attacker.x ?? 0) - (target.x ?? 0), (attacker.y ?? 0) - (target.y ?? 0)) < 8;
     game.effects.push({
       id: crypto.randomUUID(),
-      type: `projectile ${side}`,
+      type: `projectile ${projectileKind(attacker)} ${side}`,
       room: target.room,
       x: samePoint ? (attacker.x ?? 0) - 24 : attacker.x,
       y: samePoint ? (attacker.y ?? 0) - 12 : attacker.y,
       toX: samePoint ? (target.x ?? 0) + 24 : target.x,
       toY: samePoint ? (target.y ?? 0) + 12 : target.y,
-      ttl: 0.32,
+      ttl: 0.34,
       label: ''
     });
   }
@@ -191,8 +199,9 @@ export function attack(attacker, target, game, label) {
     room: target.room,
     x: target.x,
     y: target.y,
-    ttl: 0.7,
-    label: `${label} -${damage}`
+    delay: hitDelay,
+    ttl: 0.62,
+    label: `-${damage}`
   });
   triggerSkills(attacker, target, game);
   return true;

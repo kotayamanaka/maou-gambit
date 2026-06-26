@@ -68,7 +68,7 @@ export function createGame() {
     selectedCapturedId: null,
     uiPanel: 'unit',
     showLog: true,
-    camera: { zoom: 1, x: 16, y: 16 },
+    camera: null,
     selectedEntity: { type: 'ally', id: allies[0].uid },
     elapsed: 0,
     log: ['魔王軍、配置待機。'],

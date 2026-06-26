@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import fs from 'node:fs';
 import path from 'node:path';
+import { roomById, worldSize } from '../src/data/rooms.js';
 import { allyTemplates, enemyTemplates } from '../src/data/units.js';
 
 async function assertNoDocumentScroll(page) {
@@ -44,6 +45,9 @@ test('map uses generated dungeon texture tiles and continuous corridors', async 
 
   expect(mapBackground).toContain('floor-stone');
   expect(roomBackground).toContain('room-stone');
+  expect(worldSize.width).toBeGreaterThanOrEqual(4600);
+  expect(roomById.atrium.w).toBeGreaterThanOrEqual(700);
+  expect(roomById.atrium.h).toBeGreaterThanOrEqual(500);
   expect(corridor.d).toContain('L');
   expect(corridor.stroke).not.toBe('none');
   expect(corridor.strokeWidth).not.toBe('0px');
@@ -55,6 +59,9 @@ test('map uses generated dungeon texture tiles and continuous corridors', async 
 test('setup reveals only the selected menu section', async ({ page }) => {
   await page.goto('/');
   await expect(page.locator('.setup-section')).toHaveCount(1);
+  await expect(page.locator('[data-ui-panel="unit"]')).toContainText('配下');
+  await expect(page.locator('[data-ui-panel="place"]')).toContainText('配置');
+  await expect(page.locator('[data-ui-panel="chips"]')).toContainText('チップ');
   await expect(page.locator('[data-place="storage"]')).toHaveCount(0);
   await page.locator('[data-ui-panel="place"]').click();
   await expect(page.locator('[data-place="storage"]')).toBeVisible();
@@ -62,6 +69,39 @@ test('setup reveals only the selected menu section', async ({ page }) => {
   await page.locator('[data-ui-panel="chips"]').click();
   await expect(page.locator('[data-chip="attack"]')).toBeVisible();
   await expect(page.locator('[data-place="storage"]')).toHaveCount(0);
+  await assertNoDocumentScroll(page);
+});
+
+test('setup supports drag placement and chip assignment', async ({ page }) => {
+  await page.goto('/');
+  await page.evaluate(() => {
+    const unit = document.querySelector('[data-unit]');
+    const room = document.querySelector('[data-room="storage"]');
+    const data = new DataTransfer();
+    unit.dispatchEvent(new DragEvent('dragstart', { bubbles: true, dataTransfer: data }));
+    room.dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer: data }));
+    room.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: data }));
+  });
+  expect(await page.evaluate(() => window.__MAOU_GAME__.allies[0].room)).toBe('storage');
+
+  await page.evaluate(() => {
+    window.__MAOU_COMMIT__((game) => {
+      const unit = game.allies[0];
+      unit.chips = [];
+      game.selectedUnitId = unit.uid;
+      game.selectedEntity = { type: 'ally', id: unit.uid };
+      game.uiPanel = 'chips';
+    });
+  });
+  await page.evaluate(() => {
+    const chip = document.querySelector('[data-chip="attack"]');
+    const unit = document.querySelector('[data-drop-unit]');
+    const data = new DataTransfer();
+    chip.dispatchEvent(new DragEvent('dragstart', { bubbles: true, dataTransfer: data }));
+    unit.dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer: data }));
+    unit.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: data }));
+  });
+  expect(await page.evaluate(() => window.__MAOU_GAME__.allies[0].chips)).toContain('attack');
   await assertNoDocumentScroll(page);
 });
 
@@ -270,16 +310,16 @@ test('converted ally templates use generated directional action sprites', () => 
     ['bat', 'attack-left'],
     ['fallenWarrior', 'walk-front'],
     ['shadeRunner', 'attack-right'],
-    ['darkMage', 'downed-back']
+    ['darkMage', 'downed-back'],
+    ['boneGuard', 'attack-front'],
+    ['impArcher', 'walk-left'],
+    ['oracleShade', 'attack-right']
   ]) {
     const [pose, facing] = sample.split('-');
     expect(allyTemplates[id].sprite).toBe(`assets/sprites/${id}/idle-front.png`);
     expect(allyTemplates[id].spriteSet[pose][facing]).toBe(`assets/sprites/${id}/${sample}.png`);
     expect(allyTemplates[id].spriteSet.idle.front).toBe(`assets/sprites/${id}/idle-front.png`);
   }
-  expect(allyTemplates.boneGuard.spriteSet.attack.front).toBe('assets/sprites/fallenWarrior/attack-front.png');
-  expect(allyTemplates.impArcher.spriteSet.walk.left).toBe('assets/sprites/bat/walk-left.png');
-  expect(allyTemplates.oracleShade.spriteSet.attack.right).toBe('assets/sprites/darkMage/attack-right.png');
 });
 
 test('generated ally sprite folders contain four directions for each action', () => {
@@ -289,7 +329,7 @@ test('generated ally sprite folders contain four directions for each action', ()
     'attack-front.png', 'attack-back.png', 'attack-left.png', 'attack-right.png',
     'downed.png', 'downed-back.png', 'downed-left.png', 'downed-right.png'
   ];
-  for (const unitId of ['bat', 'fallenWarrior', 'shadeRunner', 'darkMage']) {
+  for (const unitId of ['bat', 'fallenWarrior', 'shadeRunner', 'darkMage', 'boneGuard', 'impArcher', 'oracleShade']) {
     const dir = path.resolve('public', 'assets', 'sprites', unitId);
     expect(fs.readdirSync(dir).filter((name) => name.endsWith('.png')).sort()).toEqual([...required].sort());
     const source = pngSize(path.resolve('assets', 'generated', 'characters', unitId, 'sheet-v1-4dir.png'));
@@ -303,7 +343,9 @@ test('stage runs and reaches result screen', async ({ page }) => {
   await page.locator('[data-action="start"]').click();
   await expect(page.getByText('防衛中')).toBeVisible();
   await page.locator('[data-action="speed"]').click();
-  await page.evaluate(() => { window.__MAOU_GAME__.speed = 6; });
+  await expect(page.locator('[data-action="speed"]')).toContainText('速度 2x');
+  expect(await page.evaluate(() => window.__MAOU_GAME__.speed)).toBe(2);
+  await page.evaluate(() => { window.__MAOU_GAME__.speed = 10; });
   await expect(page.getByText(/探索中|発見済/)).toBeVisible();
   await expect(page.getByText(/撃退成功|魔王敗北/)).toBeVisible({ timeout: 55000 });
   await assertNoDocumentScroll(page);
@@ -319,7 +361,7 @@ test('targeting chips do not sense enemies in other rooms', async ({ page }) => 
   });
   await page.locator('[data-action="start"]').click();
   await page.locator('[data-action="speed"]').click();
-  await page.evaluate(() => { window.__MAOU_GAME__.speed = 6; });
+  await page.evaluate(() => { window.__MAOU_GAME__.speed = 10; });
   await page.waitForFunction(() => window.__MAOU_GAME__?.elapsed > 12);
   const snapshot = await page.evaluate(() => ({
     lordHp: window.__MAOU_GAME__.demonLord.hp,
@@ -338,7 +380,7 @@ test('enemies use behavior chips to fight same-room monsters', async ({ page }) 
   await page.goto('/');
   await page.locator('[data-action="start"]').click();
   await page.locator('[data-action="speed"]').click();
-  await page.evaluate(() => { window.__MAOU_GAME__.speed = 6; });
+  await page.evaluate(() => { window.__MAOU_GAME__.speed = 10; });
   await page.waitForFunction(() => {
     const game = window.__MAOU_GAME__;
     const goblin = game?.allies.find((ally) => ally.name === 'ゴブリン');
@@ -362,8 +404,8 @@ test('melee units must close distance inside the same room before attacking', as
       Object.assign(goblin, {
         room: 'atrium',
         homeRoom: 'atrium',
-        x: 560,
-        y: 265,
+        x: 1900,
+        y: 1155,
         range: 1,
         chips: ['attack'],
         attackClock: 0,
@@ -386,8 +428,8 @@ test('melee units must close distance inside the same room before attacking', as
         chips: [],
         convertTo: 'fallenWarrior',
         room: 'atrium',
-        x: 660,
-        y: 265,
+        x: 2150,
+        y: 1155,
         movingTo: null,
         moveClock: 0,
         attackClock: 0,
@@ -400,12 +442,12 @@ test('melee units must close distance inside the same room before attacking', as
     const game = window.__MAOU_GAME__;
     const goblin = game.allies.find((ally) => ally.name === 'ゴブリン');
     const enemy = game.enemies.find((item) => item.uid === 'melee-range-test');
-    return goblin.x > 563 && enemy.hp === enemy.maxHp;
-  }, null, { timeout: 1200 });
+    return goblin.x > 1940 && enemy.hp === enemy.maxHp;
+  }, null, { timeout: 1600 });
   await page.waitForFunction(() => {
     const enemy = window.__MAOU_GAME__.enemies.find((item) => item.uid === 'melee-range-test');
     return enemy && enemy.hp < enemy.maxHp;
-  }, null, { timeout: 3500 });
+  }, null, { timeout: 6500 });
   await assertNoDocumentScroll(page);
 });
 
@@ -417,8 +459,8 @@ test('ranged attacks show projectile effects', async ({ page }) => {
       Object.assign(goblin, {
         room: 'atrium',
         homeRoom: 'atrium',
-        x: 552,
-        y: 265,
+        x: 1980,
+        y: 1155,
         range: 3,
         chips: ['attack'],
         attackClock: 0,
@@ -441,8 +483,8 @@ test('ranged attacks show projectile effects', async ({ page }) => {
         chips: [],
         convertTo: 'darkMage',
         room: 'atrium',
-        x: 670,
-        y: 265,
+        x: 2110,
+        y: 1155,
         movingTo: null,
         moveClock: 0,
         attackClock: 0,
@@ -453,6 +495,8 @@ test('ranged attacks show projectile effects', async ({ page }) => {
   });
   await page.waitForFunction(() => window.__MAOU_GAME__.effects.some((effect) => String(effect.type).includes('projectile')), null, { timeout: 2500 });
   await expect(page.locator('.fx.projectile')).toBeVisible();
+  await expect(page.locator('.fx.projectile.arrow')).toBeVisible();
+  await expect(page.locator('.actor.ally img').first()).toHaveAttribute('src', /goblin\/idle-right\.png/);
   await assertNoDocumentScroll(page);
 });
 
@@ -509,7 +553,7 @@ test('result can continue into upgrade flow after a win', async ({ page }) => {
   await page.goto('/');
   await page.locator('[data-action="start"]').click();
   await page.locator('[data-action="speed"]').click();
-  await page.evaluate(() => { window.__MAOU_GAME__.speed = 6; });
+  await page.evaluate(() => { window.__MAOU_GAME__.speed = 10; });
   await expect(page.getByText('撃退成功')).toBeVisible({ timeout: 55000 });
   await page.getByRole('button', { name: /捕獲処理へ/ }).click();
   await expect(page.locator('.panel-head span').filter({ hasText: /捕獲処理|強化/ })).toBeVisible();
@@ -598,7 +642,7 @@ test('upgrade management supports selling, building, room upgrades, and research
       game.captured = [];
     });
   });
-  await expect(page.getByText('戦利品')).toBeVisible();
+  await expect(page.locator('.treasury-box b')).toContainText('資金');
   await expect(page.getByText(/ゴブリン ATK\+1/)).toBeVisible();
   await page.locator('[data-ui-panel="research"]').click();
   await expect(page.locator('[data-develop-chip="attack"]')).toBeVisible();
@@ -821,14 +865,10 @@ test('battle supports unit selection and map zoom without direct commands', asyn
   await page.locator('[data-action="start"]').click();
   await expect(page.getByText('防衛中')).toBeVisible();
   const battleCamera = await page.evaluate(() => window.__MAOU_GAME__.camera);
-  expect(battleCamera.zoom).toBeGreaterThanOrEqual(1.2);
+  expect(battleCamera.zoom).toBeGreaterThanOrEqual(0.9);
   const allyActor = page.locator('.actor.ally').first();
   await expect(allyActor).toBeVisible();
-  const actorDisplayWidth = await allyActor.evaluate((el) => {
-    const cssWidth = parseFloat(getComputedStyle(el).width);
-    return cssWidth * window.__MAOU_GAME__.camera.zoom;
-  });
-  expect(actorDisplayWidth).toBeGreaterThanOrEqual(62);
+  expect(roomById.atrium.w * battleCamera.zoom).toBeGreaterThanOrEqual(630);
   await allyActor.click();
   await expect(page.getByText(/HP \d+\/\d+ \/ ATK/)).toBeVisible();
   await expect(page.locator('[data-command-room]')).toHaveCount(0);

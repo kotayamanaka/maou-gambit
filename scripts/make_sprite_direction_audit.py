@@ -5,7 +5,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "screenshots" / "sprite-direction-audit-ally-monsters.png"
-UNITS = ["bat", "fallenWarrior", "shadeRunner", "darkMage"]
+UNITS = ["bat", "fallenWarrior", "shadeRunner", "darkMage", "boneGuard", "impArcher", "oracleShade"]
 ACTIONS = ["idle", "walk", "attack", "downed"]
 DIRECTIONS = ["front", "back", "left", "right"]
 CELL = 92

@@ -61,7 +61,7 @@ function selectedEntity(game) {
   return selectedUnit(game);
 }
 
-const cameraLimits = { min: 0.32, max: 2.6 };
+const cameraLimits = { min: 0.12, max: 2.6 };
 
 function clampZoom(zoom) {
   return Math.max(cameraLimits.min, Math.min(cameraLimits.max, zoom));
@@ -91,7 +91,7 @@ function overviewCamera() {
 
 function detailZoom() {
   const view = viewportSize();
-  return view.width < 720 ? 1.3 : 1.38;
+  return view.width < 720 ? 0.9 : 0.95;
 }
 
 function focusCameraOn(state, entity, preferredZoom = null) {
@@ -193,7 +193,7 @@ function unlockHistory(game) {
 }
 
 function unitCard(unit, game) {
-  return `<button class="unit-card ${unit.uid === game.selectedUnitId ? 'on' : ''}" data-unit="${unit.uid}">
+  return `<button class="unit-card ${unit.uid === game.selectedUnitId ? 'on' : ''}" data-unit="${unit.uid}" data-drop-unit="${unit.uid}" draggable="true">
     <img src="${unit.sprite}" alt="${unit.name}" />
     <span><b>${unit.name}</b><small>LV${unit.level ?? 1} E${unit.exp ?? 0}/${nextLevelExp(unit)} 知${unit.intExp ?? 0}/${nextIntExp(unit)} INT${unit.int}</small><em>${unit.chips.map((id) => chips[id]?.icon ?? '□').join('')}</em></span>
   </button>`;
@@ -433,7 +433,7 @@ function objectPanel(game) {
       ${item.name}<small>${roomObjects[game.roomObjects?.[item.id]]?.name ?? '空き'}</small>
     </button>`)
     .join('');
-  const buttons = Object.values(roomObjects).map((object) => `<button class="mini" data-install-object="${object.id}" ${(current || !room || !isRoomBuilt(game, roomId) || (game.gold ?? 0) < object.cost) ? 'disabled' : ''}>
+  const buttons = Object.values(roomObjects).map((object) => `<button class="mini" data-install-object="${object.id}" draggable="true" ${(current || !room || !isRoomBuilt(game, roomId) || (game.gold ?? 0) < object.cost) ? 'disabled' : ''}>
     ${object.icon} ${object.name}<small>G${object.cost} / ${object.description}</small>
   </button>`).join('');
   return `<div class="info-box management-box">
@@ -446,7 +446,7 @@ function objectPanel(game) {
 }
 
 function panelTabs(game, items) {
-  return `<div class="tool-tabs">${items.map((item) => `<button class="${game.uiPanel === item.id ? 'on' : ''}" data-ui-panel="${item.id}" title="${item.label}">${item.icon}</button>`).join('')}</div>`;
+  return `<div class="tool-tabs">${items.map((item) => `<button class="${game.uiPanel === item.id ? 'on' : ''}" data-ui-panel="${item.id}" title="${item.label}"><b>${item.icon}</b><span>${item.label}</span></button>`).join('')}</div>`;
 }
 
 function managementPanels(game) {
@@ -454,12 +454,12 @@ function managementPanels(game) {
   const active = managementIds.includes(game.uiPanel) ? game.uiPanel : 'loot';
   const panelState = { ...game, uiPanel: active };
   const tabs = panelTabs(panelState, [
-    { id: 'loot', icon: 'G', label: '戦利品' },
-    { id: 'research', icon: 'R', label: '研究' },
-    { id: 'fusion', icon: 'F', label: '合成' },
-    { id: 'build', icon: 'B', label: '建設' },
-    { id: 'object', icon: 'O', label: '設備' },
-    { id: 'info', icon: 'I', label: '情報' }
+    { id: 'loot', icon: '◇', label: '戦利品' },
+    { id: 'research', icon: '⌕', label: '研究' },
+    { id: 'fusion', icon: '⇄', label: '合成' },
+    { id: 'build', icon: '□', label: '建設' },
+    { id: 'object', icon: '◆', label: '設備' },
+    { id: 'info', icon: 'ⓘ', label: '情報' }
   ]);
   const content = active === 'research' ? researchPanel(game)
     : active === 'fusion' ? fusionPanel(game)
@@ -493,7 +493,7 @@ function chipButton(chipId, unit, game) {
   const label = locked ? '????' : chip.name;
   const icon = locked ? category.icon : chip.icon;
   const title = locked ? `${category.name}系の未発見チップ` : chip.description;
-  return `<button class="chip ${inUnit ? 'on' : ''} ${locked ? 'locked' : ''} ${selected ? 'selected-chip' : ''}" data-chip="${chipId}" data-locked="${locked ? '1' : '0'}" title="${title}">
+  return `<button class="chip ${inUnit ? 'on' : ''} ${locked ? 'locked' : ''} ${selected ? 'selected-chip' : ''}" data-chip="${chipId}" data-locked="${locked ? '1' : '0'}" draggable="${locked ? 'false' : 'true'}" title="${title}">
     <b>${icon}</b><span>${label}</span><small>${locked ? `${category.name} / 未発見` : inUnit ? '装備中' : `残${available}`}</small>
     ${!locked && full ? '<small>入替可</small>' : ''}
   </button>`;
@@ -525,18 +525,52 @@ function chipDetail(game, unit) {
   </div>`;
 }
 
+function placeUnitInRoom(state, unitId, roomId) {
+  const unit = state.allies.find((ally) => ally.uid === unitId) ?? selectedUnit(state);
+  if (!unit || !canPlaceAlly(state, roomId, unit)) return false;
+  unit.room = roomId;
+  unit.homeRoom = unit.room;
+  const position = roomView(state, unit.room);
+  unit.x = position.x;
+  unit.y = position.y;
+  unit.movingTo = null;
+  state.selectedUnitId = unit.uid;
+  state.selectedEntity = { type: 'ally', id: unit.uid };
+  state.selectedRoomId = roomId;
+  return true;
+}
+
+function equipChipToUnit(state, unitId, chipId) {
+  const unit = state.allies.find((ally) => ally.uid === unitId) ?? selectedUnit(state);
+  if (!unit || !chips[chipId]) return false;
+  state.selectedUnitId = unit.uid;
+  state.selectedEntity = { type: 'ally', id: unit.uid };
+  state.selectedChipId = chipId;
+  const used = assignedChipCounts(state, unit.uid)[chipId] ?? 0;
+  const available = (state.chipBag[chipId] ?? 0) - used;
+  if (unit.chips.includes(chipId)) return true;
+  if (available <= 0) return false;
+  if (unit.chips.length < unit.int) {
+    unit.chips.push(chipId);
+    return true;
+  }
+  const replaceIndex = Math.max(0, unit.chips.length - 1);
+  unit.chips[replaceIndex] = chipId;
+  return true;
+}
+
 function setupPanel(game) {
   const unit = selectedUnit(game);
   const profile = growthProfile(unit);
   const warnings = setupWarnings(game);
   const active = game.uiPanel ?? 'unit';
   const tabs = panelTabs(game, [
-    { id: 'unit', icon: 'U', label: '配下' },
-    { id: 'place', icon: 'P', label: '配置' },
-    { id: 'chips', icon: 'C', label: 'チップ' },
-    { id: 'build', icon: 'B', label: '建設' },
-    { id: 'object', icon: 'O', label: '設備' },
-    { id: 'info', icon: 'I', label: '情報' }
+    { id: 'unit', icon: '♟', label: '配下' },
+    { id: 'place', icon: '⌖', label: '配置' },
+    { id: 'chips', icon: '▣', label: 'チップ' },
+    { id: 'build', icon: '□', label: '建設' },
+    { id: 'object', icon: '◆', label: '設備' },
+    { id: 'info', icon: 'ⓘ', label: '情報' }
   ]);
   const unitSection = `<div class="setup-section">
     <div class="unit-picker" aria-label="配下選択">
@@ -545,7 +579,7 @@ function setupPanel(game) {
     <div class="stats setup-stats" aria-label="${unit.name}の能力">
       <span>LV ${unit.level ?? 1}</span><span>HP ${unit.maxHp}</span><span>ATK ${unit.atk}</span><span>SPD ${unit.spd}</span>
       <span class="core">INT ${unit.int}</span><span>EXP ${unit.exp ?? 0}/${nextLevelExp(unit)}</span><span>知 ${unit.intExp ?? 0}/${nextIntExp(unit)}</span>
-      <span>CRY ${unit.carry}</span><span>RNG ${unit.range}</span><span>${profile.label}</span><span>${roomById[unit.homeRoom]?.name ?? unit.homeRoom}</span>
+      <span>運搬 ${unit.carry}</span><span>RNG ${unit.range}</span><span>${profile.label}</span><span>${roomById[unit.homeRoom]?.name ?? unit.homeRoom}</span>
     </div>
     <div class="advice-box">${warnings.map((line) => `<p>${line}</p>`).join('')}</div>
   </div>`;
@@ -560,6 +594,9 @@ function setupPanel(game) {
     </div>
   </div>`;
   const chipSection = `<div class="setup-section">
+    <div class="unit-picker" aria-label="配下選択">
+      <div class="unit-list">${game.allies.map((ally) => unitCard(ally, game)).join('')}</div>
+    </div>
     <div class="chips-box" aria-label="チップ">
       <div class="chip-meter">${unit.chips.length}/${unit.int}</div>
       <div class="chip-grid scroll-rail">${visibleChipIds(game, unit).map((id) => chipButton(id, unit, game)).join('')}</div>
@@ -600,7 +637,7 @@ function battlePanel(game) {
       <span>防衛中</span>
       <div class="panel-actions">
         <button data-action="pause">${game.speed === 0 ? '▶' : 'Ⅱ'}</button>
-        <button data-action="speed">×${game.speed || 1}</button>
+        <button data-action="speed" data-speed="${game.speed || 1}">速度 ${game.speed || 1}x</button>
         <button data-action="retry">↻</button>
         <button data-action="retreat">撤退</button>
       </div>
@@ -702,6 +739,7 @@ function endPanel(game, won) {
 }
 
 export function renderApp(root, game, commit) {
+  game.camera ??= overviewCamera();
   const phase = game.phase;
   const panel = phase === 'setup' ? setupPanel(game)
     : phase === 'battle' ? battlePanel(game)
@@ -722,27 +760,13 @@ export function renderApp(root, game, commit) {
     state.selectedEntity = { type: 'ally', id: button.dataset.unit };
   })));
   root.querySelectorAll('[data-place]').forEach((button) => button.addEventListener('click', () => commit((state) => {
-    const unit = selectedUnit(state);
-    if (!canPlaceAlly(state, button.dataset.place, unit)) return;
-    unit.room = button.dataset.place;
-    unit.homeRoom = unit.room;
-    const position = roomView(state, unit.room);
-    unit.x = position.x;
-    unit.y = position.y;
-    unit.movingTo = null;
+    placeUnitInRoom(state, state.selectedUnitId, button.dataset.place);
   })));
   root.querySelectorAll('[data-room]').forEach((button) => button.addEventListener('click', () => commit((state) => {
     state.selectedRoomId = button.dataset.room;
     const blocked = ['entrance', 'throne'];
     if (state.phase === 'setup' && !blocked.includes(button.dataset.room)) {
-      const unit = selectedUnit(state);
-      if (!canPlaceAlly(state, button.dataset.room, unit)) return;
-      unit.room = button.dataset.room;
-      unit.homeRoom = unit.room;
-      const position = roomView(state, unit.room);
-      unit.x = position.x;
-      unit.y = position.y;
-      unit.movingTo = null;
+      placeUnitInRoom(state, state.selectedUnitId, button.dataset.room);
     }
   })));
   root.querySelectorAll('[data-chip]').forEach((button) => button.addEventListener('click', () => commit((state) => {
@@ -859,6 +883,46 @@ export function renderApp(root, game, commit) {
     if (button.dataset.mapaction === 'focusSelected') focusCameraOn(state, selectedEntity(state));
     if (button.dataset.mapaction === 'focusEnemy') focusCameraOn(state, state.enemies[0] ?? state.downed[0]);
   })));
+
+  root.querySelectorAll('[draggable="true"]').forEach((button) => button.addEventListener('dragstart', (event) => {
+    const payload = button.dataset.unit ? { kind: 'unit', id: button.dataset.unit }
+      : button.dataset.chip ? { kind: 'chip', id: button.dataset.chip }
+        : button.dataset.installObject ? { kind: 'object', id: button.dataset.installObject }
+          : null;
+    if (!payload) return;
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('application/x-maou-gambit', JSON.stringify(payload));
+  }));
+
+  root.querySelectorAll('[data-room], [data-place], [data-drop-unit]').forEach((target) => {
+    target.addEventListener('dragover', (event) => {
+      event.preventDefault();
+      target.classList.add('drop-ready');
+    });
+    target.addEventListener('dragleave', () => target.classList.remove('drop-ready'));
+    target.addEventListener('drop', (event) => {
+      event.preventDefault();
+      target.classList.remove('drop-ready');
+      const raw = event.dataTransfer.getData('application/x-maou-gambit');
+      if (!raw) return;
+      const payload = JSON.parse(raw);
+      commit((state) => {
+        if (state.phase !== 'setup' && state.phase !== 'upgrade') return;
+        const roomId = target.dataset.room ?? target.dataset.place;
+        if (payload.kind === 'unit' && roomId && state.phase === 'setup') {
+          placeUnitInRoom(state, payload.id, roomId);
+        }
+        if (payload.kind === 'object' && roomId) {
+          state.selectedRoomId = roomId;
+          installRoomObject(state, roomId, payload.id);
+        }
+        if (payload.kind === 'chip' && target.dataset.dropUnit) {
+          equipChipToUnit(state, target.dataset.dropUnit, payload.id);
+          state.uiPanel = 'chips';
+        }
+      });
+    });
+  });
 
   const mapShell = root.querySelector('[data-map-shell]');
   if (mapShell) {

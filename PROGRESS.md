@@ -1,5 +1,52 @@
 # PROGRESS
 
+## 2026-06-26 部屋3倍化とUI/UX・戦闘視認性の再整備
+
+### 実装
+
+- ワールドを `4620x2700` に拡張し、各部屋の座標・サイズを約3倍へ変更。広間は `720x510` になり、部屋内で接近・射程・作戦チップが意味を持つ広さにした。
+- 部屋内の初期立ち位置を固定ピクセルではなく部屋サイズ比率で散らすようにし、同じ部屋でも近接ユニットが接近してから攻撃する余地を作った。
+- 初期カメラを画面サイズから計算する全体俯瞰に変更し、戦闘時は近景、リセット時は全体図へ戻るようにした。
+- メニュータブの `U/P/C/B/O/I` 表記を廃止し、`配下`、`配置`、`チップ`、`建設`、`設備`、`情報` の日本語ラベルに変更。
+- チップ画面にも配下リストを表示し、誰へチップを渡すかが常に見えるようにした。
+- 配下カードを部屋へドラッグして配置、チップを配下カードへドラッグして装備、設備を部屋へドラッグして設置できるようにした。クリック操作も併存。
+- 倍速ボタンを `速度 1x/2x/4x` 表記に変更し、押した直後の状態が読めるようにした。
+- 遠距離攻撃はキャラ絵側の射出物ではなく、別レイヤの `projectile arrow/magic` エフェクトで表現するようにした。遠距離ユニットの攻撃スプライトは本体構えに寄せ、矢や魔法玉の二重表示を避ける。
+- ダメージ表示を `打 -3` / `斬 -3` ではなく `-3` の数値だけに整理。攻撃モーション後に少し遅れて着弾/ダメージが出るよう、エフェクトに `delay` を追加した。
+- エフェクト寿命はシミュレーション倍速ではなく実時間で減るようにし、倍速中でも数字が一瞬で消えないようにした。
+- 魔王の仮アイコンを画像生成した専用ドット絵へ差し替え、`public/assets/sprites/demonLord/idle-front.png` を参照するようにした。
+- 敵冒険者シートのスライス方法を修正。12等分固定で隣のキャラが混ざっていた問題をやめ、背景色から行ごとの実キャラ塊を検出して切り出す方式に変更。盗賊/魔法使いは生成元が3方向だったため、片側を水平反転で補完した。
+- 敵スプライト検収用に `scripts/make_sprite_direction_audit_enemies.py` と `screenshots/sprite-direction-audit-enemies.png` を追加。
+
+### 検証結果
+
+- `npm test -- --reporter=line`: 62件成功
+- `npm run test:balance`: 成功。キャンペーン勝利まで到達。
+- `npm run build:pages`: 成功
+- 目視確認: `screenshots/large-rooms-overview-desktop.png`、`screenshots/large-rooms-battle-desktop.png`、`screenshots/ui-ux-setup-rework-desktop.png`、`screenshots/ui-ux-chips-rework-desktop.png`、`screenshots/ui-ux-battle-hit-effect-desktop.png`、`screenshots/sprite-direction-audit-enemies.png`
+
+## 2026-06-26 洗脳後の上位味方3体を専用スプライト化
+
+### 実装
+
+- 画像生成で `boneGuard`、`impArcher`、`oracleShade` の単体4方向シートを作成。
+- 生成原本を `assets/generated/characters/<unit-id>/sheet-v1-4dir.png` に保存。
+- `scripts/slice_ally_monsters_sheet.py` の対象を7体へ拡張し、3体それぞれを `idle`、`walk`、`attack`、`downed` x `front/back/left/right` に切り出した。
+- `boneGuard`、`impArcher`、`oracleShade` を共有素材から専用 `spriteSet` 参照へ切り替えた。
+- `scripts/make_sprite_direction_audit.py` の検収対象を7体へ拡張した。
+- 能力表示の `CRY` 表記を `運搬` に変更し、ステータス表示の意味を読みやすくした。
+
+### 検証結果
+
+- `npm test -- --reporter=line -g "generated ally sprite folders|converted ally templates"`: 4件成功
+- 方向検収画像確認。新規3体も単体4方向シートから切り出され、既存素材の流用ではなくなった。
+- PCスクリーンショット確認。骨衛兵、小悪魔射手、影託者が同一画面上で見分けられる。
+
+### スクリーンショット
+
+- `screenshots/ally-specialists-desktop.png`
+- `screenshots/sprite-direction-audit-ally-monsters.png`
+
 ## 2026-06-26 味方魔物/洗脳後ユニットの4方向生成スプライトと石通路を接続
 
 ### 実装

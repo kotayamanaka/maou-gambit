@@ -10,6 +10,9 @@ UNIT_SHEETS = [
     ("fallenWarrior", ROOT / "assets" / "generated" / "characters" / "fallenWarrior" / "sheet-v1-4dir.png"),
     ("shadeRunner", ROOT / "assets" / "generated" / "characters" / "shadeRunner" / "sheet-v1-4dir.png"),
     ("darkMage", ROOT / "assets" / "generated" / "characters" / "darkMage" / "sheet-v1-4dir.png"),
+    ("boneGuard", ROOT / "assets" / "generated" / "characters" / "boneGuard" / "sheet-v1-4dir.png"),
+    ("impArcher", ROOT / "assets" / "generated" / "characters" / "impArcher" / "sheet-v1-4dir.png"),
+    ("oracleShade", ROOT / "assets" / "generated" / "characters" / "oracleShade" / "sheet-v1-4dir.png"),
 ]
 ROWS = ["idle", "walk", "attack", "downed"]
 COLS = ["front", "back", "left", "right"]
