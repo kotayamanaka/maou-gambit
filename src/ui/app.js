@@ -1,4 +1,4 @@
-import { buildSlots, rooms, roomById, roomView, slotTaken, worldSize } from '../data/rooms.js';
+import { buildSlotRelation, buildSlots, rooms, roomById, roomView, slotTaken, worldSize } from '../data/rooms.js';
 import { chips } from '../data/chips.js';
 import { chipCategories } from '../data/chips.js';
 import { enemyChips } from '../data/enemyChips.js';
@@ -286,21 +286,6 @@ function researchPreview(game, limit = Infinity) {
   return `${visible.join(' / ')}${labels.length > limit ? ` / ほか${labels.length - limit}` : ''}`;
 }
 
-const buildSlotLabels = {
-  'north-west': '北西',
-  north: '北',
-  'north-east': '北東',
-  'west-low': '西下',
-  'east-high': '東上',
-  'east-low': '東下',
-  'far-east-high': '東奥上',
-  'far-east-low': '東奥下'
-};
-
-function buildSlotLabel(slotId) {
-  return buildSlotLabels[slotId] ?? slotId;
-}
-
 function roomManagementPanel(game) {
   const anchor = game.selectedBuildFrom ?? 'atrium';
   const selectedSlot = game.selectedBuildSlot ?? buildSlots.find((slot) => !slotTaken(game, slot.id))?.id;
@@ -314,17 +299,19 @@ function roomManagementPanel(game) {
   const slotButtons = buildSlots
     .map((slot) => {
       const used = slotTaken(game, slot.id);
+      const relation = buildSlotRelation(game, slot.id, anchor);
       return `<button class="mini compact-card ${selectedSlot === slot.id ? 'on' : ''}" data-build-slot="${slot.id}" ${used ? 'disabled' : ''}>
-        <span class="choice-top">${used ? '占有済' : '配置点'}<em>${buildSlotLabel(slot.id)}</em></span>
-        <small>${used ? '別部屋あり' : '建設先'}</small>
+        <span class="choice-top">${used ? '占有済' : relation.direction}<em>${relation.label}</em></span>
+        <small>${used ? '別部屋あり' : relation.distance}</small>
       </button>`;
     })
     .join('');
+  const selectedRelation = selectedSlot ? buildSlotRelation(game, selectedSlot, anchor) : null;
   const buildButtons = rooms
     .filter((room) => !isRoomBuilt(game, room.id) && room.buildCost)
     .map((room) => `<button class="mini decision-card" data-build-room="${room.id}" draggable="true" ${((game.gold ?? 0) < room.buildCost || !selectedSlot || slotTaken(game, selectedSlot) || !canConnectRoom(game, anchor) || !canConnectRoom(game, room.id)) ? 'disabled' : ''}>
       <span class="choice-top">${room.name}<em>G${room.buildCost}</em></span>
-      <small>${roomById[anchor]?.name ?? anchor}から ${selectedSlot ? buildSlotLabel(selectedSlot) : '配置点未選択'}へ</small>
+      <small>${selectedRelation ? selectedRelation.description : `${roomById[anchor]?.name ?? anchor}から配置点未選択`}</small>
       <span class="decision-meta">${roomEffectText(room) || `容量${room.capacity ?? 0}`}</span>
     </button>`)
     .join('');

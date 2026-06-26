@@ -179,7 +179,7 @@ test('corridors use orthogonal door segments and build slots', async ({ page }) 
     });
   });
   await expect(page.locator('.build-slot[data-build-slot="north"]')).toBeVisible();
-  await expect(page.locator('.build-slot').filter({ hasText: '配置' }).first()).toBeVisible();
+  await expect(page.locator('.build-slot[data-build-slot="north"]')).toContainText('北');
   await assertNoDocumentScroll(page);
 });
 

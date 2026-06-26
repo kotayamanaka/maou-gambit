@@ -140,6 +140,7 @@ Claude Design に UI / アートディレクション案を依頼するための
 - 研究: チップ研究、魔物研究、既知チップ開発をカード化。
 - 合成: 強化対象、素材、成長結果を並べて確認。
 - 建設: 接続元、配置点、建設候補、拡張、撤去をレーン化。
+- 建設配置点: 選択中の接続元から見た方角と距離感を表示。
 - 設備: 設置部屋、設備候補、現在設置状態をカード化。
 
 ## Data and Asset State
@@ -172,6 +173,7 @@ Claude Design に UI / アートディレクション案を依頼するための
 - `screenshots/upgrade-research-refined-desktop.png`
 - `screenshots/upgrade-build-refined-desktop.png`
 - `screenshots/upgrade-object-refined-desktop.png`
+- `screenshots/build-slot-directions-desktop.png`
 - `screenshots/captured-research-desktop.png`
 
 ### Art and Motion Audit
@@ -215,4 +217,3 @@ Latest verified state:
 - `npm test -- --reporter=line`: 82 passed
 - `npm run test:balance`: campaign victory
 - `npm run build:pages`: success
-

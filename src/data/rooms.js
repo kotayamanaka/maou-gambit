@@ -196,6 +196,21 @@ export const buildSlots = [
   { id: 'far-east-low', x: 3960, y: 2475 }
 ];
 
+export const buildSlotLabels = {
+  'north-west': '北西',
+  north: '北',
+  'north-east': '北東',
+  'west-low': '西下',
+  'east-high': '東上',
+  'east-low': '東下',
+  'far-east-high': '東奥上',
+  'far-east-low': '東奥下'
+};
+
+export function buildSlotLabel(slotId) {
+  return buildSlotLabels[slotId] ?? slotId;
+}
+
 export function roomView(game, roomId) {
   const room = roomById[roomId];
   if (!room) return null;
@@ -211,4 +226,39 @@ export function slotTaken(game, slotId) {
   if (!slot) return true;
   return Object.values(game?.roomPositions ?? {}).some((position) => position.slotId === slotId)
     || rooms.some((room) => room.built && room.x === slot.x && room.y === slot.y);
+}
+
+function directionFromDelta(dx, dy) {
+  const horizontal = Math.abs(dx) > 220 ? (dx > 0 ? '東' : '西') : '';
+  const vertical = Math.abs(dy) > 220 ? (dy > 0 ? '南' : '北') : '';
+  return `${vertical}${horizontal}` || '隣接';
+}
+
+function distanceLabel(distance) {
+  if (distance < 760) return '近距離';
+  if (distance < 1260) return '中距離';
+  return '遠距離';
+}
+
+export function buildSlotRelation(game, slotId, fromRoomId = 'atrium') {
+  const slot = buildSlots.find((item) => item.id === slotId);
+  const from = roomView(game, fromRoomId);
+  if (!slot || !from) {
+    return {
+      label: buildSlotLabel(slotId),
+      direction: buildSlotLabel(slotId),
+      distance: '',
+      description: '配置点'
+    };
+  }
+  const dx = slot.x - from.x;
+  const dy = slot.y - from.y;
+  const distance = Math.hypot(dx, dy);
+  const direction = directionFromDelta(dx, dy);
+  return {
+    label: buildSlotLabel(slotId),
+    direction,
+    distance: distanceLabel(distance),
+    description: `${from.name}から${direction} / ${distanceLabel(distance)}`
+  };
 }

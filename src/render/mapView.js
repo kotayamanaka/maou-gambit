@@ -1,4 +1,4 @@
-import { buildSlots, roomViews, rooms, slotTaken, worldSize } from '../data/rooms.js';
+import { buildSlotRelation, buildSlots, roomViews, rooms, slotTaken, worldSize } from '../data/rooms.js';
 import { roomObjects } from '../data/objects.js';
 import { isRoomBuilt, roomCapacity } from '../systems/placement.js';
 import { statusIconList } from '../systems/status.js';
@@ -122,8 +122,10 @@ export function renderMap(game, mode = 'setup') {
     ? buildSlots.map((slot) => {
       const used = slotTaken(game, slot.id);
       const selected = game.selectedBuildSlot === slot.id;
+      const relation = buildSlotRelation(game, slot.id, game.selectedBuildFrom ?? 'atrium');
       return `<button class="build-slot ${selected ? 'selected-slot' : ''} ${used ? 'used' : ''}" data-build-slot="${slot.id}" style="left:${slot.x - 58}px;top:${slot.y - 42}px;width:116px;height:84px" ${used ? 'disabled' : ''}>
-        <span>${used ? '占有' : '配置'}</span>
+        <span>${used ? '占有' : relation.direction}</span>
+        <small>${relation.label}</small>
       </button>`;
     }).join('')
     : '';

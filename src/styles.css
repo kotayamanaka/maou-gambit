@@ -301,12 +301,23 @@ img { image-rendering: pixelated; }
   position: absolute;
   z-index: 2;
   display: grid;
-  place-items: center;
+  align-content: center;
+  justify-items: center;
+  gap: 3px;
   border: 1px dashed rgba(216, 170, 74, .62);
   background: rgba(216, 170, 74, .08);
   color: #f5ddb0;
   font-size: 11px;
   font-weight: 900;
+}
+.build-slot span,
+.build-slot small {
+  display: block;
+  line-height: 1.15;
+}
+.build-slot small {
+  color: #d8aa4a;
+  font-size: 10px;
 }
 .build-slot.selected-slot {
   border-style: solid;
