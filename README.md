@@ -86,6 +86,7 @@ npm run test:balance
 
 ## UI/デザイン引き継ぎ
 
+- `CLAUDE_DESIGN_PROMPT.md`: Claude Design にそのまま渡す依頼文。
 - `UI_READINESS.md`: Claude Design に渡すための現状ブリーフ。操作面、制約、スクリーンショット、壊したくない設計原則をまとめている。
 - `ASSET_PIPELINE.md`: ドット絵/タイル/スプライトアニメーションの生成・切り出し・接続ルール。
 

@@ -6,6 +6,8 @@ Claude Design に UI / アートディレクション案を依頼するための
 
 このプロトタイプは、ゲーム性と必要な操作面を先に実装した状態。Claude Design には、ここにある機能を削らず、PCフルスクリーン/ウィンドウ前提で「ダンジョンを主役にした見やすい画面」へ整理してもらう。
 
+実際にClaude Designへ貼る依頼文は `CLAUDE_DESIGN_PROMPT.md` にまとめている。
+
 ## Product Direction
 
 - ジャンル: 探索型ダンジョン防衛 / 魔王軍運営

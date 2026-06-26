@@ -1010,3 +1010,19 @@ PC前提の広いダンジョン表示で使う床・部屋・通路タイルを
 - `npm test -- --reporter=line`: 82件成功。
 - `npm run test:balance`: 成功。キャンペーン検収は勝利。
 - `npm run build:pages`: 成功。
+
+## 2026-06-26 Claude Design 依頼プロンプト作成
+
+### 目的
+
+Claude Design に、現行プロトタイプのUI/UXとアートディレクションを具体化してもらうための依頼文を、そのまま貼れる形で用意する。
+
+### 修正
+
+- `CLAUDE_DESIGN_PROMPT.md` を追加し、参照ファイル、参照スクリーンショット、ゲーム方向性、デザイン制約、必要アウトプット、検収形式を整理した。
+- 複数案の比較ではなく、推奨1案を具体化してもらう依頼文にした。
+- README と `UI_READINESS.md` から `CLAUDE_DESIGN_PROMPT.md` へ辿れるようにした。
+
+### 検証結果
+
+- ドキュメント更新のみ。`npm run build:pages`: 成功。
