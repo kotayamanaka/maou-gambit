@@ -67,7 +67,7 @@ export function resolveEnemyRoomEffects(game, enemy) {
 
   if (room.risk.kind === 'armedInvader') {
     enemy.atk += 1;
-    addLog(game, `${enemy.name}が${room.name}の武具を奪いATK+1。`);
+    addLog(game, `${enemy.name}が${room.name}の武具を奪い攻撃+1。`);
     game.effects.push({ id: crypto.randomUUID(), type: 'status might', room: room.id, x: enemy.x, y: enemy.y - 20, ttl: 0.9, label: '武装' });
   }
 }

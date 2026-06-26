@@ -195,19 +195,19 @@ function unlockHistory(game) {
 function unitCard(unit, game) {
   return `<button class="unit-card ${unit.uid === game.selectedUnitId ? 'on' : ''}" data-unit="${unit.uid}" data-drop-unit="${unit.uid}" draggable="true">
     <img src="${unit.sprite}" alt="${unit.name}" />
-    <span><b>${unit.name}</b><small>LV${unit.level ?? 1} E${unit.exp ?? 0}/${nextLevelExp(unit)} 知${unit.intExp ?? 0}/${nextIntExp(unit)} INT${unit.int}</small><em>${unit.chips.map((id) => chips[id]?.icon ?? '□').join('')}</em></span>
+    <span><b>${unit.name}</b><small>Lv${unit.level ?? 1} 経験${unit.exp ?? 0}/${nextLevelExp(unit)} 知性${unit.int}</small><em>${unit.chips.map((id) => chips[id]?.icon ?? '□').join('')}</em></span>
   </button>`;
 }
 
 function feedPreviewText(unit, captured) {
   const preview = previewFeedGrowth(unit, captured);
-  const parts = [`EXP+${preview.material.exp}`];
-  if (preview.material.intExp) parts.push(`知+${preview.material.intExp}`);
-  if (preview.levelUps) parts.push(`LV+${preview.levelUps}`);
-  if (preview.intUps) parts.push(`INT+${preview.intUps}`);
-  if (preview.diff.maxHp) parts.push(`HP+${preview.diff.maxHp}`);
-  if (preview.diff.atk) parts.push(`ATK+${preview.diff.atk}`);
-  if (preview.diff.spd) parts.push(`SPD+${preview.diff.spd}`);
+  const parts = [`経験+${preview.material.exp}`];
+  if (preview.material.intExp) parts.push(`知識+${preview.material.intExp}`);
+  if (preview.levelUps) parts.push(`Lv+${preview.levelUps}`);
+  if (preview.intUps) parts.push(`知性+${preview.intUps}`);
+  if (preview.diff.maxHp) parts.push(`体力+${preview.diff.maxHp}`);
+  if (preview.diff.atk) parts.push(`攻撃+${preview.diff.atk}`);
+  if (preview.diff.spd) parts.push(`速さ+${preview.diff.spd}`);
   return parts.join(' ');
 }
 
@@ -215,24 +215,24 @@ function feedCompare(unit, captured) {
   const preview = previewFeedGrowth(unit, captured);
   const after = preview.after;
   return `<div class="compare-box">
-    <span>LV ${unit.level ?? 1} -> ${after.level}</span>
-    <span>HP ${unit.maxHp} -> ${after.maxHp}</span>
-    <span>ATK ${unit.atk} -> ${after.atk}</span>
-    <span>SPD ${unit.spd} -> ${after.spd}</span>
-    <span>INT ${unit.int} -> ${after.int}</span>
-    <span>EXP ${unit.exp ?? 0} -> ${after.exp}</span>
-    <span>知 ${unit.intExp ?? 0} -> ${after.intExp}</span>
+    <span>Lv ${unit.level ?? 1} -> ${after.level}</span>
+    <span>体力 ${unit.maxHp} -> ${after.maxHp}</span>
+    <span>攻撃 ${unit.atk} -> ${after.atk}</span>
+    <span>速さ ${unit.spd} -> ${after.spd}</span>
+    <span>知性 ${unit.int} -> ${after.int}</span>
+    <span>経験 ${unit.exp ?? 0} -> ${after.exp}</span>
+    <span>知識 ${unit.intExp ?? 0} -> ${after.intExp}</span>
   </div>`;
 }
 
 function growthPreviewText(preview) {
-  const parts = [`EXP+${preview.material.exp}`];
-  if (preview.material.intExp) parts.push(`知+${preview.material.intExp}`);
-  if (preview.levelUps) parts.push(`LV+${preview.levelUps}`);
-  if (preview.intUps) parts.push(`INT+${preview.intUps}`);
-  if (preview.diff.maxHp) parts.push(`HP+${preview.diff.maxHp}`);
-  if (preview.diff.atk) parts.push(`ATK+${preview.diff.atk}`);
-  if (preview.diff.spd) parts.push(`SPD+${preview.diff.spd}`);
+  const parts = [`経験+${preview.material.exp}`];
+  if (preview.material.intExp) parts.push(`知識+${preview.material.intExp}`);
+  if (preview.levelUps) parts.push(`Lv+${preview.levelUps}`);
+  if (preview.intUps) parts.push(`知性+${preview.intUps}`);
+  if (preview.diff.maxHp) parts.push(`体力+${preview.diff.maxHp}`);
+  if (preview.diff.atk) parts.push(`攻撃+${preview.diff.atk}`);
+  if (preview.diff.spd) parts.push(`速さ+${preview.diff.spd}`);
   return parts.join(' ');
 }
 
@@ -247,7 +247,7 @@ function capturedCard(captured, game) {
 function convertPreview(captured) {
   const template = allyTemplates[captured.convertTo];
   if (!template) return '<small>眷属化不可</small>';
-  return `<small>${template.name}になる / HP${template.stats.hp} ATK${template.stats.atk} INT${template.stats.int}</small>`;
+  return `<small>${template.name}になる / 体力${template.stats.hp} 攻撃${template.stats.atk} 知性${template.stats.int}</small>`;
 }
 
 function researchPreview(game) {
@@ -278,7 +278,7 @@ function roomManagementPanel(game) {
     .join('');
   const buildButtons = rooms
     .filter((room) => !isRoomBuilt(game, room.id) && room.buildCost)
-    .map((room) => `<button class="mini" data-build-room="${room.id}" ${((game.gold ?? 0) < room.buildCost || !selectedSlot || slotTaken(game, selectedSlot) || !canConnectRoom(game, anchor) || !canConnectRoom(game, room.id)) ? 'disabled' : ''}>
+    .map((room) => `<button class="mini" data-build-room="${room.id}" draggable="true" ${((game.gold ?? 0) < room.buildCost || !selectedSlot || slotTaken(game, selectedSlot) || !canConnectRoom(game, anchor) || !canConnectRoom(game, room.id)) ? 'disabled' : ''}>
       ${room.name}<small>${roomById[anchor]?.name ?? anchor}から ${selectedSlot ?? '配置点未選択'}へ G${room.buildCost}${roomEffectText(room) ? ` / ${roomEffectText(room)}` : ''}</small>
     </button>`)
     .join('');
@@ -363,7 +363,7 @@ function roomEffectText(room) {
     plunder: '侵入で略奪',
     knowledgeLeak: '侵入で魔王部屋発覚',
     panic: '侵入で配下混乱',
-    armedInvader: '侵入で敵ATK+1'
+    armedInvader: '侵入で敵攻撃+1'
   };
   return [effects[room.effect?.kind], risks[room.risk?.kind]].filter(Boolean).join(' / ');
 }
@@ -577,9 +577,9 @@ function setupPanel(game) {
       <div class="unit-list">${game.allies.map((ally) => unitCard(ally, game)).join('')}</div>
     </div>
     <div class="stats setup-stats" aria-label="${unit.name}の能力">
-      <span>LV ${unit.level ?? 1}</span><span>HP ${unit.maxHp}</span><span>ATK ${unit.atk}</span><span>SPD ${unit.spd}</span>
-      <span class="core">INT ${unit.int}</span><span>EXP ${unit.exp ?? 0}/${nextLevelExp(unit)}</span><span>知 ${unit.intExp ?? 0}/${nextIntExp(unit)}</span>
-      <span>運搬 ${unit.carry}</span><span>RNG ${unit.range}</span><span>${profile.label}</span><span>${roomById[unit.homeRoom]?.name ?? unit.homeRoom}</span>
+      <span>Lv ${unit.level ?? 1}</span><span>体力 ${unit.maxHp}</span><span>攻撃 ${unit.atk}</span><span>速さ ${unit.spd}</span>
+      <span class="core">知性 ${unit.int}</span><span>経験 ${unit.exp ?? 0}/${nextLevelExp(unit)}</span><span>知識 ${unit.intExp ?? 0}/${nextIntExp(unit)}</span>
+      <span>運搬 ${unit.carry}</span><span>射程 ${unit.range}</span><span>${profile.label}</span><span>${roomById[unit.homeRoom]?.name ?? unit.homeRoom}</span>
     </div>
     <div class="advice-box">${warnings.map((line) => `<p>${line}</p>`).join('')}</div>
   </div>`;
@@ -637,13 +637,15 @@ function battlePanel(game) {
       <span>防衛中</span>
       <div class="panel-actions">
         <button data-action="pause">${game.speed === 0 ? '▶' : 'Ⅱ'}</button>
-        <button data-action="speed" data-speed="${game.speed || 1}">速度 ${game.speed || 1}x</button>
+        <button class="${game.speed === 1 ? 'on' : ''}" data-set-speed="1">1x</button>
+        <button class="${game.speed === 2 ? 'on' : ''}" data-set-speed="2">2x</button>
+        <button class="${game.speed === 4 ? 'on' : ''}" data-set-speed="4">4x</button>
         <button data-action="retry">↻</button>
         <button data-action="retreat">撤退</button>
       </div>
     </header>
     <div class="boss-box">
-      <b>魔王HP ${game.demonLord.hp}/${game.demonLord.maxHp}</b>
+      <b>魔王体力 ${game.demonLord.hp}/${game.demonLord.maxHp}</b>
       ${hpBar(game.demonLord.hp, game.demonLord.maxHp)}
     </div>
     <div class="battle-stats">
@@ -663,7 +665,7 @@ function battlePanel(game) {
       </div>
       ${entityStatus ? `<div class="mini-stat">${entityStatus}</div>` : ''}
       ${statusText ? `<div class="mini-stat">状態 ${statusText}</div>` : ''}
-      ${entity.maxHp ? `<div class="mini-stat">${entity.level ? `LV ${entity.level} / ` : ''}HP ${entity.hp}/${entity.maxHp}${entity.atk ? ` / ATK ${entity.atk}` : ''}${entity.int != null ? ` / INT ${entity.int}` : ''}</div>${hpBar(entity.hp, entity.maxHp)}` : ''}
+      ${entity.maxHp ? `<div class="mini-stat">${entity.level ? `Lv ${entity.level} / ` : ''}体力 ${entity.hp}/${entity.maxHp}${entity.atk ? ` / 攻撃 ${entity.atk}` : ''}${entity.int != null ? ` / 知性 ${entity.int}` : ''}</div>${hpBar(entity.hp, entity.maxHp)}` : ''}
       ${isAlly ? `<div class="battle-chips">${entity.chips.map((id) => `<span>${chips[id]?.icon ?? '□'} ${chips[id]?.name ?? id}</span>`).join('')}</div>` : ''}
       ${isEnemy ? `<div class="battle-chips">${entity.chips.map((id) => `<span>${enemyChips[id]?.icon ?? '□'} ${enemyChips[id]?.name ?? id}</span>`).join('')}</div>` : ''}
     </div>` : ''}
@@ -684,7 +686,7 @@ function resultPanel(game) {
     <div class="result-grid">
       <span>撃退<b>${result.defeated}</b></span>
       <span>捕獲<b>${result.captured}</b></span>
-      <span>魔王HP<b>${result.lordHp}</b></span>
+      <span>魔王体力<b>${result.lordHp}</b></span>
       <span>時間<b>${result.elapsed}s</b></span>
       <span>与ダメ<b>${game.metrics?.allyDamage ?? 0}</b></span>
       <span>被ダメ<b>${game.metrics?.enemyDamage ?? 0}</b></span>
@@ -844,13 +846,15 @@ export function renderApp(root, game, commit) {
   root.querySelectorAll('[data-ui-panel]').forEach((button) => button.addEventListener('click', () => commit((state) => {
     state.uiPanel = button.dataset.uiPanel;
   })));
+  root.querySelectorAll('[data-set-speed]').forEach((button) => button.addEventListener('click', () => commit((state) => {
+    state.speed = Number(button.dataset.setSpeed);
+  })));
   root.querySelectorAll('[data-action]').forEach((button) => button.addEventListener('click', () => commit((state) => {
     if (button.dataset.action === 'start') {
       startStage(state);
       focusCameraOn(state, selectedEntity(state), detailZoom());
     }
     if (button.dataset.action === 'pause') state.speed = state.speed === 0 ? 1 : 0;
-    if (button.dataset.action === 'speed') state.speed = state.speed <= 1 ? 2 : state.speed === 2 ? 4 : 1;
     if (button.dataset.action === 'retry') {
       startStage(state);
       focusCameraOn(state, selectedEntity(state), detailZoom());
@@ -888,13 +892,14 @@ export function renderApp(root, game, commit) {
     const payload = button.dataset.unit ? { kind: 'unit', id: button.dataset.unit }
       : button.dataset.chip ? { kind: 'chip', id: button.dataset.chip }
         : button.dataset.installObject ? { kind: 'object', id: button.dataset.installObject }
-          : null;
+          : button.dataset.buildRoom ? { kind: 'buildRoom', id: button.dataset.buildRoom }
+            : null;
     if (!payload) return;
     event.dataTransfer.effectAllowed = 'move';
     event.dataTransfer.setData('application/x-maou-gambit', JSON.stringify(payload));
   }));
 
-  root.querySelectorAll('[data-room], [data-place], [data-drop-unit]').forEach((target) => {
+  root.querySelectorAll('[data-room], [data-place], [data-drop-unit], [data-build-slot]').forEach((target) => {
     target.addEventListener('dragover', (event) => {
       event.preventDefault();
       target.classList.add('drop-ready');
@@ -919,6 +924,11 @@ export function renderApp(root, game, commit) {
         if (payload.kind === 'chip' && target.dataset.dropUnit) {
           equipChipToUnit(state, target.dataset.dropUnit, payload.id);
           state.uiPanel = 'chips';
+        }
+        if (payload.kind === 'buildRoom' && target.dataset.buildSlot && (state.phase === 'setup' || state.phase === 'upgrade')) {
+          state.selectedBuildSlot = target.dataset.buildSlot;
+          state.uiPanel = 'build';
+          buildRoom(state, payload.id, state.selectedBuildFrom, target.dataset.buildSlot);
         }
       });
     });

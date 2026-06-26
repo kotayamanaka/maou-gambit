@@ -5,6 +5,7 @@ import { nextStep, roomConnections } from './path.js';
 import { applyStatus, attackMultiplier, speedMultiplier } from './status.js';
 
 const MELEE_RANGE = 34;
+const MAX_VISIBLE_EFFECTS = 36;
 
 function hashOffset(value = '') {
   let hash = 0;
@@ -33,6 +34,13 @@ function projectileKind(unit) {
   const skills = unit.skills ?? [];
   if (/mage|sage|oracle|shade/i.test(id) || skills.some((skill) => ['poisonTouch', 'slowTouch', 'inspireOnHit'].includes(skill))) return 'magic';
   return 'arrow';
+}
+
+function pushEffect(game, effect) {
+  game.effects.push(effect);
+  if (game.effects.length > MAX_VISIBLE_EFFECTS) {
+    game.effects = game.effects.slice(game.effects.length - MAX_VISIBLE_EFFECTS);
+  }
 }
 
 function facingFromDelta(dx, dy) {
@@ -181,7 +189,7 @@ export function attack(attacker, target, game, label) {
   const hitDelay = ranged ? 0.22 : 0.16;
   if (ranged) {
     const samePoint = Math.hypot((attacker.x ?? 0) - (target.x ?? 0), (attacker.y ?? 0) - (target.y ?? 0)) < 8;
-    game.effects.push({
+    pushEffect(game, {
       id: crypto.randomUUID(),
       type: `projectile ${projectileKind(attacker)} ${side}`,
       room: target.room,
@@ -192,8 +200,18 @@ export function attack(attacker, target, game, label) {
       ttl: 0.34,
       label: ''
     });
+  } else {
+    pushEffect(game, {
+      id: crypto.randomUUID(),
+      type: `swing ${side}`,
+      room: target.room,
+      x: target.x,
+      y: target.y,
+      ttl: 0.28,
+      label: ''
+    });
   }
-  game.effects.push({
+  pushEffect(game, {
     id: crypto.randomUUID(),
     type: `hit ${side}`,
     room: target.room,

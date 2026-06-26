@@ -102,6 +102,39 @@ test('setup supports drag placement and chip assignment', async ({ page }) => {
     unit.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: data }));
   });
   expect(await page.evaluate(() => window.__MAOU_GAME__.allies[0].chips)).toContain('attack');
+
+  await page.evaluate(() => {
+    window.__MAOU_COMMIT__((game) => {
+      game.gold = 1000;
+      game.uiPanel = 'build';
+      game.selectedBuildFrom = 'atrium';
+    });
+  });
+  await page.evaluate(() => {
+    const room = document.querySelector('[data-build-room="treasure"]');
+    const slot = document.querySelector('[data-build-slot="north"]');
+    const data = new DataTransfer();
+    room.dispatchEvent(new DragEvent('dragstart', { bubbles: true, dataTransfer: data }));
+    slot.dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer: data }));
+    slot.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: data }));
+  });
+  expect(await page.evaluate(() => window.__MAOU_GAME__.builtRooms.has('treasure'))).toBe(true);
+
+  await page.evaluate(() => {
+    window.__MAOU_COMMIT__((game) => {
+      game.uiPanel = 'object';
+      game.selectedRoomId = 'treasure';
+    });
+  });
+  await page.evaluate(() => {
+    const object = document.querySelector('[data-install-object="savePoint"]');
+    const room = document.querySelector('[data-room="treasure"]');
+    const data = new DataTransfer();
+    object.dispatchEvent(new DragEvent('dragstart', { bubbles: true, dataTransfer: data }));
+    room.dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer: data }));
+    room.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: data }));
+  });
+  expect(await page.evaluate(() => window.__MAOU_GAME__.roomObjects.treasure)).toBe('savePoint');
   await assertNoDocumentScroll(page);
 });
 
@@ -366,8 +399,8 @@ test('stage runs and reaches result screen', async ({ page }) => {
   await page.goto('/');
   await page.locator('[data-action="start"]').click();
   await expect(page.getByText('防衛中')).toBeVisible();
-  await page.locator('[data-action="speed"]').click();
-  await expect(page.locator('[data-action="speed"]')).toContainText('速度 2x');
+  await page.locator('[data-set-speed="2"]').click();
+  await expect(page.locator('[data-set-speed="2"]')).toHaveClass(/on/);
   expect(await page.evaluate(() => window.__MAOU_GAME__.speed)).toBe(2);
   await page.evaluate(() => { window.__MAOU_GAME__.speed = 10; });
   await expect(page.getByText(/探索中|発見済/)).toBeVisible();
@@ -384,7 +417,7 @@ test('targeting chips do not sense enemies in other rooms', async ({ page }) => 
     goblin.chips = ['focusMage'];
   });
   await page.locator('[data-action="start"]').click();
-  await page.locator('[data-action="speed"]').click();
+  await page.locator('[data-set-speed="2"]').click();
   await page.evaluate(() => { window.__MAOU_GAME__.speed = 10; });
   await page.waitForFunction(() => window.__MAOU_GAME__?.elapsed > 12);
   const snapshot = await page.evaluate(() => ({
@@ -403,7 +436,7 @@ test('targeting chips do not sense enemies in other rooms', async ({ page }) => 
 test('enemies use behavior chips to fight same-room monsters', async ({ page }) => {
   await page.goto('/');
   await page.locator('[data-action="start"]').click();
-  await page.locator('[data-action="speed"]').click();
+  await page.locator('[data-set-speed="2"]').click();
   await page.evaluate(() => { window.__MAOU_GAME__.speed = 10; });
   await page.waitForFunction(() => {
     const game = window.__MAOU_GAME__;
@@ -576,7 +609,7 @@ test('carrier returns to assigned room after jail delivery', async ({ page }) =>
 test('result can continue into upgrade flow after a win', async ({ page }) => {
   await page.goto('/');
   await page.locator('[data-action="start"]').click();
-  await page.locator('[data-action="speed"]').click();
+  await page.locator('[data-set-speed="2"]').click();
   await page.evaluate(() => { window.__MAOU_GAME__.speed = 10; });
   await expect(page.getByText('撃退成功')).toBeVisible({ timeout: 55000 });
   await page.getByRole('button', { name: /捕獲処理へ/ }).click();
@@ -594,7 +627,7 @@ test('feeding a captured enemy applies material exp and growth bias', async ({ p
     });
   });
   await page.locator('[data-unit]').filter({ hasText: 'ゴブリン' }).click();
-  await page.getByRole('button', { name: /ゴブリン EXP\+6 知\+2 ATK\+1/ }).click();
+  await page.getByRole('button', { name: /ゴブリン 経験\+6 知識\+2 攻撃\+1/ }).click();
   const goblin = await page.evaluate(() => window.__MAOU_GAME__.allies.find((ally) => ally.name === 'ゴブリン'));
   expect(goblin.level).toBe(1);
   expect(goblin.exp).toBe(6);
@@ -617,7 +650,7 @@ test('upgrade flow supports captured selection and action previews', async ({ pa
     });
   });
   await expect(page.getByText('影走りになる')).toBeVisible();
-  await expect(page.getByText(/EXP\+8/)).toBeVisible();
+  await expect(page.getByText(/経験\+8/)).toBeVisible();
   await expect(page.getByText('研究候補')).toBeVisible();
   await page.locator('[data-captured-select="cap-warrior"]').click();
   await expect(page.getByText('堕ちた戦士になる')).toBeVisible();
@@ -667,7 +700,7 @@ test('upgrade management supports selling, building, room upgrades, and research
     });
   });
   await expect(page.locator('.treasury-box b')).toContainText('資金');
-  await expect(page.getByText(/ゴブリン ATK\+1/)).toBeVisible();
+  await expect(page.getByText(/ゴブリン 攻撃\+1/)).toBeVisible();
   await page.locator('[data-ui-panel="research"]').click();
   await expect(page.locator('[data-develop-chip="attack"]')).toBeVisible();
   await expect(page.locator('[data-research-monster]')).toContainText('魔物研究');
@@ -894,7 +927,7 @@ test('battle supports unit selection and map zoom without direct commands', asyn
   await expect(allyActor).toBeVisible();
   expect(roomById.atrium.w * battleCamera.zoom).toBeGreaterThanOrEqual(630);
   await allyActor.click();
-  await expect(page.getByText(/HP \d+\/\d+ \/ ATK/)).toBeVisible();
+  await expect(page.getByText(/体力 \d+\/\d+ \/ 攻撃/)).toBeVisible();
   await expect(page.locator('[data-command-room]')).toHaveCount(0);
   await expect(page.locator('.battle-chips span').first()).toBeVisible();
   await page.getByRole('button', { name: '＋' }).click();

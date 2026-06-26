@@ -136,10 +136,10 @@ export function fusionMaterialForAlly(unit) {
   if ((unit.atk ?? 0) >= 8) bonuses.atk = (bonuses.atk ?? 0) + 1;
   if ((unit.spd ?? 0) >= 1.3) bonuses.spd = Math.round(((bonuses.spd ?? 0) + 0.04) * 100) / 100;
   if ((unit.int ?? 0) >= 3) intExp += 1;
-  const parts = [`EXP+${base.exp}`, `知+${intExp}`];
-  if (bonuses.maxHp) parts.push(`HP+${bonuses.maxHp}`);
-  if (bonuses.atk) parts.push(`ATK+${bonuses.atk}`);
-  if (bonuses.spd) parts.push(`SPD+${bonuses.spd}`);
+  const parts = [`経験+${base.exp}`, `知識+${intExp}`];
+  if (bonuses.maxHp) parts.push(`体力+${bonuses.maxHp}`);
+  if (bonuses.atk) parts.push(`攻撃+${bonuses.atk}`);
+  if (bonuses.spd) parts.push(`速さ+${bonuses.spd}`);
   return {
     exp: base.exp,
     intExp,
@@ -154,13 +154,13 @@ export function fuseAlly(game, targetUid, materialUid) {
   const material = game.allies.find((unit) => unit.uid === materialUid);
   if (!target || !material) return false;
   const result = applyGrowthMaterial(target, fusionMaterialForAlly(material));
-  const gains = [`EXP+${result.material.exp}`];
-  if (result.material.intExp) gains.push(`知+${result.material.intExp}`);
-  if (result.levelUps) gains.push(`LV+${result.levelUps}`);
-  if (result.intUps) gains.push(`INT+${result.intUps}`);
-  if (result.diff.maxHp) gains.push(`HP+${result.diff.maxHp}`);
-  if (result.diff.atk) gains.push(`ATK+${result.diff.atk}`);
-  if (result.diff.spd) gains.push(`SPD+${result.diff.spd}`);
+  const gains = [`経験+${result.material.exp}`];
+  if (result.material.intExp) gains.push(`知識+${result.material.intExp}`);
+  if (result.levelUps) gains.push(`Lv+${result.levelUps}`);
+  if (result.intUps) gains.push(`知性+${result.intUps}`);
+  if (result.diff.maxHp) gains.push(`体力+${result.diff.maxHp}`);
+  if (result.diff.atk) gains.push(`攻撃+${result.diff.atk}`);
+  if (result.diff.spd) gains.push(`速さ+${result.diff.spd}`);
   const room = target.homeRoom ?? target.room;
   target.room = room;
   target.homeRoom = room;
@@ -214,7 +214,7 @@ export function useItemOnUnit(game, itemId, unitId) {
   if (effect.stat === 'spd') unit.spd = Math.round((unit.spd + effect.value) * 100) / 100;
   if (effect.stat === 'intExp') {
     const intUps = applyIntExp(unit, effect.value);
-    extra = intUps ? ` / INT+${intUps}` : '';
+    extra = intUps ? ` / 知性+${intUps}` : '';
   }
   addLog(game, `${item.name}を${unit.name}に使用（${effect.label}${extra}）。`);
   return true;
@@ -396,13 +396,13 @@ export function consumeCaptured(game, capturedUid, mode, targetUid) {
   if (mode === 'feed') {
     const target = game.allies.find((unit) => unit.uid === targetUid) ?? game.allies[0];
     const result = applyFeedGrowth(target, captured);
-    const gains = [`EXP+${result.material.exp}`];
-    if (result.material.intExp) gains.push(`知+${result.material.intExp}`);
-    if (result.levelUps) gains.push(`LV+${result.levelUps}`);
-    if (result.intUps) gains.push(`INT+${result.intUps}`);
-    if (result.diff.maxHp) gains.push(`HP+${result.diff.maxHp}`);
-    if (result.diff.atk) gains.push(`ATK+${result.diff.atk}`);
-    if (result.diff.spd) gains.push(`SPD+${result.diff.spd}`);
+    const gains = [`経験+${result.material.exp}`];
+    if (result.material.intExp) gains.push(`知識+${result.material.intExp}`);
+    if (result.levelUps) gains.push(`Lv+${result.levelUps}`);
+    if (result.intUps) gains.push(`知性+${result.intUps}`);
+    if (result.diff.maxHp) gains.push(`体力+${result.diff.maxHp}`);
+    if (result.diff.atk) gains.push(`攻撃+${result.diff.atk}`);
+    if (result.diff.spd) gains.push(`速さ+${result.diff.spd}`);
     addLog(game, `${captured.name}を養分化し、${target.name}を強化（${gains.join(' / ') || result.material.label}）。`);
   }
 

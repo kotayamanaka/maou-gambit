@@ -205,7 +205,7 @@ export const allyTemplates = {
     stats: { hp: 30, atk: 5, spd: 0.95, int: 4, carry: 0, range: 2 },
     rarity: 'epic',
     skills: ['inspireOnHit'],
-    traits: ['高INT', '支援向き']
+    traits: ['高知性', '支援向き']
   }
 };
 
@@ -369,5 +369,6 @@ export const demonLord = {
   name: '魔王',
   type: 'boss',
   sprite: 'assets/sprites/demonLord/idle-front.png',
+  spriteSet: spriteSetFor('demonLord'),
   stats: { hp: 100, atk: 0, spd: 0, int: 0, carry: 0, range: 0 }
 };

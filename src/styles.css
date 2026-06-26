@@ -382,6 +382,26 @@ img { image-rendering: pixelated; }
   background: linear-gradient(90deg, rgba(255, 178, 239, .98), rgba(178, 74, 226, .44), rgba(97, 46, 160, 0));
   box-shadow: 0 0 12px rgba(214, 102, 255, .8);
 }
+.fx.swing {
+  width: 38px;
+  height: 20px;
+  border: 0;
+  color: transparent;
+  background: transparent;
+  text-shadow: none;
+  animation: swingFlash .28s ease-out both;
+}
+.fx.swing::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-top: 4px solid currentColor;
+  border-radius: 50%;
+  transform: rotate(-24deg);
+  filter: drop-shadow(0 0 7px currentColor);
+}
+.fx.swing.ally-hit { color: #ffe29c; }
+.fx.swing.enemy-hit { color: #ff8b8b; }
 .fx.capture { color: var(--green); font-size: 16px; }
 .fx.found, .fx.question { color: var(--gold); }
 .fx.status {
@@ -476,6 +496,11 @@ img { image-rendering: pixelated; }
 .panel-actions button {
   min-height: 30px;
   padding: 4px 7px;
+}
+.panel-actions button.on {
+  color: #111;
+  background: var(--gold);
+  font-weight: 900;
 }
 
 .primary, .panel button.primary {
@@ -743,6 +768,11 @@ img { image-rendering: pixelated; }
   0% { opacity: 0; clip-path: inset(0 100% 0 0); filter: brightness(1.7); }
   18% { opacity: 1; clip-path: inset(0 42% 0 0); }
   100% { opacity: 0; clip-path: inset(0 0 0 100%); filter: brightness(1); }
+}
+@keyframes swingFlash {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(.75) rotate(-16deg); }
+  35% { opacity: 1; transform: translate(-50%, -50%) scale(1.08) rotate(-6deg); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.2) rotate(10deg); }
 }
 
 @media (max-width: 720px) {

@@ -32,7 +32,7 @@ export function tickBattle(game, dt) {
   spawnDueEnemies(game);
 
   for (const unit of [...game.allies, ...game.enemies]) {
-    if (unit.animTtl > 0) unit.animTtl = Math.max(0, unit.animTtl - step);
+    if (unit.animTtl > 0) unit.animTtl = Math.max(0, unit.animTtl - dt);
     tickStatuses(unit, step, game);
   }
   tickRoomObjects(game, step);
