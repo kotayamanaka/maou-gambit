@@ -874,3 +874,38 @@ PC前提の広いダンジョン表示で使う床・部屋・通路タイルを
 
 - `demonLord` は単体表示素材のままで、歩行/攻撃フレームは未生成。
 - 今回も自動生成の微差分であり、本番素材としては専用の2〜4フレーム生成/切り出しが必要。
+
+## 2026-06-26 魔王スプライトセット昇格
+
+### 目的
+
+魔王だけが単体表示素材のまま残っていたため、他ユニットと同じ `idle / walk / attack / downed` x `front/back/left/right` の規約へ乗せる。
+
+### 修正
+
+- `scripts/make_demon_lord_sprites.py` を追加し、既存の専用魔王正面絵から4方向、歩行、攻撃、ダウン素材を派生生成するようにした。
+- `public/assets/sprites/demonLord/` に `walk-<direction>.png`、`attack-<direction>.png`、`downed.png`、`downed-back/left/right.png` を追加した。
+- 既存の `scripts/make_micro_animation_frames.py` に通し、魔王にも `walk` 3フレーム、`attack` 2フレームを生成した。
+- `src/data/spriteAnimations.js` に `demonLord` を追加し、魔王も複数フレーム配列を参照するようにした。
+- `screenshots/sprite-animation-audit.png` を24体一覧へ更新した。
+- `README.md` と `ASSET_PIPELINE.md` を24スプライトフォルダ対応へ更新した。
+
+### 生成物
+
+- `public/assets/sprites/demonLord/idle-front/back/left/right.png`
+- `public/assets/sprites/demonLord/walk-<direction>.png`
+- `public/assets/sprites/demonLord/attack-<direction>.png`
+- `public/assets/sprites/demonLord/downed.png` と `downed-back/left/right.png`
+- `public/assets/sprites/demonLord/walk-<direction>-0..2.png`
+- `public/assets/sprites/demonLord/attack-<direction>-0..1.png`
+
+### 検証結果
+
+- スプライト関連のPlaywright絞り込み検証: 4件成功。
+- `npm test -- --reporter=line`: 82件成功。
+- `npm run test:balance`: 成功。キャンペーン検収は勝利。
+- `npm run build:pages`: 成功。
+
+### 残課題
+
+- 今回の魔王4方向は既存正面絵からの派生生成であり、本番用には専用生成シートで置き換える。

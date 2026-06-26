@@ -6,6 +6,7 @@ const animatedUnits = [
   'cleric',
   'darkMage',
   'darkSlime',
+  'demonLord',
   'fallenWarrior',
   'goblin',
   'guard',

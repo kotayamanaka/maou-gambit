@@ -80,7 +80,7 @@ npm run test:balance
 - `public/assets/tiles/`: 床、部屋、通路タイル
 - `screenshots/`: UI/素材監査画像
 
-キャラは `idle / walk / attack / downed` x `front/back/left/right` を基本にする。`spriteSet` は単一PNGと複数フレーム配列の両方に対応しており、現時点では魔王以外の23スプライトフォルダに、検証用の `walk` 3フレーム、`attack` 2フレームを生成している。
+キャラは `idle / walk / attack / downed` x `front/back/left/right` を基本にする。`spriteSet` は単一PNGと複数フレーム配列の両方に対応しており、現時点では24スプライトフォルダに、検証用の `walk` 3フレーム、`attack` 2フレームを生成している。
 
 自動生成フレームは本番絵ではなく、アニメーション基盤検証用。最終的には Claude Design / 専用生成で、近接・弓・魔法ごとの攻撃差分へ置き換える。
 

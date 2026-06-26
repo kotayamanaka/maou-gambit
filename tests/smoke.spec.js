@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { roomById, worldSize } from '../src/data/rooms.js';
 import { spriteAnimations } from '../src/data/spriteAnimations.js';
-import { allyTemplates, enemyTemplates } from '../src/data/units.js';
+import { allyTemplates, demonLord, enemyTemplates } from '../src/data/units.js';
 
 async function assertNoDocumentScroll(page) {
   const metrics = await page.evaluate(() => ({
@@ -367,7 +367,7 @@ test('slime variants use generated directional action sprites', async ({ page })
 
 test('micro animation sprite frames are generated and connected for sprite folders', () => {
   const animatedFolders = Object.keys(spriteAnimations).sort();
-  expect(animatedFolders.length).toBe(23);
+  expect(animatedFolders.length).toBe(24);
 
   for (const id of animatedFolders) {
     const animation = spriteAnimations[id];
@@ -386,7 +386,7 @@ test('micro animation sprite frames are generated and connected for sprite folde
     }
   }
 
-  for (const [id, template] of Object.entries({ ...allyTemplates, ...enemyTemplates })) {
+  for (const [id, template] of Object.entries({ ...allyTemplates, ...enemyTemplates, demonLord })) {
     const spritePath = template.spriteSet?.idle?.front ?? '';
     const folder = spritePath.split('/').at(-2);
     if (!spriteAnimations[folder]) continue;
