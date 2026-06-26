@@ -1,57 +1,23 @@
-const goblinSpriteSet = {
-  idle: {
-    front: 'assets/sprites/goblin/idle-front.png',
-    back: 'assets/sprites/goblin/idle-back.png',
-    left: 'assets/sprites/goblin/idle-left.png',
-    right: 'assets/sprites/goblin/idle-right.png'
-  },
-  walk: {
-    front: 'assets/sprites/goblin/walk-front.png',
-    back: 'assets/sprites/goblin/walk-back.png',
-    left: 'assets/sprites/goblin/walk-left.png',
-    right: 'assets/sprites/goblin/walk-right.png'
-  },
-  attack: {
-    front: 'assets/sprites/goblin/attack-front.png',
-    back: 'assets/sprites/goblin/attack-back.png',
-    left: 'assets/sprites/goblin/attack-left.png',
-    right: 'assets/sprites/goblin/attack-right.png'
-  },
-  downed: {
-    front: 'assets/sprites/goblin/downed.png',
-    back: 'assets/sprites/goblin/downed-back.png',
-    left: 'assets/sprites/goblin/downed-left.png',
-    right: 'assets/sprites/goblin/downed-right.png'
-  }
-};
+import { spriteAnimations } from './spriteAnimations.js';
+
+const actions = ['idle', 'walk', 'attack', 'downed'];
+const directions = ['front', 'back', 'left', 'right'];
+
+function spritePath(unitId, action, direction) {
+  if (action === 'downed' && direction === 'front') return `assets/sprites/${unitId}/downed.png`;
+  return `assets/sprites/${unitId}/${action}-${direction}.png`;
+}
+
+function spriteEntry(unitId, action, direction) {
+  const frames = spriteAnimations[unitId]?.[action]?.[direction];
+  return Array.isArray(frames) && frames.length ? frames : spritePath(unitId, action, direction);
+}
 
 function spriteSetFor(unitId) {
-  return {
-    idle: {
-      front: `assets/sprites/${unitId}/idle-front.png`,
-      back: `assets/sprites/${unitId}/idle-back.png`,
-      left: `assets/sprites/${unitId}/idle-left.png`,
-      right: `assets/sprites/${unitId}/idle-right.png`
-    },
-    walk: {
-      front: `assets/sprites/${unitId}/walk-front.png`,
-      back: `assets/sprites/${unitId}/walk-back.png`,
-      left: `assets/sprites/${unitId}/walk-left.png`,
-      right: `assets/sprites/${unitId}/walk-right.png`
-    },
-    attack: {
-      front: `assets/sprites/${unitId}/attack-front.png`,
-      back: `assets/sprites/${unitId}/attack-back.png`,
-      left: `assets/sprites/${unitId}/attack-left.png`,
-      right: `assets/sprites/${unitId}/attack-right.png`
-    },
-    downed: {
-      front: `assets/sprites/${unitId}/downed.png`,
-      back: `assets/sprites/${unitId}/downed-back.png`,
-      left: `assets/sprites/${unitId}/downed-left.png`,
-      right: `assets/sprites/${unitId}/downed-right.png`
-    }
-  };
+  return Object.fromEntries(actions.map((action) => [
+    action,
+    Object.fromEntries(directions.map((direction) => [direction, spriteEntry(unitId, action, direction)]))
+  ]));
 }
 
 export const allyTemplates = {
@@ -61,7 +27,7 @@ export const allyTemplates = {
     type: 'ally',
     role: 'balanced',
     sprite: 'assets/sprites/goblin/idle-front.png',
-    spriteSet: goblinSpriteSet,
+    spriteSet: spriteSetFor('goblin'),
     stats: { hp: 62, atk: 10, spd: 1.0, int: 3, carry: 1, range: 1 },
     rarity: 'starter',
     skills: ['hasteOnHit'],
@@ -167,7 +133,7 @@ export const allyTemplates = {
     type: 'ally',
     role: 'commander',
     sprite: 'assets/sprites/goblin/idle-front.png',
-    spriteSet: goblinSpriteSet,
+    spriteSet: spriteSetFor('goblin'),
     stats: { hp: 58, atk: 10, spd: 1.05, int: 3, carry: 1, range: 1 },
     rarity: 'rare',
     traits: ['運搬可', '多チップ']

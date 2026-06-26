@@ -8,6 +8,8 @@
 - 本実装前の仮スプライトは `assets/sprites/` と `public/assets/sprites/` に置く。
 - 生成後の高品質素材は `assets/generated/` に原本を置き、ゲームで使う縮小版を `public/assets/sprites/` へ書き出す。
 - ダンジョン床・部屋床・通路床は `assets/generated/dungeon/tiles/` に原本と切り出しを置き、ゲーム参照用を `public/assets/tiles/` へ書き出す。
+- `spriteSet` は従来の単一PNGパスと、2から4フレーム程度のPNG配列の両方を扱う。単一PNGだけのユニットは従来どおり表示し、配列があるユニットだけ描画時にフレームを切り替える。
+- 自動生成した微差分フレームは、本番絵ではなくアニメーション基盤検証用。既存PNGは上書きせず、`walk-front-0.png` のような派生ファイルとして `public/assets/sprites/<unit-id>/` に置く。
 
 ## ディレクトリ
 
@@ -99,6 +101,12 @@ assets/generated/
 - 原本切り出し先: `assets/generated/dungeon/tiles/`
 - ゲーム参照先: `public/assets/tiles/`
 - ゲーム表示用に128px四方へ縮小し、マップ背景・部屋背景・直角通路のテクスチャとして使う。
+- 基盤検証用の微差分アニメーションフレームは `scripts/make_micro_animation_frames.py` で作る。
+- 入力: `public/assets/sprites/<unit-id>/walk-front.png` や `attack-front.png` など既存のゲーム表示用PNG。
+- 対象: `goblin`、`slime`、`warrior`、`rogue`、`mage`、`guard`。
+- 出力: `walk-<direction>-0..2.png` と `attack-<direction>-0..1.png`。元PNGは上書きしない。
+- 透明背景を維持し、ドット絵の拡縮/移動はNEAREST前提。walkは軽い上下/左右差分、attackは踏み込み方向への数px移動と軽い明度差分に留める。
+- `scripts/make_sprite_animation_audit.py` で `screenshots/sprite-animation-audit.png` を作成し、walk/attackのフレーム差分を一覧検収する。
 
 ## キャラ動作
 
@@ -111,6 +119,7 @@ assets/generated/
 - `walk`: 2から4フレーム相当の歩行差分。通路移動で使う。
 - `attack`: 近接は踏み込み。遠距離は構え/詠唱までで、矢や魔法玉などの射出物はキャラ絵に描かない。
 - `downed`: 捕獲前の倒れ状態。
+- `walk` と `attack` は、`spriteSet.walk.front` が文字列なら単一画像、配列なら時間/攻撃残り時間に応じてフレーム選択する。ユニットごとに位相をずらし、全員が同じ歩幅で同期しないようにする。
 
 ## 実装接続済み
 
@@ -122,6 +131,7 @@ assets/generated/
 - ダンジョンマップは `floor-stone` を背景床、`room-stone` を部屋床、`corridor-stone` を通路床として参照する。
 - 通路は部屋中心同士の斜め直線ではなく、部屋の扉から水平・垂直の直角セグメントとして描画する。
 - ゲーム中は座標移動の向きから `front/back/left/right` を更新し、移動中は `walk`、攻撃直後は `attack` を表示する。
+- `goblin`、`slime`、`warrior`、`rogue`、`mage`、`guard` は、基盤検証用の `walk` 3フレーム、`attack` 2フレーム配列に接続済み。その他のユニットは単一PNG参照のまま従来どおり表示する。
 - 遠距離攻撃は `attack` スプライトを直接見せず、キャラ本体は構え姿勢、射出物は `projectile arrow/magic` エフェクトで別表示する。キャラ絵とエフェクトで矢/魔法玉を重複させない。
 - まだ完全専用生成されていない後半敵職は、既存生成素材をベースにした色違い亜種として運用し、順次 `slice_dedicated_enemy_sheets.py` で専用シートへ差し替える。
 

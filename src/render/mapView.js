@@ -14,15 +14,46 @@ function spritePose(entity, fallbackPose = 'idle') {
   return pose === 'attack' && (entity.range ?? 1) > 1 ? 'idle' : pose;
 }
 
-function entitySprite(entity, fallbackPose = 'idle') {
-  const set = entity.spriteSet;
-  if (!set) return entity.sprite;
-  const pose = spritePose(entity, fallbackPose);
-  const facing = entity.facing ?? 'front';
-  return set[pose]?.[facing] ?? set[pose]?.front ?? set.idle?.[facing] ?? set.idle?.front ?? entity.sprite;
+function hashOffset(value = '') {
+  let hash = 0;
+  for (let i = 0; i < value.length; i += 1) hash = (hash * 31 + value.charCodeAt(i)) >>> 0;
+  return (hash % 1000) / 1000;
 }
 
-function sprite(entity, className = '', index = 0) {
+function animationClock(game) {
+  if (Number.isFinite(game?.elapsed)) return game.elapsed;
+  return typeof performance !== 'undefined' ? performance.now() / 1000 : 0;
+}
+
+function spriteEntry(set, pose, facing) {
+  return set[pose]?.[facing] ?? set[pose]?.front ?? set.idle?.[facing] ?? set.idle?.front;
+}
+
+function frameIndex(entity, pose, frames, clock) {
+  if (!Array.isArray(frames) || frames.length <= 1) return 0;
+  if (pose === 'attack') {
+    const ttl = entity.animTtl ?? 0;
+    return ttl > 0.18 ? 0 : Math.min(1, frames.length - 1);
+  }
+  const phase = hashOffset(entity.uid ?? entity.id ?? entity.name ?? '') * 0.7;
+  const fps = pose === 'walk' ? 7 : 3;
+  return Math.floor((clock + phase) * fps) % frames.length;
+}
+
+function entitySpriteInfo(entity, fallbackPose = 'idle', clock = 0) {
+  const set = entity.spriteSet;
+  if (!set) return { src: entity.sprite, frameIndex: 0, frameCount: 1 };
+  const pose = spritePose(entity, fallbackPose);
+  const facing = entity.facing ?? 'front';
+  const entry = spriteEntry(set, pose, facing);
+  if (Array.isArray(entry) && entry.length) {
+    const index = frameIndex(entity, pose, entry, clock);
+    return { src: entry[index] ?? entry[0] ?? entity.sprite, frameIndex: index, frameCount: entry.length };
+  }
+  return { src: entry ?? entity.sprite, frameIndex: 0, frameCount: 1 };
+}
+
+function sprite(entity, className = '', index = 0, clock = 0) {
   const hp = entity.maxHp ? `<span class="mini-hp" style="--hp:${Math.max(0, entity.hp / entity.maxHp)}"></span>` : '';
   const carry = entity.carrying ? '<b class="badge carry">⛓</b>' : '';
   const known = entity.knowsThrone ? '<b class="badge warn">!</b>' : '';
@@ -32,24 +63,27 @@ function sprite(entity, className = '', index = 0) {
   const type = entity.type === 'enemy' ? 'enemy' : entity.type === 'boss' ? 'lord' : 'ally';
   const pose = entityPose(entity);
   const facing = entity.facing ?? 'front';
-  return `<button class="actor ${className} anim-${pose} face-${facing}" data-select-type="${type}" data-select-id="${entity.uid ?? entity.id}" title="${entity.name}" style="left:${(entity.x ?? 0) + offsetX}px;top:${(entity.y ?? 0) + offsetY}px">
-    <img src="${entitySprite(entity)}" alt="${entity.name}" />
+  const spriteInfo = entitySpriteInfo(entity, 'idle', clock);
+  return `<button class="actor ${className} anim-${pose} face-${facing}" data-select-type="${type}" data-select-id="${entity.uid ?? entity.id}" data-sprite-frame="${spriteInfo.frameIndex}" data-sprite-frame-count="${spriteInfo.frameCount}" title="${entity.name}" style="left:${(entity.x ?? 0) + offsetX}px;top:${(entity.y ?? 0) + offsetY}px">
+    <img src="${spriteInfo.src}" alt="${entity.name}" />
     ${hp}${carry}${known}${status ? `<span class="status-stack">${status}</span>` : ''}
   </button>`;
 }
 
-function bodySprite(body, index = 0) {
+function bodySprite(body, index = 0, clock = 0) {
   const offsetX = ((index % 3) - 1) * 18;
   const offsetY = (Math.floor(index / 3) - 0.5) * 16;
   const facing = body.facing ?? 'front';
+  const spriteInfo = entitySpriteInfo(body, 'downed', clock);
   return `<button class="actor downed anim-downed face-${facing}" data-select-type="downed" data-select-id="${body.uid}" title="${body.name} 残り${Math.ceil(body.ttl)}秒" style="left:${(body.x ?? 0) + offsetX}px;top:${(body.y ?? 0) + offsetY}px">
-    <img src="${entitySprite(body, 'downed')}" alt="${body.name}" />
+    <img src="${spriteInfo.src}" alt="${body.name}" />
     <span class="down-timer">${Math.ceil(body.ttl)}</span>
   </button>`;
 }
 
 export function renderMap(game, mode = 'setup') {
   const camera = game.camera ?? { zoom: 1, x: 0, y: 0 };
+  const clock = animationClock(game);
   const visibleRooms = roomViews(game);
   const roomById = Object.fromEntries(visibleRooms.map((room) => [room.id, room]));
   const corridors = Object.entries(game.roomConnections ?? {})
@@ -59,12 +93,12 @@ export function renderMap(game, mode = 'setup') {
     )));
   const actors = [];
   const selected = game.selectedEntity ?? { type: 'ally', id: game.selectedUnitId };
-  game.allies.forEach((ally, index) => actors.push(sprite(ally, selected.type === 'ally' && selected.id === ally.uid ? 'selected ally' : 'ally', index)));
+  game.allies.forEach((ally, index) => actors.push(sprite(ally, selected.type === 'ally' && selected.id === ally.uid ? 'selected ally' : 'ally', index, clock)));
   if (game.phase === 'battle') {
-    game.enemies.forEach((enemy, index) => actors.push(sprite(enemy, selected.type === 'enemy' && selected.id === enemy.uid ? 'selected enemy' : 'enemy', index)));
-    game.downed.forEach((body, index) => actors.push(bodySprite(body, index)));
+    game.enemies.forEach((enemy, index) => actors.push(sprite(enemy, selected.type === 'enemy' && selected.id === enemy.uid ? 'selected enemy' : 'enemy', index, clock)));
+    game.downed.forEach((body, index) => actors.push(bodySprite(body, index, clock)));
   }
-  actors.push(sprite(game.demonLord, selected.type === 'lord' ? 'selected lord' : 'lord', 0));
+  actors.push(sprite(game.demonLord, selected.type === 'lord' ? 'selected lord' : 'lord', 0, clock));
 
   const nodes = visibleRooms.filter((room) => isRoomBuilt(game, room.id)).map((room) => {
     const discovered = game.partyKnowledge?.visited?.has?.(room.id) || mode !== 'battle' || room.id === 'entrance';

@@ -829,7 +829,7 @@ img { image-rendering: pixelated; }
 @keyframes mapBob { 50% { transform: translateY(-2px); } }
 @keyframes walkStep {
   0%, 100% { transform: translateY(0) scale(1); }
-  50% { transform: translateY(-3px) scale(1.03, .98); }
+  50% { transform: translateY(-1px) scale(1.01, .995); }
 }
 @keyframes attackSnap {
   0% { transform: translate(0, 0) scale(1); filter: brightness(1); }

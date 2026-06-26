@@ -23,6 +23,11 @@ function pngSize(filePath) {
   };
 }
 
+function expectSpriteEntry(entry, expected) {
+  if (Array.isArray(entry)) expect(entry).toContain(expected.replace(/\.png$/, '-0.png'));
+  else expect(entry).toBe(expected);
+}
+
 test('layout fits without page scroll', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByText('第一侵入隊').first()).toBeVisible();
@@ -292,7 +297,7 @@ test('goblin uses generated directional action sprites', async ({ page }) => {
       game.selectedEntity = { type: 'ally', id: goblin.uid };
     });
   });
-  await expect(page.locator('.actor.ally.selected img')).toHaveAttribute('src', /goblin\/walk-left\.png/);
+  await expect(page.locator('.actor.ally.selected img')).toHaveAttribute('src', /goblin\/walk-left-[0-2]\.png/);
 
   await page.evaluate(() => {
     window.__MAOU_COMMIT__((game) => {
@@ -304,7 +309,7 @@ test('goblin uses generated directional action sprites', async ({ page }) => {
       game.selectedEntity = { type: 'ally', id: goblin.uid };
     });
   });
-  await expect(page.locator('.actor.ally.selected img')).toHaveAttribute('src', /goblin\/attack-front\.png/);
+  await expect(page.locator('.actor.ally.selected img')).toHaveAttribute('src', /goblin\/attack-front-[0-1]\.png/);
   await assertNoDocumentScroll(page);
 });
 
@@ -343,7 +348,7 @@ test('slime variants use generated directional action sprites', async ({ page })
       game.selectedEntity = { type: 'ally', id: slime.uid };
     });
   });
-  await expect(page.locator('.actor.ally.selected img')).toHaveAttribute('src', /slime\/walk-right\.png/);
+  await expect(page.locator('.actor.ally.selected img')).toHaveAttribute('src', /slime\/walk-right-[0-2]\.png/);
 
   await page.evaluate(() => {
     window.__MAOU_COMMIT__((game) => {
@@ -355,7 +360,83 @@ test('slime variants use generated directional action sprites', async ({ page })
       game.selectedEntity = { type: 'ally', id: slime.uid };
     });
   });
-  await expect(page.locator('.actor.ally.selected img')).toHaveAttribute('src', /slime\/attack-front\.png/);
+  await expect(page.locator('.actor.ally.selected img')).toHaveAttribute('src', /slime\/attack-front-[0-1]\.png/);
+  await assertNoDocumentScroll(page);
+});
+
+test('micro animation sprite frames are generated and connected for starter units', () => {
+  for (const [id, template] of [
+    ['goblin', allyTemplates.goblin],
+    ['slime', allyTemplates.slime],
+    ['warrior', enemyTemplates.warrior],
+    ['rogue', enemyTemplates.rogue],
+    ['mage', enemyTemplates.mage],
+    ['guard', enemyTemplates.guard]
+  ]) {
+    expect(Array.isArray(template.spriteSet.walk.front), `${id} walk front`).toBe(true);
+    expect(Array.isArray(template.spriteSet.attack.front), `${id} attack front`).toBe(true);
+    expect(template.spriteSet.walk.front).toHaveLength(3);
+    expect(template.spriteSet.attack.front).toHaveLength(2);
+    expect(template.spriteSet.idle.front).toBe(`assets/sprites/${id}/idle-front.png`);
+    for (const direction of ['front', 'back', 'left', 'right']) {
+      for (const pathName of [...template.spriteSet.walk[direction], ...template.spriteSet.attack[direction]]) {
+        const file = path.join(process.cwd(), 'public', pathName);
+        expect(fs.existsSync(file), `${id}/${pathName}`).toBe(true);
+        const size = pngSize(file);
+        expect(size.width).toBeGreaterThan(8);
+        expect(size.height).toBeGreaterThan(8);
+      }
+    }
+  }
+});
+
+test('walk and attack sprites advance animation frames in render state', async ({ page }) => {
+  await page.goto('/');
+  await page.evaluate(() => {
+    window.__MAOU_COMMIT__((game) => {
+      game.phase = 'battle';
+      game.speed = 0;
+      game.elapsed = 0;
+      const goblin = game.allies.find((ally) => ally.templateId === 'goblin');
+      goblin.movingTo = 'hallA';
+      goblin.facing = 'right';
+      goblin.anim = 'walk';
+      goblin.animTtl = 0;
+      game.selectedEntity = { type: 'ally', id: goblin.uid };
+    });
+  });
+
+  const walkFrames = [];
+  for (let i = 0; i < 5; i += 1) {
+    await page.evaluate(() => {
+      window.__MAOU_COMMIT__((game) => {
+        game.elapsed += 0.18;
+      });
+    });
+    walkFrames.push(await page.locator('.actor.ally.selected').getAttribute('data-sprite-frame'));
+  }
+  expect(new Set(walkFrames).size).toBeGreaterThan(1);
+  await expect(page.locator('.actor.ally.selected img')).toHaveAttribute('src', /goblin\/walk-right-[0-2]\.png/);
+
+  await page.evaluate(() => {
+    window.__MAOU_COMMIT__((game) => {
+      const goblin = game.allies.find((ally) => ally.templateId === 'goblin');
+      goblin.movingTo = null;
+      goblin.facing = 'front';
+      goblin.anim = 'attack';
+      goblin.animTtl = 0.3;
+      game.selectedEntity = { type: 'ally', id: goblin.uid };
+    });
+  });
+  expect(await page.locator('.actor.ally.selected').getAttribute('data-sprite-frame')).toBe('0');
+  await page.evaluate(() => {
+    window.__MAOU_COMMIT__((game) => {
+      const goblin = game.allies.find((ally) => ally.templateId === 'goblin');
+      goblin.animTtl = 0.08;
+    });
+  });
+  expect(await page.locator('.actor.ally.selected').getAttribute('data-sprite-frame')).toBe('1');
+  await expect(page.locator('.actor.ally.selected img')).toHaveAttribute('src', /goblin\/attack-front-1\.png/);
   await assertNoDocumentScroll(page);
 });
 
@@ -376,7 +457,7 @@ test('early enemy templates use generated directional action sprites', () => {
   ]) {
     const [pose, facing] = sample.split('-');
     expect(enemyTemplates[id].sprite).toBe(`assets/sprites/${id}/idle-front.png`);
-    expect(enemyTemplates[id].spriteSet[pose][facing]).toBe(`assets/sprites/${id}/${sample}.png`);
+    expectSpriteEntry(enemyTemplates[id].spriteSet[pose][facing], `assets/sprites/${id}/${sample}.png`);
     expect(enemyTemplates[id].spriteSet.idle.front).toBe(`assets/sprites/${id}/idle-front.png`);
   }
 });
@@ -411,7 +492,7 @@ test('converted ally templates use generated directional action sprites', () => 
   ]) {
     const [pose, facing] = sample.split('-');
     expect(allyTemplates[id].sprite).toBe(`assets/sprites/${id}/idle-front.png`);
-    expect(allyTemplates[id].spriteSet[pose][facing]).toBe(`assets/sprites/${id}/${sample}.png`);
+    expectSpriteEntry(allyTemplates[id].spriteSet[pose][facing], `assets/sprites/${id}/${sample}.png`);
     expect(allyTemplates[id].spriteSet.idle.front).toBe(`assets/sprites/${id}/idle-front.png`);
   }
 });
@@ -1033,6 +1114,184 @@ test('risky rooms trigger concrete tradeoffs when invaders enter', async ({ page
   expect(state.logs.join('\n')).toContain('手掛かり');
   expect(state.logs.join('\n')).toContain('混乱');
   expect(state.logs.join('\n')).toContain('攻撃+1');
+  await assertNoDocumentScroll(page);
+});
+
+test('room objects apply traps, revival, and shared healing in battle', async ({ page }) => {
+  await page.goto('/');
+  const atrium = { x: roomById.atrium.x, y: roomById.atrium.y, w: roomById.atrium.w, h: roomById.atrium.h };
+
+  await page.evaluate((room) => {
+    const point = (side) => ({ x: room.x + room.w * side, y: room.y });
+    const enemy = (overrides = {}) => ({
+      uid: overrides.uid ?? 'object-test-enemy',
+      templateId: 'warrior',
+      name: overrides.name ?? '設備検証敵',
+      type: 'enemy',
+      sprite: 'assets/sprites/warrior/idle-front.png',
+      spriteSet: null,
+      maxHp: overrides.maxHp ?? 40,
+      hp: overrides.hp ?? 40,
+      atk: 1,
+      spd: 1,
+      range: 1,
+      skills: [],
+      chips: [],
+      capture: { difficulty: 1, ttl: 10 },
+      drop: { gold: 0, items: [] },
+      room: 'atrium',
+      ...point(-0.28),
+      facing: 'right',
+      anim: 'idle',
+      animTtl: 0,
+      movingTo: null,
+      moveClock: 0,
+      attackClock: 0,
+      searchClock: 999,
+      knowsThrone: false,
+      status: [],
+      ...overrides
+    });
+
+    window.__MAOU_COMMIT__((game) => {
+      game.phase = 'battle';
+      game.speed = 2;
+      game.waveQueue = [];
+      game.roomObjects = { atrium: 'spikeTrap' };
+      game.enemies = [enemy({ uid: 'trap-target', hp: 20, maxHp: 30 })];
+      game.allies[0].chips = [];
+      game.allies[0].room = 'storage';
+      game.allies[0].homeRoom = 'storage';
+      game.effects = [];
+      game.log = [];
+    });
+  }, atrium);
+
+  await page.waitForFunction(() => window.__MAOU_GAME__.enemies.find((enemy) => enemy.uid === 'trap-target')?.hp === 10);
+  const trapState = await page.evaluate(() => ({
+    hp: window.__MAOU_GAME__.enemies.find((enemy) => enemy.uid === 'trap-target')?.hp,
+    trapLog: window.__MAOU_GAME__.log.join('\n'),
+    effect: window.__MAOU_GAME__.effects.some((effect) => String(effect.label).includes('罠'))
+  }));
+  expect(trapState.hp).toBe(10);
+  expect(trapState.trapLog).toContain('棘罠');
+  expect(trapState.effect).toBe(true);
+
+  await page.evaluate((room) => {
+    const point = (side) => ({ x: room.x + room.w * side, y: room.y });
+    window.__MAOU_COMMIT__((game) => {
+      game.phase = 'battle';
+      game.speed = 2;
+      game.waveQueue = [];
+      game.roomObjects = { atrium: 'savePoint' };
+      game.enemies = [{
+        uid: 'revive-target',
+        templateId: 'warrior',
+        name: '復活検証敵',
+        type: 'enemy',
+        sprite: 'assets/sprites/warrior/idle-front.png',
+        spriteSet: null,
+        maxHp: 40,
+        hp: 0,
+        atk: 1,
+        spd: 1,
+        range: 1,
+        skills: [],
+        chips: [],
+        capture: { difficulty: 1, ttl: 10 },
+        drop: { gold: 0, items: [] },
+        room: 'atrium',
+        ...point(-0.28),
+        facing: 'right',
+        anim: 'idle',
+        animTtl: 0,
+        movingTo: null,
+        moveClock: 0,
+        attackClock: 0,
+        searchClock: 999,
+        knowsThrone: false,
+        status: []
+      }];
+      game.downed = [];
+      game.defeated = 0;
+      game.effects = [];
+      game.log = [];
+    });
+  }, atrium);
+
+  await page.waitForFunction(() => window.__MAOU_GAME__.enemies.find((enemy) => enemy.uid === 'revive-target')?.saveRevived);
+  const reviveState = await page.evaluate(() => {
+    const enemy = window.__MAOU_GAME__.enemies.find((item) => item.uid === 'revive-target');
+    return {
+      hp: enemy?.hp,
+      saveRevived: enemy?.saveRevived,
+      downed: window.__MAOU_GAME__.downed.length,
+      log: window.__MAOU_GAME__.log.join('\n')
+    };
+  });
+  expect(reviveState.hp).toBe(20);
+  expect(reviveState.saveRevived).toBe(true);
+  expect(reviveState.downed).toBe(0);
+  expect(reviveState.log).toContain('セーブポイント');
+
+  await page.evaluate((room) => {
+    const point = (side) => ({ x: room.x + room.w * side, y: room.y });
+    window.__MAOU_COMMIT__((game) => {
+      game.phase = 'battle';
+      game.speed = 8;
+      game.waveQueue = [];
+      game.roomObjects = { atrium: 'healingSpring' };
+      const goblin = game.allies[0];
+      goblin.room = 'atrium';
+      goblin.homeRoom = 'atrium';
+      goblin.chips = [];
+      goblin.maxHp = 40;
+      goblin.hp = 20;
+      Object.assign(goblin, point(0.3));
+      game.enemies = [{
+        uid: 'spring-target',
+        templateId: 'warrior',
+        name: '泉検証敵',
+        type: 'enemy',
+        sprite: 'assets/sprites/warrior/idle-front.png',
+        spriteSet: null,
+        maxHp: 40,
+        hp: 16,
+        atk: 1,
+        spd: 1,
+        range: 1,
+        skills: [],
+        chips: [],
+        capture: { difficulty: 1, ttl: 10 },
+        drop: { gold: 0, items: [] },
+        room: 'atrium',
+        ...point(-0.28),
+        facing: 'right',
+        anim: 'idle',
+        animTtl: 0,
+        movingTo: null,
+        moveClock: 0,
+        attackClock: 0,
+        searchClock: 999,
+        knowsThrone: false,
+        status: []
+      }];
+      game.effects = [];
+      game.log = [];
+    });
+  }, atrium);
+
+  await page.waitForFunction(() => {
+    const game = window.__MAOU_GAME__;
+    const enemy = game.enemies.find((item) => item.uid === 'spring-target');
+    return game.allies[0].hp > 20 && enemy?.hp > 16;
+  });
+  const springState = await page.evaluate(() => ({
+    allyHp: window.__MAOU_GAME__.allies[0].hp,
+    enemyHp: window.__MAOU_GAME__.enemies.find((enemy) => enemy.uid === 'spring-target')?.hp
+  }));
+  expect(springState.allyHp).toBeGreaterThan(20);
+  expect(springState.enemyHp).toBeGreaterThan(16);
   await assertNoDocumentScroll(page);
 });
 
