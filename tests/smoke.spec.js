@@ -833,6 +833,30 @@ test('ranged attacks show projectile effects', async ({ page }) => {
   await assertNoDocumentScroll(page);
 });
 
+test('ranged attack poses keep projectiles out of the body sprite', async ({ page }) => {
+  await page.goto('/');
+  await page.evaluate(() => {
+    window.__MAOU_COMMIT__((game) => {
+      game.phase = 'battle';
+      game.speed = 0;
+      const goblin = game.allies.find((ally) => ally.name === 'ゴブリン');
+      Object.assign(goblin, {
+        range: 3,
+        anim: 'attack',
+        animTtl: 0.3,
+        facing: 'right',
+        movingTo: null
+      });
+      game.selectedEntity = { type: 'ally', id: goblin.uid };
+    });
+  });
+  const selected = page.locator('.actor.ally.selected');
+  await expect(selected).toHaveClass(/anim-attack/);
+  await expect(selected).toHaveAttribute('data-sprite-frame-count', '1');
+  await expect(selected.locator('img')).toHaveAttribute('src', /goblin\/idle-right\.png/);
+  await assertNoDocumentScroll(page);
+});
+
 test('carrier returns to assigned room after jail delivery', async ({ page }) => {
   await page.goto('/');
   await page.evaluate(() => {
