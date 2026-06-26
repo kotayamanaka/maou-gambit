@@ -1,5 +1,27 @@
 # PROGRESS
 
+## 2026-06-26 後半敵職を色違い亜種スプライトに分岐
+
+### 実装
+
+- 後半敵職が `warrior`、`rogue`、`mage` の同一素材を共有していて、職種の多様性が画面上で弱かったため、9職分の暫定亜種スプライトを追加。
+- `scripts/make_enemy_variant_sprites.py` を追加し、既存の戦士/盗賊/魔法使いスプライトをベースに、職ごとの色調を変えた4方向/4動作スプライトを書き出すようにした。
+- 対象は `guard`、`ranger`、`cleric`、`knight`、`alchemist`、`beastTamer`、`paladin`、`sage`、`hero`。
+- `enemyTemplates` を更新し、後半敵もそれぞれ `assets/sprites/<enemy-id>/...` を参照するようにした。
+- `scripts/make_sprite_direction_audit_enemies.py` の検収対象を12職へ拡張。
+- `tests/smoke.spec.js` に、全敵職のスプライトフォルダが4方向/4動作を持つことを確認するテストを追加。
+
+### 検証結果
+
+- `npm test -- --reporter=line -g "enemy templates|enemy sprite folders"`: 4件成功
+- 方向検収画像確認。12職が同一素材の完全共有ではなく、少なくとも職ごとに色と印象で判別できる。
+- PCスクリーンショット確認。広間に複数敵職を並べても、戦士/盾兵/弓兵/僧侶/騎士/錬金術師/獣使い/聖騎士/賢者/勇者が色違いで識別できる。
+
+### スクリーンショット
+
+- `screenshots/enemy-job-variants-desktop.png`
+- `screenshots/sprite-direction-audit-enemies.png`
+
 ## 2026-06-26 部屋3倍化とUI/UX・戦闘視認性の再整備
 
 ### 実装

@@ -293,16 +293,40 @@ test('early enemy templates use generated directional action sprites', () => {
   for (const [id, sample] of [
     ['warrior', 'attack-left'],
     ['rogue', 'walk-right'],
-    ['mage', 'downed-back']
+    ['mage', 'downed-back'],
+    ['guard', 'idle-front'],
+    ['ranger', 'attack-right'],
+    ['cleric', 'walk-left'],
+    ['knight', 'attack-front'],
+    ['alchemist', 'idle-right'],
+    ['beastTamer', 'walk-front'],
+    ['paladin', 'downed-left'],
+    ['sage', 'attack-back'],
+    ['hero', 'walk-right']
   ]) {
     const [pose, facing] = sample.split('-');
     expect(enemyTemplates[id].sprite).toBe(`assets/sprites/${id}/idle-front.png`);
     expect(enemyTemplates[id].spriteSet[pose][facing]).toBe(`assets/sprites/${id}/${sample}.png`);
     expect(enemyTemplates[id].spriteSet.idle.front).toBe(`assets/sprites/${id}/idle-front.png`);
   }
-  expect(enemyTemplates.knight.spriteSet.attack.front).toBe('assets/sprites/warrior/attack-front.png');
-  expect(enemyTemplates.ranger.spriteSet.walk.left).toBe('assets/sprites/rogue/walk-left.png');
-  expect(enemyTemplates.sage.spriteSet.attack.right).toBe('assets/sprites/mage/attack-right.png');
+});
+
+test('enemy sprite folders contain four directions for each job', () => {
+  const required = [
+    'idle-front.png', 'idle-back.png', 'idle-left.png', 'idle-right.png',
+    'walk-front.png', 'walk-back.png', 'walk-left.png', 'walk-right.png',
+    'attack-front.png', 'attack-back.png', 'attack-left.png', 'attack-right.png',
+    'downed.png', 'downed-back.png', 'downed-left.png', 'downed-right.png'
+  ];
+  for (const id of Object.keys(enemyTemplates)) {
+    for (const name of required) {
+      const file = path.join(process.cwd(), 'public', 'assets', 'sprites', id, name);
+      expect(fs.existsSync(file), `${id}/${name}`).toBe(true);
+      const size = pngSize(file);
+      expect(size.width).toBeGreaterThan(8);
+      expect(size.height).toBeGreaterThan(8);
+    }
+  }
 });
 
 test('converted ally templates use generated directional action sprites', () => {
