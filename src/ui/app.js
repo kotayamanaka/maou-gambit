@@ -178,6 +178,13 @@ function stageEnemyTemplates(stage) {
     .filter(Boolean);
 }
 
+function planningStage(game) {
+  const nextIndex = game.phase === 'upgrade' && game.stageIndex < stages.length - 1
+    ? game.stageIndex + 1
+    : game.stageIndex;
+  return stages[Math.min(nextIndex, stages.length - 1)] ?? currentStage(game);
+}
+
 function stageChipAdviceEntries(stage) {
   const enemies = stageEnemyTemplates(stage);
   const entries = [];
@@ -287,7 +294,7 @@ function setupWarnings(game) {
 }
 
 function nextEnemyPanel(game) {
-  const stage = currentStage(game);
+  const stage = planningStage(game);
   const rewardParts = [];
   const rewardChips = [...(stage.reward?.chips ?? []), ...(stage.reward?.chip ? [stage.reward.chip] : [])];
   if (rewardChips.length) rewardParts.push(`報酬 ${rewardChips.map(chipName).join(' / ')}`);
@@ -301,6 +308,133 @@ function nextEnemyPanel(game) {
     ${stageChipAdvice(game)}
     ${enemyScoutLines(stage)}
     <small>${reward}</small>
+  </div>`;
+}
+
+function investmentAdviceEntries(game) {
+  const stage = planningStage(game);
+  const threats = stageThreatProfile(stage);
+  const entries = [];
+  const push = (entry) => {
+    if (entries.some((item) => item.id === entry.id)) return;
+    entries.push(entry);
+  };
+  const chipAdvice = stageChipAdviceEntries(stage);
+  const missingChip = chipAdvice.find(({ chipId }) => (game.chipBag?.[chipId] ?? 0) <= 0);
+  if (missingChip) {
+    const chip = chips[missingChip.chipId];
+    const category = chipCategories[chip.category] ?? { name: '作戦' };
+    push({
+      id: 'research-chip',
+      title: 'チップ研究',
+      target: `${category.name}系????`,
+      reason: `${stage.name}に必要な行動を増やす`,
+      panel: 'research',
+      cta: '研究へ',
+      priority: 90
+    });
+  }
+  if (threats.rare && (game.inventory?.silverChain ?? 0) > 0 && isRoomBuilt(game, 'jail')) {
+    push({
+      id: 'use-silver-chain',
+      title: '銀の拘束具',
+      target: '牢屋',
+      reason: '高難度捕獲のダウン猶予を伸ばす',
+      panel: 'loot',
+      roomId: 'jail',
+      cta: '使用へ',
+      priority: 86
+    });
+  }
+  const targetAllyCount = Math.min(4, Math.max(2, game.stageIndex + 2));
+  if (game.allies.length < targetAllyCount) {
+    push({
+      id: 'research-monster',
+      title: '魔物研究',
+      target: `配下${game.allies.length}/${targetAllyCount}`,
+      reason: '迎撃役を増やして部屋ごとの守りを厚くする',
+      panel: 'research',
+      cta: '研究へ',
+      priority: 78
+    });
+  }
+  const crowdedRoom = rooms.find((room) => (
+    isRoomBuilt(game, room.id)
+    && room.capacity > 0
+    && allyCountInRoom(game, room.id) >= roomCapacity(room.id, game)
+  ));
+  if (crowdedRoom) {
+    push({
+      id: `upgrade-${crowdedRoom.id}`,
+      title: `${crowdedRoom.name}拡張`,
+      target: `容量${roomCapacity(crowdedRoom.id, game)}`,
+      reason: '配下を分散せず主戦場に置きやすくする',
+      panel: 'invest',
+      roomId: crowdedRoom.id,
+      cta: '拡張へ',
+      priority: 70
+    });
+  }
+  if (!isRoomBuilt(game, 'library') && chipResearchCandidates(game).length) {
+    push({
+      id: 'build-library',
+      title: '禁書庫建設',
+      target: '研究費軽減',
+      reason: '未発見チップを掘る回数を増やす',
+      panel: 'build',
+      buildRoomId: 'library',
+      cta: '建設へ',
+      priority: 62
+    });
+  }
+  if (!isRoomBuilt(game, 'nest') && game.allies.length < 5) {
+    push({
+      id: 'build-nest',
+      title: '魔物巣建設',
+      target: '魔物研究費軽減',
+      reason: '捕獲以外の配下獲得を伸ばす',
+      panel: 'build',
+      buildRoomId: 'nest',
+      cta: '建設へ',
+      priority: 58
+    });
+  }
+  const totalItems = Object.values(game.inventory ?? {}).reduce((sum, count) => sum + count, 0);
+  if (!isRoomBuilt(game, 'treasure') && totalItems >= inventoryLimit(game) - 2) {
+    push({
+      id: 'build-treasure',
+      title: '宝物庫建設',
+      target: `所持${totalItems}/${inventoryLimit(game)}`,
+      reason: 'ドロップを捨てずに貯める',
+      panel: 'build',
+      buildRoomId: 'treasure',
+      cta: '建設へ',
+      priority: 54
+    });
+  }
+  if (!entries.length) {
+    push({
+      id: 'default-chip',
+      title: 'チップ開発',
+      target: '既知チップ',
+      reason: '余った資金で行動枚数を増やす',
+      panel: 'research',
+      cta: '開発へ',
+      priority: 1
+    });
+  }
+  return entries.sort((a, b) => b.priority - a.priority).slice(0, 4);
+}
+
+function investmentAdvice(game) {
+  const entries = investmentAdviceEntries(game);
+  return `<div class="investment-advice">
+    <b>投資提案</b>
+    ${entries.map((entry) => `<button class="investment-advice-row" data-invest-advice-panel="${entry.panel}" ${entry.roomId ? `data-invest-advice-room="${entry.roomId}"` : ''} ${entry.buildRoomId ? `data-invest-advice-build="${entry.buildRoomId}"` : ''} ${entry.chipId ? `data-invest-advice-chip="${entry.chipId}"` : ''}>
+      <span>${entry.title}<small>${entry.target}</small></span>
+      <em>${entry.cta}</em>
+      <small>${entry.reason}</small>
+    </button>`).join('')}
   </div>`;
 }
 
@@ -625,6 +759,7 @@ function investmentPanel(game) {
   return `${treasuryPanel(game)}<div class="info-box management-box investment-box">
     <b>投資</b>
     ${chipDiscoveryCard(game)}
+    ${investmentAdvice(game)}
     <div class="investment-grid">
       <button class="mini decision-card" data-research-chip ${!canPay(chipCost) ? 'disabled' : ''}>
         <span class="choice-top">▣ チップ研究<em>G${chipCost}</em></span>
@@ -1255,6 +1390,16 @@ export function renderApp(root, game, commit) {
   })));
   root.querySelectorAll('[data-ui-panel]').forEach((button) => button.addEventListener('click', () => commit((state) => {
     state.uiPanel = button.dataset.uiPanel;
+  })));
+  root.querySelectorAll('[data-invest-advice-panel]').forEach((button) => button.addEventListener('click', () => commit((state) => {
+    state.uiPanel = button.dataset.investAdvicePanel;
+    if (button.dataset.investAdviceRoom) state.selectedRoomId = button.dataset.investAdviceRoom;
+    if (button.dataset.investAdviceChip) state.selectedChipId = button.dataset.investAdviceChip;
+    if (button.dataset.investAdviceBuild) {
+      state.selectedBuildRoom = button.dataset.investAdviceBuild;
+      const slot = buildSlotList(state).find((item) => !buildSlotBlocked(state, item.id, button.dataset.investAdviceBuild));
+      if (slot) state.selectedBuildSlot = slot.id;
+    }
   })));
   root.querySelectorAll('[data-set-speed]').forEach((button) => bindFastButton(button, () => commit((state) => {
     state.speed = Number(button.dataset.setSpeed);

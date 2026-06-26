@@ -1180,10 +1180,10 @@ test('upgrade management supports selling, building, room upgrades, and research
   });
   await expect(page.locator('.treasury-box b')).toContainText('資金');
   await expect(page.locator('[data-ui-panel="invest"]')).toHaveClass(/on/);
-  await expect(page.getByRole('button', { name: /チップ研究.*行動を増やす/ })).toBeVisible();
-  await expect(page.getByRole('button', { name: /魔物研究.*配下を増やす/ })).toBeVisible();
-  await expect(page.getByRole('button', { name: /広間拡張.*容量\+1/ })).toBeVisible();
-  await expect(page.getByRole('button', { name: /攻撃開発.*在庫x1/ })).toBeVisible();
+  await expect(page.locator('.investment-grid').getByRole('button', { name: /チップ研究.*行動を増やす/ })).toBeVisible();
+  await expect(page.locator('.investment-grid').getByRole('button', { name: /魔物研究.*配下を増やす/ })).toBeVisible();
+  await expect(page.locator('.investment-grid').getByRole('button', { name: /広間拡張.*容量\+1/ })).toBeVisible();
+  await expect(page.locator('.investment-grid').getByRole('button', { name: /攻撃開発.*在庫x1/ })).toBeVisible();
   await expect(page.locator('.investment-grid .decision-card')).toHaveCount(4);
   await expect(page.locator('.focus-strip')).toContainText('ゴブリン');
   await page.locator('[data-ui-panel="loot"]').click();
@@ -1251,6 +1251,41 @@ test('upgrade management supports selling, building, room upgrades, and research
   expect(state.attackChips).toBeGreaterThanOrEqual(2);
   expect(state.knownChips).toBeGreaterThan(2);
   expect(state.allyCount).toBeGreaterThan(1);
+  await assertNoDocumentScroll(page);
+});
+
+test('upgrade investment advice points to next-stage preparation panels', async ({ page }) => {
+  await page.goto('/');
+  await page.evaluate(() => {
+    window.__MAOU_COMMIT__((game) => {
+      game.phase = 'upgrade';
+      game.uiPanel = 'invest';
+      game.stageIndex = 11;
+      game.gold = 1000;
+      game.inventory = { silverChain: 1 };
+      game.chipBag = { chaseNearest: 1, attack: 1, carryDowned: 1 };
+      game.collections.chips = new Set(['chaseNearest', 'attack', 'carryDowned']);
+      game.captured = [];
+    });
+  });
+
+  await expect(page.locator('.investment-advice')).toContainText('投資提案');
+  await expect(page.locator('.investment-advice')).toContainText('チップ研究');
+  await expect(page.locator('.investment-advice')).toContainText('銀の拘束具');
+  await page.getByRole('button', { name: /銀の拘束具.*牢屋/ }).click();
+  await expect(page.locator('[data-ui-panel="loot"]')).toHaveClass(/on/);
+  expect(await page.evaluate(() => window.__MAOU_GAME__.selectedRoomId)).toBe('jail');
+
+  await page.locator('[data-ui-panel="invest"]').click();
+  await page.getByRole('button', { name: /禁書庫建設.*研究費軽減/ }).click();
+  await expect(page.locator('[data-ui-panel="build"]')).toHaveClass(/on/);
+  await expect(page.locator('[data-build-preview-room="library"]')).toBeVisible();
+  const buildState = await page.evaluate(() => ({
+    selectedBuildRoom: window.__MAOU_GAME__.selectedBuildRoom,
+    selectedBuildSlot: window.__MAOU_GAME__.selectedBuildSlot
+  }));
+  expect(buildState.selectedBuildRoom).toBe('library');
+  expect(buildState.selectedBuildSlot).toBeTruthy();
   await assertNoDocumentScroll(page);
 });
 
