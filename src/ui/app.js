@@ -1,4 +1,4 @@
-import { buildSlotBlocked, buildSlotList, buildSlotRelation, doorSideLabel, doorSides, rooms, roomById, roomView, setCustomBuildSlot, slotTaken, worldSize } from '../data/rooms.js';
+import { buildSlotBlocked, buildSlotList, buildSlotRelation, doorSideLabel, doorSides, rooms, roomAtBuildSlot, roomById, roomView, setCustomBuildSlot, slotTaken, worldSize } from '../data/rooms.js';
 import { chips } from '../data/chips.js';
 import { chipCategories } from '../data/chips.js';
 import { enemyChips } from '../data/enemyChips.js';
@@ -80,9 +80,9 @@ function viewportSize() {
   };
 }
 
-function constrainCamera(camera, view = viewportSize()) {
+function constrainCamera(camera, view = viewportSize(), marginOverride = null) {
   const zoom = clampZoom(camera.zoom ?? 1);
-  const margin = view.width < 720 ? cameraPanMargin.mobile : cameraPanMargin.desktop;
+  const margin = marginOverride ?? (view.width < 720 ? cameraPanMargin.mobile : cameraPanMargin.desktop);
   const scaled = {
     width: worldSize.width * zoom,
     height: worldSize.height * zoom
@@ -1166,6 +1166,36 @@ export function renderApp(root, game, commit) {
     const getDistance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
     const getCenter = (a, b) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
     let pointerStart = null;
+    const keepBuildPreviewReadable = (camera, roomId, slot) => {
+      const actualRoom = roomAtBuildSlot(
+        slot?.custom ? { customBuildSlot: slot } : { customBuildSlot: null },
+        roomId,
+        slot?.id
+      );
+      if (!actualRoom) return camera;
+      const mapRect = mapShell.getBoundingClientRect();
+      const panelRect = root.querySelector('.panel')?.getBoundingClientRect();
+      if (!panelRect || panelRect.left <= mapRect.left || panelRect.top >= mapRect.bottom) return camera;
+
+      const zoom = camera.zoom ?? 1;
+      const preview = {
+        left: actualRoom.x * zoom + camera.x - (actualRoom.w * zoom) / 2,
+        right: actualRoom.x * zoom + camera.x + (actualRoom.w * zoom) / 2,
+        top: actualRoom.y * zoom + camera.y - (actualRoom.h * zoom) / 2,
+        bottom: actualRoom.y * zoom + camera.y + (actualRoom.h * zoom) / 2
+      };
+      const panelInMap = {
+        left: panelRect.left - mapRect.left,
+        top: panelRect.top - mapRect.top,
+        bottom: panelRect.bottom - mapRect.top
+      };
+      const verticalOverlap = preview.bottom > panelInMap.top && preview.top < panelInMap.bottom;
+      if (!verticalOverlap || preview.right < panelInMap.left - 18) return camera;
+      return constrainCamera({
+        ...camera,
+        x: camera.x - Math.ceil(preview.right - panelInMap.left + 34)
+      }, viewportSize(), panelRect.width + cameraPanMargin.desktop);
+    };
     const autoPanBuildDrag = (event, camera) => {
       const rect = mapShell.getBoundingClientRect();
       const localX = event.clientX - rect.left;
@@ -1205,13 +1235,13 @@ export function renderApp(root, game, commit) {
       const camera = game.camera ?? overviewCamera();
       const nextCamera = autoPanBuildDrag(event, camera);
       const point = mapWorldPoint(event, nextCamera);
-      applyCamera(nextCamera);
       commit((state) => {
         if (!['setup', 'upgrade'].includes(state.phase)) return;
-        state.camera = nextCamera;
         state.uiPanel = 'build';
         state.selectedBuildRoom = payload.id;
-        setCustomBuildSlot(state, point.x, point.y);
+        const slot = setCustomBuildSlot(state, point.x, point.y);
+        state.camera = keepBuildPreviewReadable(nextCamera, payload.id, slot);
+        applyCamera(state.camera);
       });
     });
     mapShell.addEventListener('dragleave', () => mapShell.classList.remove('drop-ready'));
@@ -1221,14 +1251,17 @@ export function renderApp(root, game, commit) {
       event.preventDefault();
       mapShell.classList.remove('drop-ready');
       const camera = game.camera ?? overviewCamera();
-      const nextCamera = autoPanBuildDrag(event, camera);
+      const nextCamera = constrainCamera(camera);
       const point = mapWorldPoint(event, nextCamera);
       commit((state) => {
         if (!['setup', 'upgrade'].includes(state.phase)) return;
-        state.camera = nextCamera;
         state.uiPanel = 'build';
         state.selectedBuildRoom = payload.id;
-        const slot = setCustomBuildSlot(state, point.x, point.y);
+        const slot = state.customBuildSlot && state.selectedBuildSlot === state.customBuildSlot.id
+          ? state.customBuildSlot
+          : setCustomBuildSlot(state, point.x, point.y);
+        state.selectedBuildSlot = slot.id;
+        state.camera = keepBuildPreviewReadable(nextCamera, payload.id, slot);
         buildRoom(state, payload.id, state.selectedBuildFrom, slot.id, state.selectedBuildDoor);
       });
       window.__MAOU_DRAG_PAYLOAD__ = null;

@@ -302,6 +302,14 @@ test('corridors use orthogonal door segments and build slots', async ({ page }) 
   expect(edgeDrag.camera.x).toBeLessThan(-1250);
   expect(edgeDrag.customSlot).toMatchObject({ label: '自由', custom: true });
   expect(edgeDrag.customSlot.x).toBeGreaterThan(1440);
+  const previewClearance = await page.evaluate(() => {
+    const preview = document.querySelector('[data-build-preview-room="hallA"]')?.getBoundingClientRect();
+    const panel = document.querySelector('.panel')?.getBoundingClientRect();
+    if (!preview || !panel || window.innerWidth <= 720) return { checked: false, clear: true };
+    const verticalOverlap = preview.bottom > panel.top && preview.top < panel.bottom;
+    return { checked: true, clear: !verticalOverlap || preview.right < panel.left - 8 };
+  });
+  expect(previewClearance.clear).toBe(true);
   await assertNoDocumentScroll(page);
 });
 
