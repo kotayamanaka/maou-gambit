@@ -106,6 +106,7 @@ assets/generated/
 - 対象: `walk` と `attack` の上下左右PNGが揃っている `public/assets/sprites/<unit-id>/` を自動検出する。現時点では24スプライトフォルダが対象。
 - 出力: `walk-<direction>-0..2.png` と `attack-<direction>-0..1.png`。元PNGは上書きしない。
 - 透明背景を維持し、ドット絵の拡縮/移動はNEAREST前提。walkは軽い上下/左右差分、attackは踏み込み方向への数px移動と軽い明度差分に留める。
+- スクリプト実行時に、実在する `walk`/`attack` フレームだけを `src/data/spriteAnimations.js` へ書き出す。手作業でユニット一覧を更新せず、フレームがないユニットは `spriteSetFor` の単一PNG fallback を使う。
 - `scripts/make_sprite_animation_audit.py` で `screenshots/sprite-animation-audit.png` を作成し、walk/attackのフレーム差分を一覧検収する。
 
 ## キャラ動作
@@ -132,6 +133,7 @@ assets/generated/
 - 通路は部屋中心同士の斜め直線ではなく、部屋の扉から水平・垂直の直角セグメントとして描画する。
 - ゲーム中は座標移動の向きから `front/back/left/right` を更新し、移動中は `walk`、攻撃直後は `attack` を表示する。
 - 24スプライトフォルダは、基盤検証用の `walk` 3フレーム、`attack` 2フレーム配列に接続済み。
+- 複数フレーム配列を使うユニットでは、CSS側の歩行揺れを止め、攻撃は軽い明度パルスだけに抑える。単一PNG fallback のユニットだけ従来の `walkStep` / `attackSnap` を使う。
 - 遠距離攻撃は `attack` スプライトを直接見せず、キャラ本体は構え姿勢、射出物は `projectile arrow/magic` エフェクトで別表示する。キャラ絵とエフェクトで矢/魔法玉を重複させない。
 - まだ完全専用生成されていない後半敵職は、既存生成素材をベースにした色違い亜種として運用し、順次 `slice_dedicated_enemy_sheets.py` で専用シートへ差し替える。
 

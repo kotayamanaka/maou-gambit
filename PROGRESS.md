@@ -1,5 +1,57 @@
 # PROGRESS
 
+## 2026-06-26 キャラクターモーション基盤の補強
+
+### 目的
+
+`idle / walk / attack / downed` x `front/back/left/right` の単一PNG切替を残しつつ、`walk` と `attack` は2〜4フレームのスプライトアニメーションへ拡張できる状態を堅くする。Spine / Live2D / AI動画ではなく、既存ドット絵スプライトパイプラインを伸ばす。
+
+### 修正
+
+- `scripts/make_micro_animation_frames.py` が既存PNGから微差分フレームを生成した後、実在するフレームだけを `src/data/spriteAnimations.js` へ書き出すようにした。
+- `spriteAnimations.js` を実ファイル由来の明示マニフェストに更新し、フレームがないユニットは `spriteSetFor` の単一PNG参照にfallbackする運用を明確にした。
+- 複数フレーム配列を使うユニットでは、CSSの歩行揺れを止め、攻撃は軽い明度パルスだけにして、画像フレーム切替とCSS踏み込みが喧嘩しないようにした。
+- Playwrightの素材テストを、固定24体前提ではなく、`public/assets/sprites/` の実在フレームと `spriteAnimations` が一致することを見る形へ補強した。
+
+### スクリーンショット
+
+- `screenshots/sprite-animation-audit.png`
+- `screenshots/sprite-animation-battle-desktop.png`
+
+### 検証結果
+
+- `python scripts/make_micro_animation_frames.py`: 24スプライトフォルダ、480フレーム生成・接続。
+- `python scripts/make_sprite_animation_audit.py`: `screenshots/sprite-animation-audit.png` を生成。
+- Playwright PC幅確認: 歩行中ゴブリンの `data-sprite-frame` が `0/1/2` に切り替わることを確認し、`screenshots/sprite-animation-battle-desktop.png` を生成。
+- `npm test -- --reporter=line`: 82件成功。
+- `npm run test:balance`: 成功。キャンペーン検収は勝利。
+- `npm run build:pages`: 成功。
+
+## 2026-06-26 建設カードのドラッグ中プレビュー
+
+### 目的
+
+クリックで自由候補を置く操作からさらに進めて、建設候補カードをマップ上へドラッグしている最中に予定部屋が追従し、ドロップでその場所へ建設できるようにする。部屋をカードとして持ってマップへ置く感覚を強める。
+
+### 修正
+
+- 建設候補カードの `dragstart` でドラッグ中ペイロードを保持するようにした。
+- マップ上の `dragover` で、カーソル位置をワールド座標へ変換し、`customBuildSlot` をリアルタイム更新するようにした。
+- マップ上の `drop` で、更新済みの自由候補へそのまま部屋を建設するようにした。
+- 合成DragEventでは `dataTransfer.getData()` が空になりやすいため、ドラッグ中ペイロードのfallbackを追加した。
+- Playwrightで、ドラッグ中プレビュー生成とドロップ建設を固定した。
+
+### スクリーンショット
+
+- `screenshots/build-drag-placement-desktop.png`
+
+### 検証結果
+
+- 建設関連のPlaywright絞り込み検証: 成功。
+- `npm test -- --reporter=line`: 82件成功。
+- `npm run test:balance`: 成功。キャンペーン検収は勝利。
+- `npm run build:pages`: 成功。
+
 ## 2026-06-26 マップクリックによる自由建設候補
 
 ### 目的

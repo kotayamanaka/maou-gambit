@@ -1084,8 +1084,12 @@ export function renderApp(root, game, commit) {
           : button.dataset.buildRoom ? { kind: 'buildRoom', id: button.dataset.buildRoom }
             : null;
     if (!payload) return;
+    window.__MAOU_DRAG_PAYLOAD__ = payload;
     event.dataTransfer.effectAllowed = 'move';
     event.dataTransfer.setData('application/x-maou-gambit', JSON.stringify(payload));
+  }));
+  root.querySelectorAll('[draggable="true"]').forEach((button) => button.addEventListener('dragend', () => {
+    window.__MAOU_DRAG_PAYLOAD__ = null;
   }));
 
   root.querySelectorAll('[data-room], [data-place], [data-drop-unit], [data-build-slot]').forEach((target) => {
@@ -1137,6 +1141,53 @@ export function renderApp(root, game, commit) {
     const getDistance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
     const getCenter = (a, b) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
     let pointerStart = null;
+    const mapWorldPoint = (event, camera = game.camera ?? overviewCamera()) => {
+      const rect = mapShell.getBoundingClientRect();
+      const localX = event.clientX - rect.left;
+      const localY = event.clientY - rect.top;
+      return {
+        x: (localX - camera.x) / camera.zoom,
+        y: (localY - camera.y) / camera.zoom
+      };
+    };
+    const payloadFromDrag = (event) => {
+      const raw = event.dataTransfer?.getData('application/x-maou-gambit');
+      if (!raw) return window.__MAOU_DRAG_PAYLOAD__ ?? null;
+      try {
+        return JSON.parse(raw);
+      } catch {
+        return window.__MAOU_DRAG_PAYLOAD__ ?? null;
+      }
+    };
+    mapShell.addEventListener('dragover', (event) => {
+      const payload = payloadFromDrag(event);
+      if (!payload || payload.kind !== 'buildRoom') return;
+      event.preventDefault();
+      mapShell.classList.add('drop-ready');
+      const point = mapWorldPoint(event);
+      commit((state) => {
+        if (!['setup', 'upgrade'].includes(state.phase)) return;
+        state.uiPanel = 'build';
+        state.selectedBuildRoom = payload.id;
+        setCustomBuildSlot(state, point.x, point.y);
+      });
+    });
+    mapShell.addEventListener('dragleave', () => mapShell.classList.remove('drop-ready'));
+    mapShell.addEventListener('drop', (event) => {
+      const payload = payloadFromDrag(event);
+      if (!payload || payload.kind !== 'buildRoom') return;
+      event.preventDefault();
+      mapShell.classList.remove('drop-ready');
+      const point = mapWorldPoint(event);
+      commit((state) => {
+        if (!['setup', 'upgrade'].includes(state.phase)) return;
+        state.uiPanel = 'build';
+        state.selectedBuildRoom = payload.id;
+        const slot = setCustomBuildSlot(state, point.x, point.y);
+        buildRoom(state, payload.id, state.selectedBuildFrom, slot.id, state.selectedBuildDoor);
+      });
+      window.__MAOU_DRAG_PAYLOAD__ = null;
+    });
     mapShell.addEventListener('wheel', (event) => {
       event.preventDefault();
       const camera = game.camera ?? overviewCamera();

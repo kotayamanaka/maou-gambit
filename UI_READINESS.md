@@ -147,6 +147,7 @@ Claude Design に UI / アートディレクション案を依頼するための
 - 建設プレビュー: 選択中の部屋候補をマップ上に半透明表示し、選択扉から予定通路を点線で表示する。
 - 建設衝突判定: 選択中の部屋サイズで既存部屋と近すぎる配置点を `重複` として無効化する。
 - 自由建設候補: 建設モード中にマップ上の空き地をクリックし、グリッドにスナップした `自由` 配置候補を追加できる。
+- ドラッグ建設: 建設候補カードをマップ上へドラッグすると、予定部屋が追従し、ドロップ位置へ建設できる。
 - 設備: 設置部屋、設備候補、現在設置状態をカード化。
 
 ## Data and Asset State
@@ -184,6 +185,7 @@ Claude Design に UI / アートディレクション案を依頼するための
 - `screenshots/build-preview-desktop.png`
 - `screenshots/build-grid-collision-desktop.png`
 - `screenshots/build-free-placement-desktop.png`
+- `screenshots/build-drag-placement-desktop.png`
 - `screenshots/captured-research-desktop.png`
 
 ### Art and Motion Audit

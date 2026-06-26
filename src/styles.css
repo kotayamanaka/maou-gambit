@@ -193,6 +193,8 @@ img { image-rendering: pixelated; }
 .actor.downed { opacity: .76; filter: grayscale(.35); animation: blink 0.7s steps(2) infinite; }
 .actor.anim-walk img { animation: walkStep .42s steps(2) infinite; }
 .actor.anim-attack img { animation: attackSnap .34s steps(2) both; }
+.actor.anim-walk:not([data-sprite-frame-count="1"]) img { animation: none; }
+.actor.anim-attack:not([data-sprite-frame-count="1"]) img { animation: attackFramePulse .24s steps(2) both; }
 .actor.anim-downed img { transform: translateY(5px) rotate(-8deg) scale(1.04); }
 .actor.face-left.anim-attack img { --attack-x: -7px; }
 .actor.face-right.anim-attack img { --attack-x: 7px; }
@@ -692,7 +694,7 @@ img { image-rendering: pixelated; }
   cursor: grab;
 }
 .unit-card.on { border-color: var(--gold); }
-.unit-card.drop-ready, .room.drop-ready, .mini.drop-ready {
+.unit-card.drop-ready, .room.drop-ready, .mini.drop-ready, .map-shell.drop-ready {
   outline: 2px solid var(--teal);
   outline-offset: -2px;
   box-shadow: 0 0 18px rgba(92, 220, 206, .32);
@@ -996,6 +998,11 @@ img { image-rendering: pixelated; }
   0% { transform: translate(0, 0) scale(1); filter: brightness(1); }
   42% { transform: translate(var(--attack-x, 0), var(--attack-y, 0)) scale(1.12); filter: brightness(1.45); }
   100% { transform: translate(0, 0) scale(1); filter: brightness(1); }
+}
+@keyframes attackFramePulse {
+  0% { filter: brightness(1); }
+  45% { filter: brightness(1.18); }
+  100% { filter: brightness(1); }
 }
 @keyframes blink { 50% { opacity: .45; } }
 @keyframes pop { from { opacity: 0; transform: translate(-50%, 10px) scale(.8); } to { opacity: 1; transform: translate(-50%, -28px) scale(1); } }

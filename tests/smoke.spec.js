@@ -224,6 +224,49 @@ test('corridors use orthogonal door segments and build slots', async ({ page }) 
   }));
   expect(customBuild.built).toBe(true);
   expect(customBuild.position).toMatchObject({ x: 1440, y: 360, slotId: customSlot.id });
+  await page.evaluate(() => {
+    window.__MAOU_COMMIT__((game) => {
+      game.builtRooms.delete('hallA');
+      delete game.roomPositions.hallA;
+      game.roomConnections.hallA = [];
+      game.roomConnections.atrium = (game.roomConnections.atrium ?? []).filter((id) => id !== 'hallA');
+      game.roomConnectionDoors = {};
+      game.selectedBuildRoom = 'hallA';
+      game.selectedBuildDoor = 'west';
+      game.customBuildSlot = null;
+      game.selectedBuildSlot = 'north';
+      game.gold = 1000;
+      game.camera = { zoom: 1, x: -1250, y: 0 };
+    });
+  });
+  await page.evaluate(() => {
+    const map = document.querySelector('[data-map-shell]');
+    const data = new DataTransfer();
+    window.__MAOU_DRAG_PAYLOAD__ = { kind: 'buildRoom', id: 'hallA' };
+    map.dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer: data, clientX: 200, clientY: 100 }));
+  });
+  await expect(page.locator('.build-slot.custom-slot')).toContainText('自由');
+  await expect(page.locator('[data-build-preview-room="hallA"]')).toBeVisible();
+  const dragPreview = await page.evaluate(() => ({
+    customSlot: window.__MAOU_GAME__.customBuildSlot,
+    selectedBuildRoom: window.__MAOU_GAME__.selectedBuildRoom
+  }));
+  expect(dragPreview.customSlot).toMatchObject({ label: '自由', custom: true, x: 1440, y: 360 });
+  expect(dragPreview.selectedBuildRoom).toBe('hallA');
+  await page.evaluate(() => {
+    const map = document.querySelector('[data-map-shell]');
+    const data = new DataTransfer();
+    window.__MAOU_DRAG_PAYLOAD__ = { kind: 'buildRoom', id: 'hallA' };
+    map.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: data, clientX: 200, clientY: 100 }));
+  });
+  const dragBuild = await page.evaluate(() => ({
+    built: window.__MAOU_GAME__.builtRooms.has('hallA'),
+    position: window.__MAOU_GAME__.roomPositions.hallA,
+    mapReady: document.querySelector('.map-shell').classList.contains('drop-ready')
+  }));
+  expect(dragBuild.built).toBe(true);
+  expect(dragBuild.position).toMatchObject({ x: 1440, y: 360, slotId: dragPreview.customSlot.id });
+  expect(dragBuild.mapReady).toBe(false);
   await assertNoDocumentScroll(page);
 });
 
@@ -411,14 +454,28 @@ test('slime variants use generated directional action sprites', async ({ page })
 
 test('micro animation sprite frames are generated and connected for sprite folders', () => {
   const animatedFolders = Object.keys(spriteAnimations).sort();
-  expect(animatedFolders.length).toBe(24);
+  const spriteRoot = path.join(process.cwd(), 'public', 'assets', 'sprites');
+  const foldersWithFrames = fs.readdirSync(spriteRoot, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+    .filter((id) => ['walk', 'attack'].every((action) => ['front', 'back', 'left', 'right'].every((direction) => (
+      fs.existsSync(path.join(spriteRoot, id, `${action}-${direction}-0.png`))
+      && fs.existsSync(path.join(spriteRoot, id, `${action}-${direction}-1.png`))
+    ))))
+    .sort();
+  expect(animatedFolders).toEqual(foldersWithFrames);
+  for (const required of ['goblin', 'slime', 'warrior', 'rogue', 'mage', 'guard']) {
+    expect(animatedFolders).toContain(required);
+  }
 
   for (const id of animatedFolders) {
     const animation = spriteAnimations[id];
     expect(Array.isArray(animation.walk.front), `${id} walk front`).toBe(true);
     expect(Array.isArray(animation.attack.front), `${id} attack front`).toBe(true);
-    expect(animation.walk.front).toHaveLength(3);
-    expect(animation.attack.front).toHaveLength(2);
+    expect(animation.walk.front.length).toBeGreaterThanOrEqual(2);
+    expect(animation.walk.front.length).toBeLessThanOrEqual(4);
+    expect(animation.attack.front.length).toBeGreaterThanOrEqual(2);
+    expect(animation.attack.front.length).toBeLessThanOrEqual(4);
     for (const direction of ['front', 'back', 'left', 'right']) {
       for (const pathName of [...animation.walk[direction], ...animation.attack[direction]]) {
         const file = path.join(process.cwd(), 'public', pathName);
