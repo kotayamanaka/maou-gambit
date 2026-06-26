@@ -420,14 +420,25 @@ test('stage runs and reaches result screen', async ({ page }) => {
   await page.goto('/');
   await page.locator('[data-action="start"]').click();
   await expect(page.getByText('防衛中')).toBeVisible();
-  await page.locator('[data-set-speed="4"]').click();
-  await expect(page.locator('[data-set-speed="4"]')).toHaveClass(/on/);
+  const speed4 = page.locator('.battle-speedbar [data-set-speed="4"]');
+  const speed1 = page.locator('.battle-speedbar [data-set-speed="1"]');
+  const speed2 = page.locator('.battle-speedbar [data-set-speed="2"]');
+  await expect(page.locator('.battle-speedbar')).toBeVisible();
+  await expect(speed4).toBeVisible();
+  const speedTargets = await page.evaluate(() => [...document.querySelectorAll('.battle-speedbar [data-set-speed], .battle-speedbar [data-action="pause"]')].map((button) => {
+    const rect = button.getBoundingClientRect();
+    const top = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+    return { width: rect.width, height: rect.height, topIsSelf: top === button };
+  }));
+  expect(speedTargets.every((target) => target.width >= 44 && target.height >= 44 && target.topIsSelf)).toBe(true);
+  await speed4.click();
+  await expect(speed4).toHaveClass(/on/);
   expect(await page.evaluate(() => window.__MAOU_GAME__.speed)).toBe(4);
-  await page.locator('[data-set-speed="1"]').click();
-  await expect(page.locator('[data-set-speed="1"]')).toHaveClass(/on/);
+  await speed1.click();
+  await expect(speed1).toHaveClass(/on/);
   expect(await page.evaluate(() => window.__MAOU_GAME__.speed)).toBe(1);
-  await page.locator('[data-set-speed="2"]').click();
-  await expect(page.locator('[data-set-speed="2"]')).toHaveClass(/on/);
+  await speed2.click();
+  await expect(speed2).toHaveClass(/on/);
   expect(await page.evaluate(() => window.__MAOU_GAME__.speed)).toBe(2);
   await page.evaluate(() => { window.__MAOU_GAME__.speed = 10; });
   await expect(page.getByText(/探索中|発見済/)).toBeVisible();
@@ -690,6 +701,31 @@ test('feeding a captured enemy applies material exp and growth bias', async ({ p
   expect(goblin.intExp).toBe(2);
   expect(goblin.maxHp).toBe(62);
   expect(goblin.atk).toBe(11);
+  await assertNoDocumentScroll(page);
+});
+
+test('feeding a captured sage grants immediate intelligence growth', async ({ page }) => {
+  await page.goto('/');
+  await page.evaluate(() => {
+    window.__MAOU_COMMIT__((game) => {
+      game.phase = 'upgrade';
+      game.captured = [{
+        uid: 'cap-sage',
+        templateId: 'sage',
+        name: '賢者',
+        sprite: 'assets/sprites/sage/idle-front.png',
+        convertTo: 'oracleShade',
+        capture: { difficulty: 5, ttl: 7 },
+        drop: { gold: 55, items: ['sageInk', 'manaDust'] }
+      }];
+    });
+  });
+  await expect(page.getByRole('button', { name: /ゴブリン 経験\+12 知識\+6 知性\+2 攻撃\+1/ })).toBeVisible();
+  await page.getByRole('button', { name: /ゴブリン 経験\+12 知識\+6 知性\+2 攻撃\+1/ }).click();
+  const goblin = await page.evaluate(() => window.__MAOU_GAME__.allies.find((ally) => ally.name === 'ゴブリン'));
+  expect(goblin.int).toBe(5);
+  expect(goblin.intExp).toBe(0);
+  expect(goblin.chips.length).toBeLessThanOrEqual(goblin.int);
   await assertNoDocumentScroll(page);
 });
 

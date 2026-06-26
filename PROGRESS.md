@@ -12,7 +12,8 @@
 - 第1侵入隊の2体目の出現を40秒に遅らせ、ゴブリン1体でも敵2体・捕獲・勝利が成立するようにした。
 - 編成の配置候補は建設済み部屋だけを表示するようにし、未建設部屋への配置ネタバレを減らした。
 - 初回セットアップでは `配下`、`配置`、`チップ`、`情報` だけを表示し、`建設`、`設備` は第1防衛後に開くようにした。初手から上級メニューを見せず、まず配置とチップを理解させる。
-- 速度ボタンのクリック処理を明示的に止めてから速度を確定するようにし、`1x`、`2x`、`4x` の選択状態をテストで固定した。
+- 捕獲した賢者は `知識+6` の高知性素材として扱い、ゴブリンなら養分化1回で `知性+2` まで伸びることをテストで固定した。
+- 速度ボタンを戦闘パネルのヘッダー内から分離し、マップ左上の固定 `battle-speedbar` に移動。スマホでも44px以上のタップ領域を持たせ、パネルスクロールやヘッダー詰まりに影響されず選択できるようにした。
 - 盾兵 `guard` を色替え流用から専用生成シートに差し替え、盾を持つシルエットとして判別しやすくした。
 - `scripts/slice_dedicated_enemy_sheets.py` を追加し、単体生成した敵職シートを `idle/walk/attack/downed` x `front/back/left/right` に切り出せるようにした。
 
@@ -20,16 +21,19 @@
 
 - `npx playwright test tests/smoke.spec.js -g "stage runs|result can continue"`: 4件成功
 - `npx playwright test tests/smoke.spec.js -g "setup reveals|corridors use|setup supports drag"`: 6件成功
-- `npm test`: 66件成功
+- `npx playwright test tests/smoke.spec.js -g "feeding a captured"`: 4件成功
+- `npm test`: 68件成功
 - `npm run build`: 成功
 - `npm run test:balance`: 成功。キャンペーン検収は勝利。
 - 初期状態のシミュレーション確認: ゴブリン1体でステージ1は敵2体、魔王無傷、捕獲1体以上で勝利。
-- 速度UIは `4x -> 1x -> 2x` の順に選択でき、内部速度値も更新されることをテストで確認。
+- 速度UIは `4x -> 1x -> 2x` の順に選択でき、内部速度値も更新されることをテストで確認。加えて速度ボタン中央が最前面要素になっており、各ボタンが44px以上の実タップ領域を持つことをPC/スマホで固定。
 - 目視確認: 初回セットアップで上級タブが隠れ、ダンジョン全体に透過パネルが重なる状態を確認。
 
 ### スクリーンショット
 
 - `screenshots/tutorial-setup-minimal-tabs-desktop.png`
+- `screenshots/speed-ui-desktop-after.png`
+- `screenshots/speed-ui-mobile-after.png`
 
 ## 2026-06-26 戦闘表現・速度UI・DnD操作の再修正
 

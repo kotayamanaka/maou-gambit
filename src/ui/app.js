@@ -651,10 +651,6 @@ function battlePanel(game) {
     <header class="panel-head">
       <span>防衛中</span>
       <div class="panel-actions">
-        <button data-action="pause">${game.speed === 0 ? '▶' : 'Ⅱ'}</button>
-        <button class="${game.speed === 1 ? 'on' : ''}" data-set-speed="1">1x</button>
-        <button class="${game.speed === 2 ? 'on' : ''}" data-set-speed="2">2x</button>
-        <button class="${game.speed === 4 ? 'on' : ''}" data-set-speed="4">4x</button>
         <button data-action="retry">↻</button>
         <button data-action="retreat">撤退</button>
       </div>
@@ -692,6 +688,16 @@ function battlePanel(game) {
     ${game.showLog ? `<div class="log">${game.log.map((line) => `<p>${line}</p>`).join('')}</div>` : '<div class="log compact-log"><p>ログ非表示</p></div>'}
     ${treasuryPanel(game)}
   </aside>`;
+}
+
+function battleSpeedbar(game) {
+  if (game.phase !== 'battle') return '';
+  return `<div class="battle-speedbar" aria-label="戦闘速度">
+    <button class="speed-pause" data-action="pause" title="${game.speed === 0 ? '再開' : '一時停止'}">${game.speed === 0 ? '▶' : 'Ⅱ'}</button>
+    <button class="${game.speed === 1 ? 'on' : ''}" data-set-speed="1" title="等速">1x</button>
+    <button class="${game.speed === 2 ? 'on' : ''}" data-set-speed="2" title="2倍速">2x</button>
+    <button class="${game.speed === 4 ? 'on' : ''}" data-set-speed="4" title="4倍速">4x</button>
+  </div>`;
 }
 
 function resultPanel(game) {
@@ -768,6 +774,7 @@ export function renderApp(root, game, commit) {
   root.innerHTML = `<main class="app ${phase}">
     <section class="playfield">
       ${renderMap(game, phase)}
+      ${battleSpeedbar(game)}
       ${panel}
     </section>
   </main>`;

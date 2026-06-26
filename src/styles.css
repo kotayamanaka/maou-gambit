@@ -335,6 +335,36 @@ img { image-rendering: pixelated; }
   font-weight: 900;
 }
 
+.battle-speedbar {
+  position: absolute;
+  left: 12px;
+  top: 12px;
+  z-index: 12;
+  display: flex;
+  gap: 6px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  background: rgba(20, 17, 15, .72);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 12px 30px rgba(0,0,0,.34);
+}
+.battle-speedbar button {
+  min-width: 46px;
+  min-height: 44px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,.07);
+  color: #f5ead8;
+  font-weight: 900;
+}
+.battle-speedbar button.on {
+  color: #111;
+  background: var(--gold);
+}
+.battle-speedbar .speed-pause {
+  min-width: 44px;
+}
+
 .fx {
   position: absolute;
   z-index: 5;
@@ -440,6 +470,10 @@ img { image-rendering: pixelated; }
   .map-controls {
     left: 14px;
     bottom: 14px;
+  }
+  .battle-speedbar {
+    left: 16px;
+    top: 16px;
   }
   .map-controls button {
     min-width: 38px;
@@ -804,6 +838,18 @@ img { image-rendering: pixelated; }
     bottom: auto;
     left: auto;
     right: 8px;
+  }
+  .battle-speedbar {
+    left: 8px;
+    top: 8px;
+    max-width: calc(100vw - 96px);
+    gap: 5px;
+    padding: 5px;
+  }
+  .battle-speedbar button {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 8px;
   }
   .unit-picker { padding: 5px; }
   .unit-card {
