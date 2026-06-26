@@ -1,4 +1,4 @@
-import { autoDoorSide, buildSlotBlocked, buildSlotRelation, buildSlots, connectionDoorSide, doorPoint, roomAtBuildSlot, roomCollidesAtSlot, roomViews, rooms, slotTaken, worldSize } from '../data/rooms.js';
+import { autoDoorSide, buildSlotBlocked, buildSlotById, buildSlotList, buildSlotRelation, connectionDoorSide, doorPoint, roomAtBuildSlot, roomCollidesAtSlot, roomViews, rooms, slotTaken, worldSize } from '../data/rooms.js';
 import { roomObjects } from '../data/objects.js';
 import { isRoomBuilt, roomCapacity } from '../systems/placement.js';
 import { statusIconList } from '../systems/status.js';
@@ -123,12 +123,12 @@ export function renderMap(game, mode = 'setup') {
     ?? rooms.find((room) => !isRoomBuilt(game, room.id) && room.buildCost);
   const buildPreviewRoomId = buildPreviewTemplate?.id ?? null;
   const slotNodes = buildingMode
-    ? buildSlots.map((slot) => {
+    ? buildSlotList(game).map((slot) => {
       const occupied = slotTaken(game, slot.id);
       const blocked = buildPreviewRoomId ? buildSlotBlocked(game, slot.id, buildPreviewRoomId) : occupied;
       const selected = game.selectedBuildSlot === slot.id;
       const relation = buildSlotRelation(game, slot.id, game.selectedBuildFrom ?? 'atrium');
-      return `<button class="build-slot ${selected ? 'selected-slot' : ''} ${blocked ? 'used' : ''}" data-build-slot="${slot.id}" style="left:${slot.x - 58}px;top:${slot.y - 42}px;width:116px;height:84px" ${blocked ? 'disabled' : ''}>
+      return `<button class="build-slot ${slot.custom ? 'custom-slot' : ''} ${selected ? 'selected-slot' : ''} ${blocked ? 'used' : ''}" data-build-slot="${slot.id}" style="left:${slot.x - 58}px;top:${slot.y - 42}px;width:116px;height:84px" ${blocked ? 'disabled' : ''}>
         <span>${occupied ? '占有' : blocked ? '重複' : relation.direction}</span>
         <small>${relation.label}</small>
       </button>`;
@@ -174,12 +174,12 @@ export function renderMap(game, mode = 'setup') {
     return points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`).join(' ');
   }
 
-  const previewSlot = buildSlots.find((slot) => slot.id === game.selectedBuildSlot);
+  const previewSlot = buildSlotById(game, game.selectedBuildSlot);
   const previewTemplate = buildPreviewTemplate;
   const previewFrom = roomById[game.selectedBuildFrom ?? 'atrium'];
   const previewBlocked = previewSlot && previewTemplate ? roomCollidesAtSlot(game, previewTemplate.id, previewSlot.id) : false;
   const previewRoom = buildingMode && previewSlot && previewTemplate && previewFrom && !slotTaken(game, previewSlot.id)
-    ? roomAtBuildSlot(previewTemplate.id, previewSlot.id)
+    ? roomAtBuildSlot(game, previewTemplate.id, previewSlot.id)
     : null;
   const previewDoors = previewRoom
     ? doorPairFromSides(

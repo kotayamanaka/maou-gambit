@@ -358,6 +358,11 @@ img { image-rendering: pixelated; }
   outline: 2px solid var(--gold);
   outline-offset: 2px;
 }
+.build-slot.custom-slot {
+  border-style: solid;
+  background: rgba(90, 191, 199, .14);
+  border-color: rgba(90, 191, 199, .72);
+}
 .build-slot.used {
   opacity: .24;
   filter: grayscale(.8);

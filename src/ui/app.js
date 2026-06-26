@@ -1,4 +1,4 @@
-import { buildSlotBlocked, buildSlotRelation, buildSlots, doorSideLabel, doorSides, rooms, roomById, roomView, slotTaken, worldSize } from '../data/rooms.js';
+import { buildSlotBlocked, buildSlotList, buildSlotRelation, doorSideLabel, doorSides, rooms, roomById, roomView, setCustomBuildSlot, slotTaken, worldSize } from '../data/rooms.js';
 import { chips } from '../data/chips.js';
 import { chipCategories } from '../data/chips.js';
 import { enemyChips } from '../data/enemyChips.js';
@@ -289,7 +289,7 @@ function researchPreview(game, limit = Infinity) {
 function roomManagementPanel(game) {
   const anchor = game.selectedBuildFrom ?? 'atrium';
   const selectedDoor = game.selectedBuildDoor ?? 'north';
-  const selectedSlot = game.selectedBuildSlot ?? buildSlots.find((slot) => !slotTaken(game, slot.id))?.id;
+  const selectedSlot = game.selectedBuildSlot ?? buildSlotList(game).find((slot) => !slotTaken(game, slot.id))?.id;
   const buildableRooms = rooms.filter((room) => !isRoomBuilt(game, room.id) && room.buildCost);
   const selectedBuildRoom = buildableRooms.some((room) => room.id === game.selectedBuildRoom)
     ? game.selectedBuildRoom
@@ -307,14 +307,14 @@ function roomManagementPanel(game) {
       <small>接続口</small>
     </button>`)
     .join('');
-  const slotButtons = buildSlots
+  const slotButtons = buildSlotList(game)
     .map((slot) => {
       const occupied = slotTaken(game, slot.id);
       const blocked = selectedBuildRoom ? buildSlotBlocked(game, slot.id, selectedBuildRoom) : occupied;
       const relation = buildSlotRelation(game, slot.id, anchor);
       return `<button class="mini compact-card ${selectedSlot === slot.id ? 'on' : ''}" data-build-slot="${slot.id}" ${blocked ? 'disabled' : ''}>
         <span class="choice-top">${occupied ? '占有済' : blocked ? '重複' : relation.direction}<em>${relation.label}</em></span>
-        <small>${occupied ? '別部屋あり' : blocked ? '既存部屋と近い' : relation.distance}</small>
+        <small>${slot.custom ? 'マップ指定' : occupied ? '別部屋あり' : blocked ? '既存部屋と近い' : relation.distance}</small>
       </button>`;
     })
     .join('');
@@ -1136,6 +1136,7 @@ export function renderApp(root, game, commit) {
     };
     const getDistance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
     const getCenter = (a, b) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
+    let pointerStart = null;
     mapShell.addEventListener('wheel', (event) => {
       event.preventDefault();
       const camera = game.camera ?? overviewCamera();
@@ -1184,6 +1185,7 @@ export function renderApp(root, game, commit) {
       dragging = true;
       window.__MAOU_MAP_DRAGGING__ = true;
       last = { x: event.clientX, y: event.clientY };
+      pointerStart = { x: event.clientX, y: event.clientY, camera: { ...draftCamera } };
     });
     mapShell.addEventListener('pointermove', (event) => {
       if (pointers.has(event.pointerId)) pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
@@ -1207,15 +1209,29 @@ export function renderApp(root, game, commit) {
       applyCamera(draftCamera);
     });
     const finishPointer = (event) => {
+      const start = pointerStart;
+      const wasPinching = Boolean(pinch);
       pointers.delete(event.pointerId);
+      const clickDistance = start ? Math.hypot(event.clientX - start.x, event.clientY - start.y) : Infinity;
       if (draftCamera) {
         commit((state) => {
           state.camera = { ...draftCamera };
+          if (!wasPinching && clickDistance < 6 && ['setup', 'upgrade'].includes(state.phase) && state.uiPanel === 'build') {
+            const rect = mapShell.getBoundingClientRect();
+            const localX = event.clientX - rect.left;
+            const localY = event.clientY - rect.top;
+            setCustomBuildSlot(
+              state,
+              (localX - start.camera.x) / start.camera.zoom,
+              (localY - start.camera.y) / start.camera.zoom
+            );
+          }
         });
       }
       dragging = false;
       window.__MAOU_MAP_DRAGGING__ = false;
       last = null;
+      pointerStart = null;
       pinch = null;
       draftCamera = null;
     };

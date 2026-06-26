@@ -184,6 +184,8 @@ export const rooms = [
 
 export const worldSize = { width: 4620, height: 2700 };
 export const roomById = Object.fromEntries(rooms.map((room) => [room.id, room]));
+const buildGridSize = 90;
+const buildGridMargin = 360;
 
 export const buildSlots = [
   { id: 'far-west-high', x: 570, y: 285 },
@@ -238,6 +240,43 @@ export function buildSlotLabel(slotId) {
   return buildSlotLabels[slotId] ?? slotId;
 }
 
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+export function snapBuildPoint(x, y) {
+  return {
+    x: clamp(Math.round(x / buildGridSize) * buildGridSize, buildGridMargin, worldSize.width - buildGridMargin),
+    y: clamp(Math.round(y / buildGridSize) * buildGridSize, buildGridMargin, worldSize.height - buildGridMargin)
+  };
+}
+
+export function customBuildSlotId(point) {
+  return `custom-${Math.round(point.x)}-${Math.round(point.y)}`;
+}
+
+export function setCustomBuildSlot(game, x, y) {
+  const point = snapBuildPoint(x, y);
+  const slot = {
+    id: customBuildSlotId(point),
+    label: '自由',
+    custom: true,
+    ...point
+  };
+  game.customBuildSlot = slot;
+  game.selectedBuildSlot = slot.id;
+  return slot;
+}
+
+export function buildSlotById(game, slotId) {
+  return buildSlots.find((item) => item.id === slotId)
+    ?? (game?.customBuildSlot?.id === slotId ? game.customBuildSlot : null);
+}
+
+export function buildSlotList(game) {
+  return game?.customBuildSlot ? [...buildSlots, game.customBuildSlot] : buildSlots;
+}
+
 export function roomView(game, roomId) {
   const room = roomById[roomId];
   if (!room) return null;
@@ -249,7 +288,7 @@ export function roomViews(game) {
 }
 
 export function slotTaken(game, slotId) {
-  const slot = buildSlots.find((item) => item.id === slotId);
+  const slot = buildSlotById(game, slotId);
   if (!slot) return true;
   return Object.values(game?.roomPositions ?? {}).some((position) => position.slotId === slotId)
     || rooms.some((room) => room.built && room.x === slot.x && room.y === slot.y);
@@ -268,15 +307,15 @@ function rectsOverlap(a, b) {
   return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
 }
 
-export function roomAtBuildSlot(roomId, slotId) {
+export function roomAtBuildSlot(game, roomId, slotId) {
   const room = roomById[roomId];
-  const slot = buildSlots.find((item) => item.id === slotId);
+  const slot = buildSlotById(game, slotId);
   if (!room || !slot) return null;
   return { ...room, x: slot.x, y: slot.y };
 }
 
 export function roomCollidesAtSlot(game, roomId, slotId, margin = 72) {
-  const candidate = roomAtBuildSlot(roomId, slotId);
+  const candidate = roomAtBuildSlot(game, roomId, slotId);
   if (!candidate) return true;
   const candidateRect = rectFor(candidate, margin);
   return roomViews(game)
@@ -302,12 +341,13 @@ function distanceLabel(distance) {
 }
 
 export function buildSlotRelation(game, slotId, fromRoomId = 'atrium') {
-  const slot = buildSlots.find((item) => item.id === slotId);
+  const slot = buildSlotById(game, slotId);
   const from = roomView(game, fromRoomId);
+  const label = slot?.label ?? buildSlotLabel(slotId);
   if (!slot || !from) {
     return {
-      label: buildSlotLabel(slotId),
-      direction: buildSlotLabel(slotId),
+      label,
+      direction: label,
       distance: '',
       description: '配置点'
     };
@@ -317,7 +357,7 @@ export function buildSlotRelation(game, slotId, fromRoomId = 'atrium') {
   const distance = Math.hypot(dx, dy);
   const direction = directionFromDelta(dx, dy);
   return {
-    label: buildSlotLabel(slotId),
+    label,
     direction,
     distance: distanceLabel(distance),
     description: `${from.name}から${direction} / ${distanceLabel(distance)}`

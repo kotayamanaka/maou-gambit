@@ -196,6 +196,34 @@ test('corridors use orthogonal door segments and build slots', async ({ page }) 
   });
   await expect(page.locator('[data-build-preview-room="treasure"]')).toHaveClass(/blocked/);
   await expect(page.locator('[data-build-preview-room="treasure"]')).toContainText('重複');
+  await page.evaluate(() => {
+    window.__MAOU_COMMIT__((game) => {
+      game.selectedBuildRoom = 'hallA';
+      game.selectedBuildSlot = 'north';
+      game.selectedBuildDoor = 'west';
+      game.customBuildSlot = null;
+      game.gold = 1000;
+      game.camera = { zoom: 1, x: -1250, y: 0 };
+    });
+  });
+  await page.locator('[data-map-shell]').click({ position: { x: 200, y: 100 } });
+  await expect(page.locator('.build-slot')).toHaveCount(16);
+  await expect(page.locator('.build-slot.custom-slot')).toContainText('自由');
+  await expect(page.locator('[data-build-preview-room="hallA"]')).toBeVisible();
+  await expect(page.locator('[data-build-preview-room="hallA"]')).not.toHaveClass(/blocked/);
+  const { customSlot, selectedBuildSlot } = await page.evaluate(() => ({
+    customSlot: window.__MAOU_GAME__.customBuildSlot,
+    selectedBuildSlot: window.__MAOU_GAME__.selectedBuildSlot
+  }));
+  expect(customSlot).toMatchObject({ label: '自由', custom: true, x: 1440, y: 360 });
+  expect(customSlot.id).toBe(selectedBuildSlot);
+  await page.locator('[data-build-room="hallA"]').click();
+  const customBuild = await page.evaluate(() => ({
+    built: window.__MAOU_GAME__.builtRooms.has('hallA'),
+    position: window.__MAOU_GAME__.roomPositions.hallA
+  }));
+  expect(customBuild.built).toBe(true);
+  expect(customBuild.position).toMatchObject({ x: 1440, y: 360, slotId: customSlot.id });
   await assertNoDocumentScroll(page);
 });
 

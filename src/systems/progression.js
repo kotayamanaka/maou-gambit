@@ -4,7 +4,7 @@ import { items } from '../data/items.js';
 import { roomObjects } from '../data/objects.js';
 import { currentStage, addLog, resetToSetup } from '../game/state.js';
 import { stages } from '../data/stages.js';
-import { autoDoorSide, buildSlotBlocked, buildSlots, connectionKey, doorSideLabel, rooms, roomById, roomView } from '../data/rooms.js';
+import { autoDoorSide, buildSlotBlocked, buildSlotById, connectionKey, doorSideLabel, rooms, roomById, roomView } from '../data/rooms.js';
 import { firstOpenAllyRoom, isRoomBuilt, roomCapacity, roomLevel } from './placement.js';
 import { applyFeedGrowth, applyGrowthMaterial, nextIntExp, growthProfile } from './growth.js';
 import { researchCost } from './roomEffects.js';
@@ -295,7 +295,7 @@ export function buildRoom(game, roomId, fromRoomId = null, slotId = null, doorSi
   if (!room || isRoomBuilt(game, roomId)) return false;
   const from = fromRoomId ?? game.selectedBuildFrom ?? 'atrium';
   if (!isRoomBuilt(game, from) || !canConnectRoom(game, from) || !canConnectRoom(game, roomId)) return false;
-  const slot = buildSlots.find((item) => item.id === (slotId ?? game.selectedBuildSlot));
+  const slot = buildSlotById(game, slotId ?? game.selectedBuildSlot);
   if (!slot || buildSlotBlocked(game, slot.id, roomId)) return false;
   const cost = room.buildCost ?? 120;
   if (!spendGold(game, cost)) return false;
