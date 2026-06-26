@@ -15,6 +15,21 @@ export const CHIP_DEVELOPMENT_BASE_COST = 36;
 export const MONSTER_RESEARCH_COST = 120;
 export const DEMOLISH_ROOM_COST = 90;
 
+const enemyResearchChips = {
+  warrior: ['attack', 'chaseNearest'],
+  rogue: ['returnHome', 'chaseNearest'],
+  mage: ['focusMage', 'focusWeak'],
+  guard: ['carryDowned', 'returnHome'],
+  ranger: ['focusRanged', 'focusWeak'],
+  cleric: ['focusWeak', 'focusMage'],
+  knight: ['attack', 'focusRare'],
+  alchemist: ['focusMage', 'focusRanged'],
+  beastTamer: ['chaseNearest', 'focusRare'],
+  paladin: ['focusRare', 'returnThrone'],
+  sage: ['focusRare', 'focusKnower', 'focusMage'],
+  hero: ['focusKnower', 'focusRare', 'returnThrone']
+};
+
 export const monsterRarities = {
   starter: { id: 'starter', name: '初期', icon: '◆', weight: 6 },
   common: { id: 'common', name: '通常', icon: '○', weight: 52 },
@@ -79,6 +94,20 @@ function discoverChip(game, chipId, label) {
   game.collections?.chips?.add?.(chipId);
   game.chipUnlocks = [`${label}: ${chips[chipId].name} +1`, ...(game.chipUnlocks ?? [])].slice(0, 6);
   return true;
+}
+
+export function capturedResearchChipOptions(captured, game = null) {
+  const base = enemyResearchChips[captured?.templateId] ?? ['attack'];
+  const options = base.filter((id) => chips[id]);
+  if (!game) return options;
+  const underCap = options.filter((id) => (game.chipBag?.[id] ?? 0) < 3);
+  if (underCap.length) return underCap;
+  return Object.keys(chips).filter((id) => (game.chipBag?.[id] ?? 0) < 3);
+}
+
+export function capturedResearchPreview(captured, game) {
+  const options = capturedResearchChipOptions(captured, game);
+  return options.map((id) => `${chips[id]?.icon ?? '□'} ${chips[id]?.name ?? id}`).join(' / ') || '候補なし';
 }
 
 function spendGold(game, amount) {
@@ -407,10 +436,10 @@ export function consumeCaptured(game, capturedUid, mode, targetUid) {
   }
 
   if (mode === 'research') {
-    const candidates = Object.keys(chips).filter((id) => (game.chipBag[id] ?? 0) < 3);
+    const candidates = capturedResearchChipOptions(captured, game);
     const chipId = candidates[Math.floor(Math.random() * candidates.length)] ?? 'attack';
-    discoverChip(game, chipId, '研究');
-    addLog(game, `${captured.name}を研究し、${chips[chipId].name}を獲得。`);
+    discoverChip(game, chipId, `${captured.name}研究`);
+    addLog(game, `${captured.name}を研究し、${chips[chipId].name}を解析。`);
   }
 
   if (mode === 'ransom' || mode === 'sell') {

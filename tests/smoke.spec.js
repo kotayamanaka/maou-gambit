@@ -759,10 +759,45 @@ test('upgrade flow supports captured selection and action previews', async ({ pa
   });
   await expect(page.getByText('影走りになる')).toBeVisible();
   await expect(page.getByText(/経験\+8/)).toBeVisible();
-  await expect(page.getByText('研究候補')).toBeVisible();
+  await expect(page.getByText(/解析 .*配置帰還.*接近/)).toBeVisible();
+  await expect(page.getByRole('button', { name: /研究 .*配置帰還.*接近/ })).toBeVisible();
   await page.locator('[data-captured-select="cap-warrior"]').click();
   await expect(page.getByText('堕ちた戦士になる')).toBeVisible();
   await expect(page.getByRole('button', { name: /身代金 G\+22/ })).toBeVisible();
+  await assertNoDocumentScroll(page);
+});
+
+test('captured enemy research grants chips tied to the captured job', async ({ page }) => {
+  await page.goto('/');
+  await page.evaluate(() => {
+    window.__MAOU_COMMIT__((game) => {
+      game.phase = 'upgrade';
+      game.chipBag.returnHome = 0;
+      game.chipBag.chaseNearest = 3;
+      game.captured = [{
+        uid: 'cap-rogue',
+        templateId: 'rogue',
+        name: '盗賊',
+        sprite: 'assets/sprites/rogue/idle-front.png',
+        convertTo: 'shadeRunner',
+        capture: { difficulty: 2, ttl: 10 },
+        drop: { gold: 20, items: ['scoutBoots'] }
+      }];
+      game.selectedCapturedId = 'cap-rogue';
+    });
+  });
+  await expect(page.getByRole('button', { name: /研究 .*配置帰還/ })).toBeVisible();
+  await page.locator('[data-upgrade="research"]').click();
+  const state = await page.evaluate(() => ({
+    returnHome: window.__MAOU_GAME__.chipBag.returnHome,
+    captured: window.__MAOU_GAME__.captured.length,
+    unlock: window.__MAOU_GAME__.chipUnlocks[0],
+    log: window.__MAOU_GAME__.log[0]
+  }));
+  expect(state.returnHome).toBe(1);
+  expect(state.captured).toBe(0);
+  expect(state.unlock).toContain('盗賊研究');
+  expect(state.log).toContain('配置帰還');
   await assertNoDocumentScroll(page);
 });
 
