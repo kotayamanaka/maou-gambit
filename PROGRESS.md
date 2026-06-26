@@ -967,3 +967,21 @@ PC前提の広いダンジョン表示で使う床・部屋・通路タイルを
 - `npm test -- --reporter=line`: 82件成功。
 - `npm run test:balance`: 成功。キャンペーン検収は勝利。
 - `npm run build:pages`: 成功。
+
+## 2026-06-26 Claude Design 引き継ぎブリーフ更新
+
+### 目的
+
+本格UI/アートディレクションをClaude Designに依頼する前に、現行プロトタイプの操作面、制約、スクリーンショット、壊したくない設計原則を1ファイルで渡せるようにする。
+
+### 修正
+
+- `UI_READINESS.md` を最新状態に更新し、PC主対象、画面全体スクロール禁止、マップ主役、戦闘中直接指示NG、常時全開示NGを明文化した。
+- Setup、Battle、Map、Upgrade の実装済み操作面を棚卸しした。
+- 投資/戦利品/研究/合成/建設/設備の最新カード型UIと、スプライト/方向/敵亜種の監査画像を、Claude Design向けスクリーンショットセットとして整理した。
+- Claude Designで改善してほしい領域と、実装側の追従なしに変えてはいけない項目を分けて記録した。
+- `README.md` から `UI_READINESS.md` と `ASSET_PIPELINE.md` へ辿れるようにした。
+
+### 検証結果
+
+- ドキュメント更新のみ。直前の状態で `npm test -- --reporter=line` 82件成功、`npm run test:balance` 成功、`npm run build:pages` 成功を確認済み。
