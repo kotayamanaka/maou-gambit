@@ -4,7 +4,7 @@ import { items } from '../data/items.js';
 import { roomObjects } from '../data/objects.js';
 import { currentStage, addLog, resetToSetup } from '../game/state.js';
 import { stages } from '../data/stages.js';
-import { rooms, roomById } from '../data/rooms.js';
+import { buildSlots, rooms, roomById, roomView, slotTaken } from '../data/rooms.js';
 import { firstOpenAllyRoom, isRoomBuilt, roomCapacity, roomLevel } from './placement.js';
 import { applyFeedGrowth, applyGrowthMaterial, nextIntExp, growthProfile } from './growth.js';
 import { researchCost } from './roomEffects.js';
@@ -55,8 +55,8 @@ function createAllyFromTemplate(game, template, sourceLabel = '召喚') {
     traits: [...(template.traits ?? [])],
     room,
     homeRoom: room,
-    x: roomById[room].x,
-    y: roomById[room].y,
+    x: roomView(game, room).x,
+    y: roomView(game, room).y,
     facing: 'front',
     anim: 'idle',
     animTtl: 0,
@@ -164,8 +164,8 @@ export function fuseAlly(game, targetUid, materialUid) {
   const room = target.homeRoom ?? target.room;
   target.room = room;
   target.homeRoom = room;
-  target.x = roomById[room]?.x ?? target.x;
-  target.y = roomById[room]?.y ?? target.y;
+  target.x = roomView(game, room)?.x ?? target.x;
+  target.y = roomView(game, room)?.y ?? target.y;
   target.carrying = null;
   game.allies = game.allies.filter((unit) => unit.uid !== materialUid);
   game.selectedUnitId = target.uid;
@@ -256,14 +256,18 @@ function disconnectRoom(game, roomId) {
   game.roomConnections[roomId] = [];
 }
 
-export function buildRoom(game, roomId, fromRoomId = null) {
+export function buildRoom(game, roomId, fromRoomId = null, slotId = null) {
   const room = roomById[roomId];
   if (!room || isRoomBuilt(game, roomId)) return false;
   const from = fromRoomId ?? game.selectedBuildFrom ?? 'atrium';
   if (!isRoomBuilt(game, from) || !canConnectRoom(game, from) || !canConnectRoom(game, roomId)) return false;
+  const slot = buildSlots.find((item) => item.id === (slotId ?? game.selectedBuildSlot));
+  if (!slot || slotTaken(game, slot.id)) return false;
   const cost = room.buildCost ?? 120;
   if (!spendGold(game, cost)) return false;
   game.builtRooms ??= new Set(rooms.filter((item) => item.built).map((item) => item.id));
+  game.roomPositions ??= {};
+  game.roomPositions[roomId] = { x: slot.x, y: slot.y, slotId: slot.id };
   game.builtRooms.add(roomId);
   game.roomLevels ??= {};
   game.roomLevels[roomId] ??= 1;

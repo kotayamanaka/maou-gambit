@@ -59,8 +59,9 @@ img { image-rendering: pixelated; }
   background:
     linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px),
-    linear-gradient(145deg, rgba(50, 38, 30, .95), rgba(18, 22, 22, .95));
-  background-size: 34px 34px, 34px 34px, auto;
+    linear-gradient(145deg, rgba(28, 22, 18, .66), rgba(9, 12, 12, .72)),
+    url("../assets/tiles/floor-stone.png");
+  background-size: 34px 34px, 34px 34px, auto, 128px 128px;
   overflow: hidden;
   touch-action: none;
 }
@@ -80,10 +81,11 @@ img { image-rendering: pixelated; }
   background:
     linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px),
-    linear-gradient(180deg, rgba(68, 58, 46, .94), rgba(30, 27, 24, .96));
-  background-size: 18px 18px, 18px 18px, auto;
+    linear-gradient(180deg, rgba(97, 81, 62, .46), rgba(24, 22, 20, .58)),
+    url("../assets/tiles/room-stone.png");
+  background-size: 18px 18px, 18px 18px, auto, 128px 128px;
   box-shadow: inset 0 0 0 2px rgba(0,0,0,.24), 0 12px 26px rgba(0,0,0,.34);
-  padding: 10px;
+  padding: 12px;
   text-align: left;
   z-index: 2;
 }
@@ -103,7 +105,7 @@ img { image-rendering: pixelated; }
 .room-name {
   display: inline-block;
   font-weight: 700;
-  font-size: 12px;
+  font-size: 13px;
   color: #f4dfb0;
   text-shadow: 0 1px 0 #000;
 }
@@ -136,8 +138,8 @@ img { image-rendering: pixelated; }
 
 .actor {
   position: relative;
-  width: 34px;
-  height: 34px;
+  width: 44px;
+  height: 44px;
   border-radius: 4px;
   background: rgba(0,0,0,.18);
   display: grid;
@@ -155,15 +157,15 @@ img { image-rendering: pixelated; }
 
 .actor-layer .actor {
   position: absolute;
-  margin-left: -17px;
-  margin-top: -17px;
+  margin-left: -22px;
+  margin-top: -22px;
   animation: mapBob 0.9s steps(2) infinite;
   pointer-events: auto;
 }
 
 .actor img {
-  width: 30px;
-  height: 30px;
+  width: 40px;
+  height: 40px;
   object-fit: contain;
   image-rendering: pixelated;
 }
@@ -237,17 +239,75 @@ img { image-rendering: pixelated; }
   width: 100%;
   height: 100%;
   z-index: 0;
+  pointer-events: none;
+  display: none;
 }
 .corridor {
-  stroke: rgba(120, 95, 58, .68);
-  stroke-width: 46;
+  stroke: rgba(0, 0, 0, .42);
+  stroke-width: 60;
   stroke-linecap: round;
-  filter: drop-shadow(0 0 5px rgba(0,0,0,.55));
+  filter: drop-shadow(0 0 8px rgba(0,0,0,.62));
 }
-.corridor:nth-child(even) { stroke: rgba(162, 126, 68, .58); }
 .corridor.unbuilt {
   stroke-dasharray: 18 18;
   opacity: .34;
+}
+
+.corridor-band {
+  position: absolute;
+  z-index: 1;
+  border-radius: 28px;
+  background:
+    linear-gradient(90deg, rgba(0,0,0,.25), rgba(255, 201, 103, .16) 38%, rgba(255, 201, 103, .18) 62%, rgba(0,0,0,.28)),
+    url("../assets/tiles/corridor-stone.png");
+  background-size: auto, 96px 96px;
+  box-shadow: inset 0 0 0 2px rgba(0,0,0,.26), 0 0 9px rgba(0,0,0,.48);
+  pointer-events: none;
+}
+.corridor-band.horizontal {
+  height: 56px;
+  transform: translate(0, -50%);
+}
+.corridor-band.vertical {
+  width: 56px;
+  transform: translate(-50%, 0);
+}
+.corridor-band.unbuilt {
+  opacity: .28;
+  filter: grayscale(.62) brightness(.72);
+}
+.room-door {
+  position: absolute;
+  z-index: 3;
+  width: 28px;
+  height: 28px;
+  transform: translate(-50%, -50%);
+  border: 2px solid rgba(20, 13, 8, .8);
+  background: linear-gradient(180deg, #7a5025, #28160d);
+  box-shadow: inset 0 0 0 2px rgba(255, 206, 117, .18), 0 2px 6px rgba(0,0,0,.45);
+  pointer-events: none;
+}
+
+.build-slot {
+  position: absolute;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  border: 1px dashed rgba(216, 170, 74, .62);
+  background: rgba(216, 170, 74, .08);
+  color: #f5ddb0;
+  font-size: 11px;
+  font-weight: 900;
+}
+.build-slot.selected-slot {
+  border-style: solid;
+  background: rgba(216, 170, 74, .22);
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+.build-slot.used {
+  opacity: .24;
+  filter: grayscale(.8);
 }
 
 .map-controls {
@@ -358,6 +418,21 @@ img { image-rendering: pixelated; }
   align-items: center;
   font-weight: 800;
 }
+.tool-tabs {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 5px;
+}
+.tool-tabs button {
+  min-height: 34px;
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,.06);
+  font-weight: 900;
+}
+.tool-tabs button.on {
+  color: #111;
+  background: var(--gold);
+}
 .panel-actions {
   display: flex;
   gap: 5px;
@@ -404,6 +479,12 @@ img { image-rendering: pixelated; }
 }
 .setup-panel {
   gap: 8px;
+}
+.setup-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
 }
 .setup-panel .stage-pill,
 .setup-panel .detail-card,
@@ -458,6 +539,9 @@ img { image-rendering: pixelated; }
   overflow-y: hidden;
   scrollbar-width: thin;
   padding-bottom: 2px;
+}
+.scroll-rail .mini {
+  flex: 0 0 96px;
 }
 .room-picker .mini {
   flex: 0 0 88px;
@@ -621,9 +705,9 @@ img { image-rendering: pixelated; }
     padding: 4px;
   }
   .room-name { font-size: 10px; }
-  .actor { width: 24px; height: 24px; }
-  .actor-layer .actor { margin-left: -12px; margin-top: -12px; }
-  .actor img { width: 21px; height: 21px; }
+  .actor { width: 34px; height: 34px; }
+  .actor-layer .actor { margin-left: -17px; margin-top: -17px; }
+  .actor img { width: 31px; height: 31px; }
   .panel {
     left: 7px;
     right: 7px;
@@ -667,9 +751,9 @@ img { image-rendering: pixelated; }
 @media (max-width: 430px) {
   .room { padding: 4px; }
   .room-name { font-size: 9px; }
-  .actor { width: 21px; height: 21px; }
-  .actor-layer .actor { margin-left: -10px; margin-top: -10px; }
-  .actor img { width: 18px; height: 18px; }
+  .actor { width: 31px; height: 31px; }
+  .actor-layer .actor { margin-left: -15px; margin-top: -15px; }
+  .actor img { width: 28px; height: 28px; }
   .panel-head { font-size: 13px; }
   .stage-pill, .boss-box, .detail-card, .unit-picker, .room-picker, .chips-box, .log, .empty { padding: 6px; }
   .mini, .chip, .upgrade-actions button, .panel button { min-height: 34px; }

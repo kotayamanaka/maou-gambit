@@ -62,7 +62,7 @@ export const allyTemplates = {
     role: 'balanced',
     sprite: 'assets/sprites/goblin/idle-front.png',
     spriteSet: goblinSpriteSet,
-    stats: { hp: 48, atk: 9, spd: 1.0, int: 3, carry: 1, range: 1 },
+    stats: { hp: 62, atk: 10, spd: 1.0, int: 3, carry: 1, range: 1 },
     rarity: 'starter',
     skills: ['hasteOnHit'],
     traits: ['運搬可', '初期主力']

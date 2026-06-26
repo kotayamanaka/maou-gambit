@@ -182,3 +182,31 @@ export const rooms = [
 
 export const worldSize = { width: 1540, height: 900 };
 export const roomById = Object.fromEntries(rooms.map((room) => [room.id, room]));
+
+export const buildSlots = [
+  { id: 'north-west', x: 390, y: 95 },
+  { id: 'north', x: 720, y: 95 },
+  { id: 'north-east', x: 1040, y: 125 },
+  { id: 'west-low', x: 390, y: 560 },
+  { id: 'east-high', x: 1080, y: 245 },
+  { id: 'east-low', x: 1080, y: 560 },
+  { id: 'far-east-high', x: 1320, y: 190 },
+  { id: 'far-east-low', x: 1320, y: 825 }
+];
+
+export function roomView(game, roomId) {
+  const room = roomById[roomId];
+  if (!room) return null;
+  return { ...room, ...(game?.roomPositions?.[roomId] ?? {}) };
+}
+
+export function roomViews(game) {
+  return rooms.map((room) => roomView(game, room.id));
+}
+
+export function slotTaken(game, slotId) {
+  const slot = buildSlots.find((item) => item.id === slotId);
+  if (!slot) return true;
+  return Object.values(game?.roomPositions ?? {}).some((position) => position.slotId === slotId)
+    || rooms.some((room) => room.built && room.x === slot.x && room.y === slot.y);
+}

@@ -71,11 +71,11 @@ export function decideAllyAction(game, unit) {
     if (chip.action === 'attack') return { type: 'attack', target };
     if (chip.action === 'moveToTarget') return { type: 'attack', target };
     if (chip.action === 'carryToJail') return { type: 'pickup', target };
-    if (chip.action === 'returnHome' && canPlaceAlly(game, homeRoom, unit)) return { type: 'move', targetRoom: homeRoom };
+    if (chip.action === 'returnHome' && isRoomBuilt(game, homeRoom)) return { type: 'move', targetRoom: homeRoom };
     if (chip.action === 'moveHallB' && canPlaceAlly(game, 'hallB', unit)) return { type: 'move', targetRoom: 'hallB' };
   }
 
-  if (unit.chips.includes('carryDowned') && unit.room !== homeRoom && canPlaceAlly(game, homeRoom, unit)) {
+  if (unit.chips.includes('carryDowned') && unit.room !== homeRoom && isRoomBuilt(game, homeRoom)) {
     return { type: 'move', targetRoom: homeRoom };
   }
 

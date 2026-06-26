@@ -1,7 +1,7 @@
 import { allyTemplates, demonLord } from '../data/units.js';
 import { initialChipBag } from '../data/chips.js';
 import { stages } from '../data/stages.js';
-import { rooms, roomById } from '../data/rooms.js';
+import { rooms, roomView } from '../data/rooms.js';
 
 let nextId = 1;
 
@@ -15,7 +15,7 @@ function initialRoomConnections() {
 }
 
 function unitFromTemplate(template, room, chips = []) {
-  const start = roomById[room];
+  const start = roomView(null, room);
   return {
     uid: `${template.id}-${nextId++}`,
     templateId: template.id,
@@ -66,8 +66,9 @@ export function createGame() {
     selectedRoomId: 'atrium',
     selectedChipId: 'attack',
     selectedCapturedId: null,
+    uiPanel: 'unit',
     showLog: true,
-    camera: { zoom: 0.78, x: 16, y: 16 },
+    camera: { zoom: 1, x: 16, y: 16 },
     selectedEntity: { type: 'ally', id: allies[0].uid },
     elapsed: 0,
     log: ['魔王軍、配置待機。'],
@@ -82,10 +83,15 @@ export function createGame() {
     inventory: {},
     lootLog: [],
     builtRooms: new Set(rooms.filter((room) => room.built).map((room) => room.id)),
+    roomPositions: Object.fromEntries(rooms.filter((room) => room.built).map((room) => [
+      room.id,
+      { x: room.x, y: room.y, slotId: `initial-${room.id}` }
+    ])),
     roomLevels: Object.fromEntries(rooms.map((room) => [room.id, 1])),
     roomCapacityBonus: {},
     roomConnections: initialRoomConnections(),
     selectedBuildFrom: 'atrium',
+    selectedBuildSlot: 'north',
     roomObjects: {},
     allies,
     enemies: [],
@@ -128,6 +134,8 @@ export function startStage(game) {
     unit.carrying = null;
     unit.moveClock = 0;
     unit.attackClock = 0;
+    unit.routeTarget = null;
+    unit.routePoints = null;
   });
   game.demonLord.hp = game.demonLord.maxHp;
   addLog(game, `${currentStage(game).name}、侵入開始。`);
@@ -141,11 +149,14 @@ export function resetToSetup(game) {
   game.allies.forEach((unit) => {
     const room = unit.homeRoom ?? unit.room;
     unit.room = room;
-    unit.x = roomById[room].x;
-    unit.y = roomById[room].y;
+    const position = roomView(game, room);
+    unit.x = position.x;
+    unit.y = position.y;
     unit.anim = 'idle';
     unit.animTtl = 0;
     unit.movingTo = null;
+    unit.routeTarget = null;
+    unit.routePoints = null;
     unit.carrying = null;
   });
   addLog(game, '次の侵入に備えて再配置。');

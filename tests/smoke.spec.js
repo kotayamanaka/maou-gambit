@@ -19,12 +19,58 @@ test('layout fits without page scroll', async ({ page }) => {
   await assertNoDocumentScroll(page);
 });
 
+test('map uses generated dungeon texture tiles', async ({ page }) => {
+  await page.goto('/');
+  const mapBackground = await page.locator('.map-shell').evaluate((el) => getComputedStyle(el).backgroundImage);
+  const roomBackground = await page.locator('.room').first().evaluate((el) => getComputedStyle(el).backgroundImage);
+  const corridorBackground = await page.locator('.corridor-band').first().evaluate((el) => getComputedStyle(el).backgroundImage);
+
+  expect(mapBackground).toContain('floor-stone');
+  expect(roomBackground).toContain('room-stone');
+  expect(corridorBackground).toContain('corridor-stone');
+  await expect(page.locator('.corridor-band').first()).toBeVisible();
+  await assertNoDocumentScroll(page);
+});
+
+test('setup reveals only the selected menu section', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('.setup-section')).toHaveCount(1);
+  await expect(page.locator('[data-place="storage"]')).toHaveCount(0);
+  await page.locator('[data-ui-panel="place"]').click();
+  await expect(page.locator('[data-place="storage"]')).toBeVisible();
+  await expect(page.locator('[data-chip="attack"]')).toHaveCount(0);
+  await page.locator('[data-ui-panel="chips"]').click();
+  await expect(page.locator('[data-chip="attack"]')).toBeVisible();
+  await expect(page.locator('[data-place="storage"]')).toHaveCount(0);
+  await assertNoDocumentScroll(page);
+});
+
+test('corridors use orthogonal door segments and build slots', async ({ page }) => {
+  await page.goto('/');
+  const segments = await page.locator('.corridor-band').evaluateAll((items) => items.map((el) => ({
+    horizontal: el.classList.contains('horizontal'),
+    vertical: el.classList.contains('vertical'),
+    transform: getComputedStyle(el).transform
+  })));
+  expect(segments.length).toBeGreaterThan(0);
+  expect(segments.every((item) => item.horizontal || item.vertical)).toBe(true);
+  expect(segments.some((item) => item.vertical)).toBe(true);
+  expect(segments.every((item) => !item.transform.includes('rotate'))).toBe(true);
+
+  await page.locator('[data-ui-panel="build"]').click();
+  await expect(page.locator('.build-slot[data-build-slot="north"]')).toBeVisible();
+  await expect(page.locator('.build-slot').filter({ hasText: '配置' }).first()).toBeVisible();
+  await assertNoDocumentScroll(page);
+});
+
 test('setup supports monster selection, placement, and chip editing', async ({ page }) => {
   await page.goto('/');
   await expect(page.locator('.unit-picker')).toBeVisible();
   await expect(page.locator('[data-unit]')).toHaveCount(1);
   await page.locator('.actor.ally').first().click();
+  await page.locator('[data-ui-panel="place"]').click();
   await page.locator('[data-place="storage"]').click();
+  await page.locator('[data-ui-panel="chips"]').click();
   await page.locator('[data-chip="carryDowned"]').click();
   const state = await page.evaluate(() => {
     const unit = window.__MAOU_GAME__.allies.find((ally) => ally.uid === window.__MAOU_GAME__.selectedUnitId);
@@ -67,6 +113,7 @@ test('setup enforces room capacity', async ({ page }) => {
     });
   });
   await page.locator('[data-unit]').nth(0).click();
+  await page.locator('[data-ui-panel="place"]').click();
   await page.locator('[data-place="storage"]').click();
   await page.locator('[data-unit]').nth(1).click();
   await expect(page.locator('[data-place="storage"]')).toBeDisabled();
@@ -79,10 +126,12 @@ test('setup enforces room capacity', async ({ page }) => {
 test('setup shows advice, chip detail, next enemies, and unlock history', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByText(/チップ枠余り|前線が空き|編成チェックOK/)).toBeVisible();
+  await page.locator('[data-ui-panel="chips"]').click();
   await page.locator('[data-chip="focusMage"]').click();
   await expect(page.getByText('攻撃対象系 / 未発見')).toBeVisible();
   await expect(page.getByText('????').first()).toBeVisible();
   await expect(page.getByText('未発見').first()).toBeVisible();
+  await page.locator('[data-ui-panel="info"]').click();
   await expect(page.getByText('次の敵情報')).toBeVisible();
   await expect(page.getByText(/戦士x1/)).toBeVisible();
   await expect(page.getByText('図鑑', { exact: true })).toBeVisible();
@@ -152,6 +201,7 @@ test('slime variants use generated directional action sprites', async ({ page })
       ]);
     });
   });
+  await page.locator('[data-ui-panel="research"]').click();
   await page.locator('[data-research-monster]').click();
   await page.evaluate(() => {
     window.__MAOU_COMMIT__((game) => {
@@ -412,8 +462,8 @@ test('feeding a captured enemy applies material exp and growth bias', async ({ p
   expect(goblin.level).toBe(1);
   expect(goblin.exp).toBe(6);
   expect(goblin.intExp).toBe(2);
-  expect(goblin.maxHp).toBe(48);
-  expect(goblin.atk).toBe(10);
+  expect(goblin.maxHp).toBe(62);
+  expect(goblin.atk).toBe(11);
   await assertNoDocumentScroll(page);
 });
 
@@ -481,20 +531,27 @@ test('upgrade management supports selling, building, room upgrades, and research
   });
   await expect(page.getByText('戦利品')).toBeVisible();
   await expect(page.getByText(/ゴブリン ATK\+1/)).toBeVisible();
+  await page.locator('[data-ui-panel="research"]').click();
   await expect(page.locator('[data-develop-chip="attack"]')).toBeVisible();
   await expect(page.locator('[data-research-monster]')).toContainText('魔物研究');
   await expect(page.getByText(/魔物候補/)).toBeVisible();
+  await page.locator('[data-ui-panel="loot"]').click();
   await page.locator('[data-use-item-unit="rustyBlade"]').click();
   await page.locator('[data-use-item-unit="manaDust"]').click();
   await page.locator('[data-use-item-room="roomStone"]').click();
   await page.locator('[data-use-item-room="silverChain"]').click();
   await page.locator('[data-sell-item="rustyBlade"]').click();
+  await page.locator('[data-ui-panel="research"]').click();
   await page.locator('[data-develop-chip="attack"]').click();
+  await page.locator('[data-ui-panel="build"]').click();
   await page.locator('[data-build-anchor="atrium"]').click();
+  await page.locator('[data-build-slot="north"]').click();
   await page.locator('[data-build-room="treasure"]').click();
   await page.locator('[data-upgrade-room="atrium"]').click();
+  await page.locator('[data-ui-panel="object"]').click();
   await page.locator('[data-object-room="treasure"]').click();
   await page.locator('[data-install-object="savePoint"]').click();
+  await page.locator('[data-ui-panel="research"]').click();
   await page.locator('[data-research-chip]').click();
   await page.locator('[data-research-monster]').click();
   const state = await page.evaluate(() => ({
@@ -502,6 +559,7 @@ test('upgrade management supports selling, building, room upgrades, and research
     rustyBlade: window.__MAOU_GAME__.inventory.rustyBlade,
     treasureBuilt: window.__MAOU_GAME__.builtRooms.has('treasure'),
     treasureConnection: window.__MAOU_GAME__.roomConnections.treasure,
+    treasurePosition: window.__MAOU_GAME__.roomPositions.treasure,
     treasureObject: window.__MAOU_GAME__.roomObjects.treasure,
     atriumCapacity: window.__MAOU_GAME__.roomCapacityBonus.atrium,
     captureTtlBonus: window.__MAOU_GAME__.captureTtlBonus,
@@ -512,10 +570,11 @@ test('upgrade management supports selling, building, room upgrades, and research
   }));
   expect(state.gold).toBeLessThan(1000);
   expect(state.rustyBlade).toBe(0);
-  expect(state.goblin.atk).toBe(10);
+  expect(state.goblin.atk).toBe(11);
   expect(state.goblin.intExp).toBe(2);
   expect(state.treasureBuilt).toBe(true);
   expect(state.treasureConnection).toContain('atrium');
+  expect(state.treasurePosition.slotId).toBe('north');
   expect(state.treasureObject).toBe('savePoint');
   expect(state.atriumCapacity).toBe(2);
   expect(state.captureTtlBonus).toBe(3);
@@ -549,6 +608,7 @@ test('monster research prioritizes unknown monsters with rarity preview', async 
     });
   });
 
+  await page.locator('[data-ui-panel="research"]').click();
   await expect(page.getByText(/魔物候補 .*伝説x1/)).toBeVisible();
   await expect(page.getByRole('button', { name: /魔物研究.*希少100%/ })).toBeVisible();
   await page.locator('[data-research-monster]').click();
@@ -609,6 +669,7 @@ test('monster fusion consumes an ally to grow the selected monster', async ({ pa
     });
   });
 
+  await page.locator('[data-ui-panel="fusion"]').click();
   await expect(page.getByText('魔物合成')).toBeVisible();
   await expect(page.locator('[data-fusion-material="fusion-slime"]')).toContainText('通常素材');
   await expect(page.locator('[data-fuse-ally="fusion-slime"]')).toContainText('合成実行');
@@ -625,7 +686,7 @@ test('monster fusion consumes an ally to grow the selected monster', async ({ pa
   expect(state.allyNames).toEqual(['ゴブリン']);
   expect(state.goblin.exp).toBe(12);
   expect(state.goblin.intExp).toBe(1);
-  expect(state.goblin.maxHp).toBe(50);
+  expect(state.goblin.maxHp).toBe(64);
   expect(state.log).toContain('合成素材');
   await assertNoDocumentScroll(page);
 });

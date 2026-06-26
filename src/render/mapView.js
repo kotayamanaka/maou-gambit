@@ -1,4 +1,4 @@
-import { rooms, worldSize } from '../data/rooms.js';
+import { buildSlots, roomViews, rooms, slotTaken, worldSize } from '../data/rooms.js';
 import { roomObjects } from '../data/objects.js';
 import { isRoomBuilt, roomCapacity } from '../systems/placement.js';
 import { statusIconList } from '../systems/status.js';
@@ -38,7 +38,8 @@ function bodySprite(body, index = 0) {
 
 export function renderMap(game, mode = 'setup') {
   const camera = game.camera ?? { zoom: 1, x: 0, y: 0 };
-  const roomById = Object.fromEntries(rooms.map((room) => [room.id, room]));
+  const visibleRooms = roomViews(game);
+  const roomById = Object.fromEntries(visibleRooms.map((room) => [room.id, room]));
   const corridors = Object.entries(game.roomConnections ?? {})
     .flatMap(([roomId, targets]) => targets.map((target) => [roomId, target]))
     .filter(([a, b], index, list) => index === list.findIndex(([x, y]) => (
@@ -53,7 +54,7 @@ export function renderMap(game, mode = 'setup') {
   }
   actors.push(sprite(game.demonLord, selected.type === 'lord' ? 'selected lord' : 'lord', 0));
 
-  const nodes = rooms.map((room) => {
+  const nodes = visibleRooms.filter((room) => isRoomBuilt(game, room.id)).map((room) => {
     const discovered = game.partyKnowledge?.visited?.has?.(room.id) || mode !== 'battle' || room.id === 'entrance';
     const built = isRoomBuilt(game, room.id);
     const selected = room.id === game.selectedRoomId ? 'selected-room' : '';
@@ -67,11 +68,74 @@ export function renderMap(game, mode = 'setup') {
     </button>`;
   }).join('');
 
+  const slotNodes = mode === 'setup' && game.uiPanel === 'build'
+    ? buildSlots.map((slot) => {
+      const used = slotTaken(game, slot.id);
+      const selected = game.selectedBuildSlot === slot.id;
+      return `<button class="build-slot ${selected ? 'selected-slot' : ''} ${used ? 'used' : ''}" data-build-slot="${slot.id}" style="left:${slot.x - 58}px;top:${slot.y - 42}px;width:116px;height:84px" ${used ? 'disabled' : ''}>
+        <span>${used ? '占有' : '配置'}</span>
+      </button>`;
+    }).join('')
+    : '';
+
   const lines = corridors.map(([a, b]) => {
     const from = roomById[a];
     const to = roomById[b];
     const locked = !isRoomBuilt(game, a) || !isRoomBuilt(game, b);
     return `<line class="corridor ${locked ? 'unbuilt' : ''}" x1="${from.x}" y1="${from.y}" x2="${to.x}" y2="${to.y}" />`;
+  }).join('');
+
+  function doorPair(from, to) {
+    const dx = to.x - from.x;
+    const dy = to.y - from.y;
+    if (Math.abs(dx) >= Math.abs(dy)) {
+      const side = dx >= 0 ? 1 : -1;
+      return {
+        from: { x: from.x + (from.w / 2) * side, y: from.y },
+        to: { x: to.x - (to.w / 2) * side, y: to.y },
+        axis: 'x'
+      };
+    }
+    const side = dy >= 0 ? 1 : -1;
+    return {
+      from: { x: from.x, y: from.y + (from.h / 2) * side },
+      to: { x: to.x, y: to.y - (to.h / 2) * side },
+      axis: 'y'
+    };
+  }
+
+  function segment(from, to, locked, index) {
+    const horizontal = Math.abs(to.x - from.x) >= Math.abs(to.y - from.y);
+    if (horizontal) {
+      const left = Math.min(from.x, to.x);
+      return `<div class="corridor-band horizontal ${locked ? 'unbuilt' : ''}" style="left:${left}px;top:${from.y}px;width:${Math.max(1, Math.abs(to.x - from.x))}px"></div>`;
+    }
+    const top = Math.min(from.y, to.y);
+    return `<div class="corridor-band vertical ${locked ? 'unbuilt' : ''}" style="left:${from.x}px;top:${top}px;height:${Math.max(1, Math.abs(to.y - from.y))}px"></div>`;
+  }
+
+  const corridorBands = corridors.map(([a, b], corridorIndex) => {
+    const from = roomById[a];
+    const to = roomById[b];
+    if (!from || !to) return '';
+    const locked = !isRoomBuilt(game, a) || !isRoomBuilt(game, b);
+    const doors = doorPair(from, to);
+    const bends = doors.axis === 'x'
+      ? [
+        doors.from,
+        { x: Math.round((doors.from.x + doors.to.x) / 2), y: doors.from.y },
+        { x: Math.round((doors.from.x + doors.to.x) / 2), y: doors.to.y },
+        doors.to
+      ]
+      : [
+        doors.from,
+        { x: doors.from.x, y: Math.round((doors.from.y + doors.to.y) / 2) },
+        { x: doors.to.x, y: Math.round((doors.from.y + doors.to.y) / 2) },
+        doors.to
+      ];
+    const parts = bends.slice(0, -1).map((point, index) => segment(point, bends[index + 1], locked, corridorIndex + index)).join('');
+    const doorsHtml = `<span class="room-door" style="left:${doors.from.x}px;top:${doors.from.y}px"></span><span class="room-door" style="left:${doors.to.x}px;top:${doors.to.y}px"></span>`;
+    return `${parts}${doorsHtml}`;
   }).join('');
 
   const effects = game.effects.map((effect) => {
@@ -95,18 +159,13 @@ export function renderMap(game, mode = 'setup') {
     <div class="map-board">
       <div class="map-world" style="width:${worldSize.width}px;height:${worldSize.height}px;transform: translate(${camera.x}px, ${camera.y}px) scale(${camera.zoom})">
         <svg class="corridors" viewBox="0 0 ${worldSize.width} ${worldSize.height}" aria-hidden="true">${lines}</svg>
-        ${nodes}<div class="actor-layer">${actors.join('')}</div>${effects}
+        ${corridorBands}${slotNodes}${nodes}<div class="actor-layer">${actors.join('')}</div>${effects}
       </div>
       <div class="map-controls" aria-label="マップ操作">
         <button data-mapaction="zoomIn" title="拡大">＋</button>
         <button data-mapaction="zoomOut" title="縮小">－</button>
-        <button data-mapaction="panLeft" title="左へ">←</button>
-        <button data-mapaction="panRight" title="右へ">→</button>
-        <button data-mapaction="panUp" title="上へ">↑</button>
-        <button data-mapaction="panDown" title="下へ">↓</button>
         <button data-mapaction="reset" title="リセット">⟳</button>
         <button data-mapaction="focusSelected" title="選択へ">◎</button>
-        <button data-mapaction="focusEnemy" title="侵入者へ">!</button>
       </div>
     </div>
   </section>`;

@@ -1,5 +1,4 @@
-import { rooms } from '../data/rooms.js';
-import { roomById } from '../data/rooms.js';
+import { buildSlots, rooms, roomById, roomView, slotTaken } from '../data/rooms.js';
 import { chips } from '../data/chips.js';
 import { chipCategories } from '../data/chips.js';
 import { enemyChips } from '../data/enemyChips.js';
@@ -217,16 +216,25 @@ function researchPreview(game) {
 
 function roomManagementPanel(game) {
   const anchor = game.selectedBuildFrom ?? 'atrium';
+  const selectedSlot = game.selectedBuildSlot ?? buildSlots.find((slot) => !slotTaken(game, slot.id))?.id;
   const anchorButtons = rooms
     .filter((room) => isRoomBuilt(game, room.id) && canConnectRoom(game, room.id))
     .map((room) => `<button class="mini ${anchor === room.id ? 'on' : ''}" data-build-anchor="${room.id}">
       ${room.name}<small>${connectionCount(game, room.id)}/${room.connectionLimit ?? 4}</small>
     </button>`)
     .join('');
+  const slotButtons = buildSlots
+    .map((slot) => {
+      const used = slotTaken(game, slot.id);
+      return `<button class="mini ${selectedSlot === slot.id ? 'on' : ''}" data-build-slot="${slot.id}" ${used ? 'disabled' : ''}>
+        ${used ? '占有済' : '配置点'}<small>${slot.id}</small>
+      </button>`;
+    })
+    .join('');
   const buildButtons = rooms
     .filter((room) => !isRoomBuilt(game, room.id) && room.buildCost)
-    .map((room) => `<button class="mini" data-build-room="${room.id}" ${((game.gold ?? 0) < room.buildCost || !canConnectRoom(game, anchor) || !canConnectRoom(game, room.id)) ? 'disabled' : ''}>
-      ${room.name}<small>${roomById[anchor]?.name ?? anchor}から建設 G${room.buildCost}${roomEffectText(room) ? ` / ${roomEffectText(room)}` : ''}</small>
+    .map((room) => `<button class="mini" data-build-room="${room.id}" ${((game.gold ?? 0) < room.buildCost || !selectedSlot || slotTaken(game, selectedSlot) || !canConnectRoom(game, anchor) || !canConnectRoom(game, room.id)) ? 'disabled' : ''}>
+      ${room.name}<small>${roomById[anchor]?.name ?? anchor}から ${selectedSlot ?? '配置点未選択'}へ G${room.buildCost}${roomEffectText(room) ? ` / ${roomEffectText(room)}` : ''}</small>
     </button>`)
     .join('');
   const demolishButtons = rooms
@@ -248,6 +256,7 @@ function roomManagementPanel(game) {
   return `<div class="info-box management-box">
     <b>ダンジョン</b>
     <div class="scroll-rail">${anchorButtons || '<span class="empty-inline">接続元なし</span>'}</div>
+    <div class="scroll-rail">${slotButtons || '<span class="empty-inline">配置点なし</span>'}</div>
     <div class="scroll-rail">${buildButtons || '<span class="empty-inline">建設候補なし</span>'}</div>
     <div class="scroll-rail">${demolishButtons || '<span class="empty-inline">撤去候補なし</span>'}</div>
     <div class="scroll-rail">${upgradeButtons || '<span class="empty-inline">拡張候補なし</span>'}</div>
@@ -391,8 +400,29 @@ function objectPanel(game) {
   </div>`;
 }
 
+function panelTabs(game, items) {
+  return `<div class="tool-tabs">${items.map((item) => `<button class="${game.uiPanel === item.id ? 'on' : ''}" data-ui-panel="${item.id}" title="${item.label}">${item.icon}</button>`).join('')}</div>`;
+}
+
 function managementPanels(game) {
-  return `${treasuryPanel(game)}${collectionPanel(game)}${inventoryPanel(game)}${researchPanel(game)}${fusionPanel(game)}${roomManagementPanel(game)}${objectPanel(game)}`;
+  const managementIds = ['loot', 'research', 'fusion', 'build', 'object', 'info'];
+  const active = managementIds.includes(game.uiPanel) ? game.uiPanel : 'loot';
+  const panelState = { ...game, uiPanel: active };
+  const tabs = panelTabs(panelState, [
+    { id: 'loot', icon: 'G', label: '戦利品' },
+    { id: 'research', icon: 'R', label: '研究' },
+    { id: 'fusion', icon: 'F', label: '合成' },
+    { id: 'build', icon: 'B', label: '建設' },
+    { id: 'object', icon: 'O', label: '設備' },
+    { id: 'info', icon: 'I', label: '情報' }
+  ]);
+  const content = active === 'research' ? researchPanel(game)
+    : active === 'fusion' ? fusionPanel(game)
+      : active === 'build' ? roomManagementPanel(game)
+        : active === 'object' ? objectPanel(game)
+          : active === 'info' ? `<div class="info-grid">${collectionPanel(game)}${unlockHistory(game)}${nextEnemyPanel(game)}${treasuryPanel(game)}</div>`
+            : `${treasuryPanel(game)}${inventoryPanel(game)}`;
+  return `${tabs}${content}`;
 }
 
 function roomChoice(room, unit, game) {
@@ -454,11 +484,16 @@ function setupPanel(game) {
   const unit = selectedUnit(game);
   const profile = growthProfile(unit);
   const warnings = setupWarnings(game);
-  return `<aside class="panel setup-panel">
-    <header class="panel-head">
-      <span>${currentStage(game).id}/${stages.length} ${currentStage(game).name}</span>
-      <button class="primary" data-action="start" title="侵入開始">▶</button>
-    </header>
+  const active = game.uiPanel ?? 'unit';
+  const tabs = panelTabs(game, [
+    { id: 'unit', icon: 'U', label: '配下' },
+    { id: 'place', icon: 'P', label: '配置' },
+    { id: 'chips', icon: 'C', label: 'チップ' },
+    { id: 'build', icon: 'B', label: '建設' },
+    { id: 'object', icon: 'O', label: '設備' },
+    { id: 'info', icon: 'I', label: '情報' }
+  ]);
+  const unitSection = `<div class="setup-section">
     <div class="unit-picker" aria-label="配下選択">
       <div class="unit-list">${game.allies.map((ally) => unitCard(ally, game)).join('')}</div>
     </div>
@@ -468,17 +503,38 @@ function setupPanel(game) {
       <span>CRY ${unit.carry}</span><span>RNG ${unit.range}</span><span>${profile.label}</span><span>${roomById[unit.homeRoom]?.name ?? unit.homeRoom}</span>
     </div>
     <div class="advice-box">${warnings.map((line) => `<p>${line}</p>`).join('')}</div>
+  </div>`;
+  const placeSection = `<div class="setup-section">
+    <div class="unit-picker" aria-label="配下選択">
+      <div class="unit-list">${game.allies.map((ally) => unitCard(ally, game)).join('')}</div>
+    </div>
     <div class="room-picker" aria-label="配置先">
       <div class="scroll-rail">${rooms.filter((room) => room.capacity > 0).map((room) =>
         roomChoice(room, unit, game)
       ).join('')}</div>
     </div>
+  </div>`;
+  const chipSection = `<div class="setup-section">
     <div class="chips-box" aria-label="チップ">
       <div class="chip-meter">${unit.chips.length}/${unit.int}</div>
       <div class="chip-grid scroll-rail">${visibleChipIds(game, unit).map((id) => chipButton(id, unit, game)).join('')}</div>
     </div>
     ${chipDetail(game, unit)}
-    <div class="info-grid">${nextEnemyPanel(game)}${treasuryPanel(game)}${collectionPanel(game)}${unlockHistory(game)}</div>
+  </div>`;
+  const infoSection = `<div class="setup-section"><div class="info-grid">${nextEnemyPanel(game)}${treasuryPanel(game)}${collectionPanel(game)}${unlockHistory(game)}</div></div>`;
+  const content = active === 'place' ? placeSection
+    : active === 'chips' ? chipSection
+      : active === 'build' ? `<div class="setup-section">${roomManagementPanel(game)}</div>`
+        : active === 'object' ? `<div class="setup-section">${objectPanel(game)}</div>`
+          : active === 'info' ? infoSection
+            : unitSection;
+  return `<aside class="panel setup-panel">
+    <header class="panel-head">
+      <span>${currentStage(game).id}/${stages.length} ${currentStage(game).name}</span>
+      <button class="primary" data-action="start" title="侵入開始">▶</button>
+    </header>
+    ${tabs}
+    ${content}
   </aside>`;
 }
 
@@ -625,8 +681,9 @@ export function renderApp(root, game, commit) {
     if (!canPlaceAlly(state, button.dataset.place, unit)) return;
     unit.room = button.dataset.place;
     unit.homeRoom = unit.room;
-    unit.x = roomById[unit.room].x;
-    unit.y = roomById[unit.room].y;
+    const position = roomView(state, unit.room);
+    unit.x = position.x;
+    unit.y = position.y;
     unit.movingTo = null;
   })));
   root.querySelectorAll('[data-room]').forEach((button) => button.addEventListener('click', () => commit((state) => {
@@ -637,8 +694,9 @@ export function renderApp(root, game, commit) {
       if (!canPlaceAlly(state, button.dataset.room, unit)) return;
       unit.room = button.dataset.room;
       unit.homeRoom = unit.room;
-      unit.x = roomById[unit.room].x;
-      unit.y = roomById[unit.room].y;
+      const position = roomView(state, unit.room);
+      unit.x = position.x;
+      unit.y = position.y;
       unit.movingTo = null;
     }
   })));
@@ -665,10 +723,15 @@ export function renderApp(root, game, commit) {
     state.selectedCapturedId = state.captured[0]?.uid ?? null;
   })));
   root.querySelectorAll('[data-build-room]').forEach((button) => button.addEventListener('click', () => commit((state) => {
-    buildRoom(state, button.dataset.buildRoom, state.selectedBuildFrom);
+    buildRoom(state, button.dataset.buildRoom, state.selectedBuildFrom, state.selectedBuildSlot);
   })));
   root.querySelectorAll('[data-build-anchor]').forEach((button) => button.addEventListener('click', () => commit((state) => {
     state.selectedBuildFrom = button.dataset.buildAnchor;
+  })));
+  root.querySelectorAll('[data-build-slot]').forEach((button) => button.addEventListener('click', () => commit((state) => {
+    if (slotTaken(state, button.dataset.buildSlot)) return;
+    state.selectedBuildSlot = button.dataset.buildSlot;
+    state.uiPanel = 'build';
   })));
   root.querySelectorAll('[data-demolish-room]').forEach((button) => button.addEventListener('click', () => commit((state) => {
     demolishRoom(state, button.dataset.demolishRoom);
@@ -708,6 +771,9 @@ export function renderApp(root, game, commit) {
   })));
   root.querySelectorAll('[data-fuse-ally]').forEach((button) => button.addEventListener('click', () => commit((state) => {
     fuseAlly(state, button.dataset.fuseTarget, button.dataset.fuseAlly);
+  })));
+  root.querySelectorAll('[data-ui-panel]').forEach((button) => button.addEventListener('click', () => commit((state) => {
+    state.uiPanel = button.dataset.uiPanel;
   })));
   root.querySelectorAll('[data-action]').forEach((button) => button.addEventListener('click', () => commit((state) => {
     if (button.dataset.action === 'start') startStage(state);
@@ -775,7 +841,7 @@ export function renderApp(root, game, commit) {
       });
     }, { passive: false });
     mapShell.addEventListener('pointerdown', (event) => {
-      if (event.target.closest('.room, .actor, .map-controls')) return;
+      if (event.target.closest('.room, .actor, .build-slot, .map-controls')) return;
       pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
       try {
         mapShell.setPointerCapture(event.pointerId);

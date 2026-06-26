@@ -1,5 +1,5 @@
 import { enemyTemplates } from '../data/units.js';
-import { roomById } from '../data/rooms.js';
+import { roomById, roomView } from '../data/rooms.js';
 import { addLog } from '../game/state.js';
 import { nextStep, roomConnections } from './path.js';
 import { applyStatus, attackMultiplier, speedMultiplier } from './status.js';
@@ -59,8 +59,8 @@ function triggerSkills(attacker, target, game) {
   }
 }
 
-export function roomPoint(roomId, unit) {
-  const room = roomById[roomId];
+export function roomPoint(roomId, unit, game = null) {
+  const room = roomView(game, roomId);
   if (!room) return { x: unit.x ?? 0, y: unit.y ?? 0 };
   const lane = hashOffset(unit.uid ?? unit.id ?? unit.name) - 0.5;
   const side = unit.type === 'enemy' ? -0.3 : unit.type === 'boss' ? 0.18 : 0.24;
@@ -68,6 +68,43 @@ export function roomPoint(roomId, unit) {
     x: room.x + Math.min(room.w * Math.abs(side), 48) * Math.sign(side),
     y: room.y + lane * Math.min(room.h * 0.38, 34)
   };
+}
+
+function doorPair(fromRoom, toRoom) {
+  const dx = toRoom.x - fromRoom.x;
+  const dy = toRoom.y - fromRoom.y;
+  if (Math.abs(dx) >= Math.abs(dy)) {
+    const fromSide = dx >= 0 ? 1 : -1;
+    return {
+      from: { x: fromRoom.x + (fromRoom.w / 2) * fromSide, y: fromRoom.y },
+      to: { x: toRoom.x - (toRoom.w / 2) * fromSide, y: toRoom.y },
+      axis: 'x'
+    };
+  }
+  const fromSide = dy >= 0 ? 1 : -1;
+  return {
+    from: { x: fromRoom.x, y: fromRoom.y + (fromRoom.h / 2) * fromSide },
+    to: { x: toRoom.x, y: toRoom.y - (toRoom.h / 2) * fromSide },
+    axis: 'y'
+  };
+}
+
+function movementRoute(game, fromRoomId, toRoomId, unit) {
+  const fromRoom = roomView(game, fromRoomId);
+  const toRoom = roomView(game, toRoomId);
+  if (!fromRoom || !toRoom) return [roomPoint(toRoomId, unit, game)];
+  const doors = doorPair(fromRoom, toRoom);
+  const destination = roomPoint(toRoomId, unit, game);
+  const bend = doors.axis === 'x'
+    ? [
+      { x: (doors.from.x + doors.to.x) / 2, y: doors.from.y },
+      { x: (doors.from.x + doors.to.x) / 2, y: doors.to.y }
+    ]
+    : [
+      { x: doors.from.x, y: (doors.from.y + doors.to.y) / 2 },
+      { x: doors.to.x, y: (doors.from.y + doors.to.y) / 2 }
+    ];
+  return [doors.from, ...bend, doors.to, destination];
 }
 
 export function spawnDueEnemies(game) {
@@ -92,8 +129,8 @@ export function spawnDueEnemies(game) {
       capture: { ...(template.capture ?? { difficulty: 1, ttl: 12 }) },
       drop: { ...(template.drop ?? { gold: 0, items: [] }) },
       room: 'entrance',
-      x: roomById.entrance.x,
-      y: roomById.entrance.y,
+      x: roomView(game, 'entrance').x,
+      y: roomView(game, 'entrance').y,
       facing: 'right',
       anim: 'idle',
       animTtl: 0,
@@ -103,7 +140,7 @@ export function spawnDueEnemies(game) {
       searchClock: 0.45,
       knowsThrone: false
     };
-    const point = roomPoint('entrance', enemy);
+    const point = roomPoint('entrance', enemy, game);
     enemy.x = point.x;
     enemy.y = point.y;
     game.enemies.push(enemy);
@@ -164,7 +201,11 @@ export function attack(attacker, target, game, label) {
 export function moveUnit(unit, targetRoom, dt, game = null) {
   if (!targetRoom || unit.room === targetRoom) return false;
   const stepRoom = roomById[unit.movingTo] ? unit.movingTo : nextStep(unit.room, targetRoom, game);
-  const destination = roomPoint(stepRoom, unit);
+  if (!unit.routePoints || unit.routeTarget !== stepRoom) {
+    unit.routeTarget = stepRoom;
+    unit.routePoints = movementRoute(game, unit.room, stepRoom, unit);
+  }
+  const destination = unit.routePoints[0];
   if (!destination) return false;
   unit.movingTo = stepRoom;
 
@@ -178,9 +219,15 @@ export function moveUnit(unit, targetRoom, dt, game = null) {
   if (dist <= travel) {
     unit.x = destination.x;
     unit.y = destination.y;
-    unit.room = stepRoom;
-    unit.movingTo = null;
-    return true;
+    unit.routePoints.shift();
+    if (!unit.routePoints.length) {
+      unit.room = stepRoom;
+      unit.movingTo = null;
+      unit.routeTarget = null;
+      unit.routePoints = null;
+      return true;
+    }
+    return false;
   }
 
   unit.x += (dx / dist) * travel;
