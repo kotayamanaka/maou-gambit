@@ -1,5 +1,31 @@
 # PROGRESS
 
+## 2026-06-26 後半敵の職シルエット強化
+
+### 目的
+
+後半敵職の一部がベース職の色違いに見えやすく、戦闘中に「何の職が来たか」を読み取りづらかった。専用生成シートへ置き換える前の中間改善として、既存の亜種生成スクリプトに職ごとの装備/記号差分を加える。
+
+### 修正
+
+- `scripts/make_enemy_variant_sprites.py` を、単純な色替えだけでなく、職ごとの小さな装備差分を描き足す処理へ拡張した。
+- `ranger` は弓、`cleric` は聖印と杖、`knight` は槍と兜飾り、`paladin` は槍と聖印、`alchemist` は薬瓶とゴーグル、`sage` は杖と魔術印、`beastTamer` は鞭、`hero` は剣/兜飾りを重ねる。
+- `guard` は専用盾兵シートがあるため、亜種生成対象から外し、再生成で上書きしないようにした。
+- 8職の `idle / walk / attack / downed` x `front/back/left/right` を再生成し、派生 `walk` 3フレーム、`attack` 2フレームも再生成した。
+- `screenshots/sprite-direction-audit-enemies.png` と `screenshots/sprite-animation-audit.png` を更新した。
+
+### 検証結果
+
+- `python scripts/make_enemy_variant_sprites.py`: 8職を再生成。
+- `python scripts/make_micro_animation_frames.py`: 24スプライトフォルダ、480フレーム生成・接続。
+- `python scripts/make_sprite_direction_audit_enemies.py`: 成功。敵職の監査画像を目視確認。
+- `python scripts/make_sprite_animation_audit.py`: 成功。
+
+### 残課題
+
+- 今回の装備差分はプロトタイプ用の自動描き足し。本番では職ごとの専用生成シートへ置き換える。
+- レンジャー/獣使いはまだ小さめの差分なので、専用素材化時に弓や鞭のシルエットをもっと大きく取る。
+
 ## 2026-06-26 キャラクターモーション再検収
 
 ### 目的

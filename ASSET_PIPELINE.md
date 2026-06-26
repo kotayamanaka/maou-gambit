@@ -84,10 +84,10 @@ assets/generated/
 - `scripts/make_sprite_direction_audit.py` で `screenshots/sprite-direction-audit-ally-monsters.png` を作成し、4方向と動作の検収をしてから実装へ接続する。
 - `scripts/make_sprite_direction_audit_enemies.py` で `screenshots/sprite-direction-audit-enemies.png` を作成し、敵冒険者の切り出しに隣接キャラ混入や欠けがないか検収する。
 - 後半敵職の暫定亜種スプライトは `scripts/make_enemy_variant_sprites.py` で、`warrior`、`rogue`、`mage` をベースに職ごとの色調を変えて書き出す。
-- 対象: `guard`、`ranger`、`cleric`、`knight`、`alchemist`、`beastTamer`、`paladin`、`sage`、`hero`
+- 対象: `ranger`、`cleric`、`knight`、`alchemist`、`beastTamer`、`paladin`、`sage`、`hero`
 - 原本切り出し先: `assets/generated/characters/<unit-id>/`
 - ゲーム参照先: `public/assets/sprites/<unit-id>/`
-- これは本格専用生成前の暫定多様化。ゲーム中で職が判別できることを優先し、後で職ごとの専用シートに差し替える。
+- これは本格専用生成前の暫定多様化。ゲーム中で職が判別できることを優先し、色調だけでなく弓、杖、槍、聖印、薬瓶、鞭などの小さな職差分も重ねる。後で職ごとの専用シートに差し替える。
 - 専用生成した敵職シートは `scripts/slice_dedicated_enemy_sheets.py` で、各ユニットごとの 4方向 x 4動作に切り出す。
 - 入力例: `assets/generated/characters/guard/sheet-v2-4dir.png`
 - 対象: `guard`
