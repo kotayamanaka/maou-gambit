@@ -987,6 +987,8 @@ test('upgrade management supports selling, building, room upgrades, and research
   await page.locator('[data-ui-panel="build"]').click();
   await expect(page.locator('.build-layout')).toBeVisible();
   await page.locator('[data-build-anchor="atrium"]').click();
+  await page.locator('[data-build-door="east"]').click();
+  await expect(page.locator('[data-build-door="east"]')).toHaveClass(/on/);
   await page.locator('[data-build-slot="north"]').click();
   await expect(page.locator('[data-build-room="treasure"]')).toHaveClass(/decision-card/);
   await expect(page.locator('.build-layout')).toContainText('北');
@@ -1005,6 +1007,7 @@ test('upgrade management supports selling, building, room upgrades, and research
     rustyBlade: window.__MAOU_GAME__.inventory.rustyBlade,
     treasureBuilt: window.__MAOU_GAME__.builtRooms.has('treasure'),
     treasureConnection: window.__MAOU_GAME__.roomConnections.treasure,
+    treasureDoors: window.__MAOU_GAME__.roomConnectionDoors['atrium::treasure'],
     treasurePosition: window.__MAOU_GAME__.roomPositions.treasure,
     treasureObject: window.__MAOU_GAME__.roomObjects.treasure,
     atriumCapacity: window.__MAOU_GAME__.roomCapacityBonus.atrium,
@@ -1020,6 +1023,7 @@ test('upgrade management supports selling, building, room upgrades, and research
   expect(state.goblin.intExp).toBe(2);
   expect(state.treasureBuilt).toBe(true);
   expect(state.treasureConnection).toContain('atrium');
+  expect(state.treasureDoors.atrium).toBe('east');
   expect(state.treasurePosition.slotId).toBe('north');
   expect(state.treasureObject).toBe('savePoint');
   expect(state.atriumCapacity).toBe(2);

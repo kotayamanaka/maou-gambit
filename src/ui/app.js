@@ -1,4 +1,4 @@
-import { buildSlotRelation, buildSlots, rooms, roomById, roomView, slotTaken, worldSize } from '../data/rooms.js';
+import { buildSlotRelation, buildSlots, doorSideLabel, doorSides, rooms, roomById, roomView, slotTaken, worldSize } from '../data/rooms.js';
 import { chips } from '../data/chips.js';
 import { chipCategories } from '../data/chips.js';
 import { enemyChips } from '../data/enemyChips.js';
@@ -288,12 +288,19 @@ function researchPreview(game, limit = Infinity) {
 
 function roomManagementPanel(game) {
   const anchor = game.selectedBuildFrom ?? 'atrium';
+  const selectedDoor = game.selectedBuildDoor ?? 'north';
   const selectedSlot = game.selectedBuildSlot ?? buildSlots.find((slot) => !slotTaken(game, slot.id))?.id;
   const anchorButtons = rooms
     .filter((room) => isRoomBuilt(game, room.id) && canConnectRoom(game, room.id))
     .map((room) => `<button class="mini compact-card ${anchor === room.id ? 'on' : ''}" data-build-anchor="${room.id}">
       <span class="choice-top">${room.name}<em>${connectionCount(game, room.id)}/${room.connectionLimit ?? 4}</em></span>
       <small>接続元</small>
+    </button>`)
+    .join('');
+  const doorButtons = doorSides
+    .map((side) => `<button class="mini compact-card ${selectedDoor === side ? 'on' : ''}" data-build-door="${side}">
+      <span class="choice-top">${doorSideLabel(side)}<em>${side === 'north' ? '上' : side === 'east' ? '右' : side === 'south' ? '下' : '左'}</em></span>
+      <small>接続口</small>
     </button>`)
     .join('');
   const slotButtons = buildSlots
@@ -311,7 +318,7 @@ function roomManagementPanel(game) {
     .filter((room) => !isRoomBuilt(game, room.id) && room.buildCost)
     .map((room) => `<button class="mini decision-card" data-build-room="${room.id}" draggable="true" ${((game.gold ?? 0) < room.buildCost || !selectedSlot || slotTaken(game, selectedSlot) || !canConnectRoom(game, anchor) || !canConnectRoom(game, room.id)) ? 'disabled' : ''}>
       <span class="choice-top">${room.name}<em>G${room.buildCost}</em></span>
-      <small>${selectedRelation ? selectedRelation.description : `${roomById[anchor]?.name ?? anchor}から配置点未選択`}</small>
+      <small>${roomById[anchor]?.name ?? anchor}${doorSideLabel(selectedDoor)}から ${selectedRelation ? selectedRelation.direction : '配置点未選択'}へ</small>
       <span class="decision-meta">${roomEffectText(room) || `容量${room.capacity ?? 0}`}</span>
     </button>`)
     .join('');
@@ -337,6 +344,7 @@ function roomManagementPanel(game) {
     <b>ダンジョン</b>
     <div class="build-layout">
       ${railGroup('接続元', anchorButtons, '接続元なし')}
+      ${railGroup('接続扉', doorButtons, '接続扉なし')}
       ${railGroup('配置点', slotButtons, '配置点なし')}
       ${railGroup('建設', buildButtons, '建設候補なし')}
       ${railGroup('拡張', upgradeButtons, '拡張候補なし')}
@@ -949,10 +957,13 @@ export function renderApp(root, game, commit) {
     state.selectedCapturedId = state.captured[0]?.uid ?? null;
   })));
   root.querySelectorAll('[data-build-room]').forEach((button) => button.addEventListener('click', () => commit((state) => {
-    buildRoom(state, button.dataset.buildRoom, state.selectedBuildFrom, state.selectedBuildSlot);
+    buildRoom(state, button.dataset.buildRoom, state.selectedBuildFrom, state.selectedBuildSlot, state.selectedBuildDoor);
   })));
   root.querySelectorAll('[data-build-anchor]').forEach((button) => button.addEventListener('click', () => commit((state) => {
     state.selectedBuildFrom = button.dataset.buildAnchor;
+  })));
+  root.querySelectorAll('[data-build-door]').forEach((button) => button.addEventListener('click', () => commit((state) => {
+    state.selectedBuildDoor = button.dataset.buildDoor;
   })));
   root.querySelectorAll('[data-build-slot]').forEach((button) => button.addEventListener('click', () => commit((state) => {
     if (slotTaken(state, button.dataset.buildSlot)) return;
@@ -1085,7 +1096,7 @@ export function renderApp(root, game, commit) {
         if (payload.kind === 'buildRoom' && target.dataset.buildSlot && (state.phase === 'setup' || state.phase === 'upgrade')) {
           state.selectedBuildSlot = target.dataset.buildSlot;
           state.uiPanel = 'build';
-          buildRoom(state, payload.id, state.selectedBuildFrom, target.dataset.buildSlot);
+          buildRoom(state, payload.id, state.selectedBuildFrom, target.dataset.buildSlot, state.selectedBuildDoor);
         }
       });
     });

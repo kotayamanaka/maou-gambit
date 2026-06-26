@@ -1,5 +1,5 @@
 import { enemyTemplates } from '../data/units.js';
-import { roomById, roomView } from '../data/rooms.js';
+import { connectionDoorSide, doorPoint, roomById, roomView } from '../data/rooms.js';
 import { addLog } from '../game/state.js';
 import { nextStep, roomConnections } from './path.js';
 import { applyStatus, attackMultiplier, speedMultiplier } from './status.js';
@@ -85,22 +85,13 @@ export function roomPoint(roomId, unit, game = null) {
   };
 }
 
-function doorPair(fromRoom, toRoom) {
-  const dx = toRoom.x - fromRoom.x;
-  const dy = toRoom.y - fromRoom.y;
-  if (Math.abs(dx) >= Math.abs(dy)) {
-    const fromSide = dx >= 0 ? 1 : -1;
-    return {
-      from: { x: fromRoom.x + (fromRoom.w / 2) * fromSide, y: fromRoom.y },
-      to: { x: toRoom.x - (toRoom.w / 2) * fromSide, y: toRoom.y },
-      axis: 'x'
-    };
-  }
-  const fromSide = dy >= 0 ? 1 : -1;
+function doorPair(game, fromRoom, toRoom) {
+  const fromSide = connectionDoorSide(game, fromRoom, toRoom);
+  const toSide = connectionDoorSide(game, toRoom, fromRoom);
   return {
-    from: { x: fromRoom.x, y: fromRoom.y + (fromRoom.h / 2) * fromSide },
-    to: { x: toRoom.x, y: toRoom.y - (toRoom.h / 2) * fromSide },
-    axis: 'y'
+    from: doorPoint(fromRoom, fromSide),
+    to: doorPoint(toRoom, toSide),
+    axis: ['east', 'west'].includes(fromSide) ? 'x' : 'y'
   };
 }
 
@@ -108,7 +99,7 @@ function movementRoute(game, fromRoomId, toRoomId, unit) {
   const fromRoom = roomView(game, fromRoomId);
   const toRoom = roomView(game, toRoomId);
   if (!fromRoom || !toRoom) return [roomPoint(toRoomId, unit, game)];
-  const doors = doorPair(fromRoom, toRoom);
+  const doors = doorPair(game, fromRoom, toRoom);
   const destination = roomPoint(toRoomId, unit, game);
   const bend = doors.axis === 'x'
     ? [

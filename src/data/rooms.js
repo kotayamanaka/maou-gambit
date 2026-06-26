@@ -196,6 +196,19 @@ export const buildSlots = [
   { id: 'far-east-low', x: 3960, y: 2475 }
 ];
 
+export const doorSides = ['north', 'east', 'south', 'west'];
+
+export const doorSideLabels = {
+  north: '北扉',
+  east: '東扉',
+  south: '南扉',
+  west: '西扉'
+};
+
+export function doorSideLabel(side) {
+  return doorSideLabels[side] ?? side;
+}
+
 export const buildSlotLabels = {
   'north-west': '北西',
   north: '北',
@@ -261,4 +274,26 @@ export function buildSlotRelation(game, slotId, fromRoomId = 'atrium') {
     distance: distanceLabel(distance),
     description: `${from.name}から${direction} / ${distanceLabel(distance)}`
   };
+}
+
+export function connectionKey(a, b) {
+  return [a, b].sort().join('::');
+}
+
+export function doorPoint(room, side) {
+  if (side === 'north') return { x: room.x, y: room.y - room.h / 2 };
+  if (side === 'south') return { x: room.x, y: room.y + room.h / 2 };
+  if (side === 'east') return { x: room.x + room.w / 2, y: room.y };
+  return { x: room.x - room.w / 2, y: room.y };
+}
+
+export function autoDoorSide(from, to) {
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  if (Math.abs(dx) >= Math.abs(dy)) return dx >= 0 ? 'east' : 'west';
+  return dy >= 0 ? 'south' : 'north';
+}
+
+export function connectionDoorSide(game, from, to) {
+  return game?.roomConnectionDoors?.[connectionKey(from.id, to.id)]?.[from.id] ?? autoDoorSide(from, to);
 }

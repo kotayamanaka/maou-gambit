@@ -4,7 +4,7 @@ import { items } from '../data/items.js';
 import { roomObjects } from '../data/objects.js';
 import { currentStage, addLog, resetToSetup } from '../game/state.js';
 import { stages } from '../data/stages.js';
-import { buildSlots, rooms, roomById, roomView, slotTaken } from '../data/rooms.js';
+import { autoDoorSide, buildSlots, connectionKey, doorSideLabel, rooms, roomById, roomView, slotTaken } from '../data/rooms.js';
 import { firstOpenAllyRoom, isRoomBuilt, roomCapacity, roomLevel } from './placement.js';
 import { applyFeedGrowth, applyGrowthMaterial, nextIntExp, growthProfile } from './growth.js';
 import { researchCost } from './roomEffects.js';
@@ -269,23 +269,28 @@ export function useItemOnRoom(game, itemId, roomId) {
   return true;
 }
 
-function connectRooms(game, a, b) {
+function connectRooms(game, a, b, doors = null) {
   game.roomConnections ??= {};
   game.roomConnections[a] ??= [];
   game.roomConnections[b] ??= [];
   if (!game.roomConnections[a].includes(b)) game.roomConnections[a].push(b);
   if (!game.roomConnections[b].includes(a)) game.roomConnections[b].push(a);
+  if (doors) {
+    game.roomConnectionDoors ??= {};
+    game.roomConnectionDoors[connectionKey(a, b)] = doors;
+  }
 }
 
 function disconnectRoom(game, roomId) {
   game.roomConnections ??= {};
   for (const target of game.roomConnections[roomId] ?? []) {
     game.roomConnections[target] = (game.roomConnections[target] ?? []).filter((id) => id !== roomId);
+    delete game.roomConnectionDoors?.[connectionKey(roomId, target)];
   }
   game.roomConnections[roomId] = [];
 }
 
-export function buildRoom(game, roomId, fromRoomId = null, slotId = null) {
+export function buildRoom(game, roomId, fromRoomId = null, slotId = null, doorSide = null) {
   const room = roomById[roomId];
   if (!room || isRoomBuilt(game, roomId)) return false;
   const from = fromRoomId ?? game.selectedBuildFrom ?? 'atrium';
@@ -300,8 +305,12 @@ export function buildRoom(game, roomId, fromRoomId = null, slotId = null) {
   game.builtRooms.add(roomId);
   game.roomLevels ??= {};
   game.roomLevels[roomId] ??= 1;
-  connectRooms(game, from, roomId);
-  addLog(game, `${roomById[from].name}から${room.name}へ通路を繋いで建設。G-${cost}。`);
+  const fromRoom = roomView(game, from);
+  const toRoom = roomView(game, roomId);
+  const fromDoor = doorSide ?? game.selectedBuildDoor ?? autoDoorSide(fromRoom, toRoom);
+  const toDoor = autoDoorSide(toRoom, fromRoom);
+  connectRooms(game, from, roomId, { [from]: fromDoor, [roomId]: toDoor });
+  addLog(game, `${roomById[from].name}${doorSideLabel(fromDoor)}から${room.name}へ通路を繋いで建設。G-${cost}。`);
   return true;
 }
 

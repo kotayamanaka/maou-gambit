@@ -1,4 +1,4 @@
-import { buildSlotRelation, buildSlots, roomViews, rooms, slotTaken, worldSize } from '../data/rooms.js';
+import { buildSlotRelation, buildSlots, connectionDoorSide, doorPoint, roomViews, rooms, slotTaken, worldSize } from '../data/rooms.js';
 import { roomObjects } from '../data/objects.js';
 import { isRoomBuilt, roomCapacity } from '../systems/placement.js';
 import { statusIconList } from '../systems/status.js';
@@ -131,21 +131,14 @@ export function renderMap(game, mode = 'setup') {
     : '';
 
   function doorPair(from, to) {
-    const dx = to.x - from.x;
-    const dy = to.y - from.y;
-    if (Math.abs(dx) >= Math.abs(dy)) {
-      const side = dx >= 0 ? 1 : -1;
-      return {
-        from: { x: from.x + (from.w / 2) * side, y: from.y },
-        to: { x: to.x - (to.w / 2) * side, y: to.y },
-        axis: 'x'
-      };
-    }
-    const side = dy >= 0 ? 1 : -1;
+    const fromSide = connectionDoorSide(game, from, to);
+    const toSide = connectionDoorSide(game, to, from);
+    const fromPoint = doorPoint(from, fromSide);
+    const toPoint = doorPoint(to, toSide);
     return {
-      from: { x: from.x, y: from.y + (from.h / 2) * side },
-      to: { x: to.x, y: to.y - (to.h / 2) * side },
-      axis: 'y'
+      from: fromPoint,
+      to: toPoint,
+      axis: ['east', 'west'].includes(fromSide) ? 'x' : 'y'
     };
   }
 

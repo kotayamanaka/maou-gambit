@@ -110,6 +110,7 @@ Claude Design に UI / アートディレクション案を依頼するための
 - アイテム売却
 - 部屋建設
 - 接続元選択
+- 接続扉選択
 - 配置点選択
 - 部屋撤去
 - 設備設置
@@ -141,8 +142,8 @@ Claude Design に UI / アートディレクション案を依頼するための
 - 戦利品: `使用` と `売却` を2列で分離。
 - 研究: チップ研究、魔物研究、既知チップ開発をカード化。
 - 合成: 強化対象、素材、成長結果を並べて確認。
-- 建設: 接続元、配置点、建設候補、拡張、撤去をレーン化。
-- 建設配置点: 選択中の接続元から見た方角と距離感を表示。
+- 建設: 接続元、接続扉、配置点、建設候補、拡張、撤去をレーン化。
+- 建設配置点: 選択中の接続元から見た方角と距離感を表示し、接続元の北/東/南/西扉を選べる。
 - 設備: 設置部屋、設備候補、現在設置状態をカード化。
 
 ## Data and Asset State
@@ -176,6 +177,7 @@ Claude Design に UI / アートディレクション案を依頼するための
 - `screenshots/upgrade-build-refined-desktop.png`
 - `screenshots/upgrade-object-refined-desktop.png`
 - `screenshots/build-slot-directions-desktop.png`
+- `screenshots/build-door-selection-desktop.png`
 - `screenshots/captured-research-desktop.png`
 
 ### Art and Motion Audit
@@ -194,7 +196,7 @@ Claude Design に UI / アートディレクション案を依頼するための
 - 戦闘中の選択対象、運搬、ダウン、射出、状態異常が一目で読める情報階層を作る。
 - 戦後処理で、投資、研究、合成、建設、設備の「選択の重み」が伝わるカード表現へ磨く。
 - 未発見チップ、未研究魔物、コレクション率を、ネタバレせず集めたくなる見せ方にする。
-- 部屋建設の接続元/配置点選択を、将来のグリッド/ドア方向選択へ自然に拡張できるUIにする。
+- 部屋建設の接続元/接続扉/配置点選択を、将来の自由配置グリッドや建設プレビューへ自然に拡張できるUIにする。
 - 魔王軍らしさは出すが、画面全体を暗くしすぎず、キャラと通路の視認性を優先する。
 
 ## Do Not Change Without Implementation Follow-Up
