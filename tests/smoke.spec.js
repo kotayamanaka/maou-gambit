@@ -933,6 +933,109 @@ test('upgrade management supports selling, building, room upgrades, and research
   await assertNoDocumentScroll(page);
 });
 
+test('risky rooms trigger concrete tradeoffs when invaders enter', async ({ page }) => {
+  await page.goto('/');
+  const riskRooms = Object.fromEntries(['library', 'nest', 'treasure', 'armory'].map((id) => [
+    id,
+    { x: roomById[id].x, y: roomById[id].y, w: roomById[id].w, h: roomById[id].h }
+  ]));
+  await page.evaluate((roomsForTest) => {
+    const roomPoint = (roomId, side = -0.28) => {
+      const room = roomsForTest[roomId];
+      return { x: room.x + room.w * side, y: room.y };
+    };
+    const enemy = (uid, room, atk = 4) => ({
+      uid,
+      templateId: 'rogue',
+      name: uid,
+      type: 'enemy',
+      sprite: 'assets/sprites/rogue/idle-front.png',
+      spriteSet: null,
+      maxHp: 40,
+      hp: 40,
+      atk,
+      spd: 1,
+      range: 1,
+      skills: [],
+      chips: [],
+      capture: { difficulty: 1, ttl: 10 },
+      drop: { gold: 0, items: [] },
+      room,
+      ...roomPoint(room),
+      facing: 'right',
+      anim: 'idle',
+      animTtl: 0,
+      movingTo: null,
+      moveClock: 0,
+      attackClock: 0,
+      searchClock: 999,
+      knowsThrone: false,
+      status: []
+    });
+
+    window.__MAOU_COMMIT__((game) => {
+      game.phase = 'battle';
+      game.speed = 1;
+      game.gold = 100;
+      game.inventory = { rustyBlade: 1 };
+      game.waveQueue = [];
+      game.enemies = [
+        enemy('treasure-raider', 'treasure'),
+        enemy('library-scout', 'library'),
+        enemy('nest-intruder', 'nest'),
+        enemy('armory-looter', 'armory', 4)
+      ];
+      for (const roomId of ['library', 'nest', 'treasure', 'armory']) {
+        game.builtRooms.add(roomId);
+        game.roomPositions[roomId] = { ...roomPoint(roomId, 0), slotId: `test-${roomId}` };
+      }
+      game.roomConnections.library = ['atrium'];
+      game.roomConnections.nest = ['atrium', 'treasure'];
+      game.roomConnections.treasure = ['atrium'];
+      game.roomConnections.armory = ['atrium'];
+      const goblin = game.allies[0];
+      goblin.room = 'nest';
+      goblin.homeRoom = 'nest';
+      goblin.chips = [];
+      goblin.attackClock = 0;
+      Object.assign(goblin, roomPoint('nest', 0.3));
+      game.partyKnowledge = { throneKnown: false, visited: new Set(['entrance']) };
+      game.effects = [];
+      game.log = [];
+    });
+  }, riskRooms);
+
+  await page.waitForFunction(() => {
+    const game = window.__MAOU_GAME__;
+    return game.gold === 84
+      && game.inventory.rustyBlade === 0
+      && game.partyKnowledge.throneKnown
+      && game.enemies.find((enemy) => enemy.uid === 'armory-looter')?.atk === 5
+      && game.allies[0].attackClock > 1;
+  });
+
+  const state = await page.evaluate(() => ({
+    gold: window.__MAOU_GAME__.gold,
+    rustyBlade: window.__MAOU_GAME__.inventory.rustyBlade,
+    throneKnown: window.__MAOU_GAME__.partyKnowledge.throneKnown,
+    libraryScoutKnows: window.__MAOU_GAME__.enemies.find((enemy) => enemy.uid === 'library-scout')?.knowsThrone,
+    armoryAtk: window.__MAOU_GAME__.enemies.find((enemy) => enemy.uid === 'armory-looter')?.atk,
+    goblinDelay: window.__MAOU_GAME__.allies[0].attackClock,
+    logs: window.__MAOU_GAME__.log
+  }));
+  expect(state.gold).toBe(84);
+  expect(state.rustyBlade).toBe(0);
+  expect(state.throneKnown).toBe(true);
+  expect(state.libraryScoutKnows).toBe(true);
+  expect(state.armoryAtk).toBe(5);
+  expect(state.goblinDelay).toBeGreaterThan(1);
+  expect(state.logs.join('\n')).toContain('荒らされた');
+  expect(state.logs.join('\n')).toContain('手掛かり');
+  expect(state.logs.join('\n')).toContain('混乱');
+  expect(state.logs.join('\n')).toContain('攻撃+1');
+  await assertNoDocumentScroll(page);
+});
+
 test('monster research prioritizes unknown monsters with rarity preview', async ({ page }) => {
   await page.goto('/');
   await page.evaluate(() => {
