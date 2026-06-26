@@ -99,8 +99,8 @@ export const chipCategories = {
 };
 
 export const initialChipBag = {
-  chaseNearest: 2,
-  attack: 2,
+  chaseNearest: 1,
+  attack: 1,
   focusWeak: 0,
   focusMage: 0,
   focusKnower: 0,

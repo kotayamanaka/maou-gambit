@@ -428,6 +428,11 @@ export function finishUpgrade(game) {
   for (const rewardChip of rewardChips) {
     discoverChip(game, rewardChip, '報酬');
   }
+  for (const allyId of reward.allies ?? []) {
+    if (game.allies.some((unit) => unit.templateId === allyId)) continue;
+    const template = allyTemplates[allyId];
+    if (template) createAllyFromTemplate(game, template, '防衛報酬');
+  }
   if (reward.gold) {
     game.gold = (game.gold ?? 0) + reward.gold;
     addLog(game, `防衛報酬 G+${reward.gold}。`);

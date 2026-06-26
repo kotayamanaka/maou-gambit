@@ -180,7 +180,7 @@ test('corridors use orthogonal door segments and build slots', async ({ page }) 
 test('setup supports monster selection, placement, and chip editing', async ({ page }) => {
   await page.goto('/');
   await expect(page.locator('.unit-picker')).toBeVisible();
-  await expect(page.locator('[data-unit]')).toHaveCount(2);
+  await expect(page.locator('[data-unit]')).toHaveCount(1);
   await page.locator('.actor.ally').first().click();
   await page.locator('[data-ui-panel="place"]').click();
   await page.locator('[data-place="storage"]').click();
@@ -648,6 +648,32 @@ test('result can continue into upgrade flow after a win', async ({ page }) => {
   await assertNoDocumentScroll(page);
 });
 
+test('first reward expands the roster with slime after the tutorial defense', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('[data-unit]')).toHaveCount(1);
+  await page.evaluate(() => {
+    window.__MAOU_COMMIT__((game) => {
+      game.phase = 'upgrade';
+      game.captured = [];
+    });
+  });
+  await page.getByRole('button', { name: /次の防衛へ/ }).click();
+  const state = await page.evaluate(() => ({
+    stageIndex: window.__MAOU_GAME__.stageIndex,
+    allyNames: window.__MAOU_GAME__.allies.map((ally) => ally.name),
+    chipBag: window.__MAOU_GAME__.chipBag,
+    unlocks: window.__MAOU_GAME__.chipUnlocks
+  }));
+  expect(state.stageIndex).toBe(1);
+  expect(state.allyNames).toEqual(['ゴブリン', 'スライム']);
+  expect(state.chipBag.chaseNearest).toBe(2);
+  expect(state.chipBag.attack).toBe(2);
+  expect(state.chipBag.focusWeak).toBe(1);
+  expect(state.unlocks.join('\n')).toContain('弱敵狙い');
+  await expect(page.locator('[data-ui-panel="build"]')).toBeVisible();
+  await assertNoDocumentScroll(page);
+});
+
 test('feeding a captured enemy applies material exp and growth bias', async ({ page }) => {
   await page.goto('/');
   await page.evaluate(() => {
@@ -883,7 +909,7 @@ test('monster fusion consumes an ally to grow the selected monster', async ({ pa
       log: window.__MAOU_GAME__.log[0]
     };
   });
-  expect(state.allyNames).toEqual(['ゴブリン', 'スライム']);
+  expect(state.allyNames).toEqual(['ゴブリン']);
   expect(state.goblin.exp).toBe(12);
   expect(state.goblin.intExp).toBe(1);
   expect(state.goblin.maxHp).toBe(64);

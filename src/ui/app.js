@@ -118,6 +118,10 @@ function enemyName(kind) {
   return enemyTemplates[kind]?.name ?? kind;
 }
 
+function allyName(kind) {
+  return allyTemplates[kind]?.name ?? kind;
+}
+
 function waveSummary(stage) {
   const counts = {};
   stage.waves.flat().forEach((spawn) => {
@@ -143,6 +147,7 @@ function nextEnemyPanel(game) {
   const rewardParts = [];
   const rewardChips = [...(stage.reward?.chips ?? []), ...(stage.reward?.chip ? [stage.reward.chip] : [])];
   if (rewardChips.length) rewardParts.push(`報酬 ${rewardChips.map(chipName).join(' / ')}`);
+  if (stage.reward?.allies?.length) rewardParts.push(`加入 ${stage.reward.allies.map(allyName).join(' / ')}`);
   if (stage.reward?.gold) rewardParts.push(`G+${stage.reward.gold}`);
   const reward = rewardParts.join(' / ') || '報酬なし';
   return `<div class="info-box next-enemies">
