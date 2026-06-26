@@ -1,5 +1,32 @@
 # PROGRESS
 
+## 2026-06-26 キャラクターモーション再検収
+
+### 目的
+
+`spriteSet` の単一PNG/複数フレーム配列両対応、簡易フレーム生成、PC幅戦闘画面での歩行フレーム切替が現行コードで維持されていることを再確認する。
+
+### 確認内容
+
+- `scripts/make_micro_animation_frames.py` を再実行し、24スプライトフォルダに `walk` 3フレーム、`attack` 2フレームを再生成した。
+- `src/data/spriteAnimations.js` が実在ファイル由来で再生成され、配列がない場合は `spriteSetFor` の単一PNG fallback が残ることを確認した。
+- `scripts/make_sprite_animation_audit.py` で `screenshots/sprite-animation-audit.png` を再生成し、walk/attackフレームの欠けがないことを目視確認した。
+- PlaywrightでPC幅の戦闘画面を固定し、選択中ゴブリンが `walk-right-0..2.png` の3フレームを切り替える状態で `screenshots/sprite-animation-battle-desktop.png` を更新した。
+
+### 検証結果
+
+- `python scripts/make_micro_animation_frames.py`: 24スプライトフォルダ、480フレーム生成・接続。
+- `python scripts/make_sprite_animation_audit.py`: 成功。
+- Playwright PC幅確認: 選択ゴブリンの `data-sprite-frame` が `1,0,1,2,0` と遷移し、`data-sprite-frame-count="3"` を確認。
+- `npm test -- --reporter=line`: 94件成功。
+- `npm run test:balance`: 成功。キャンペーン検収は勝利。
+- `npm run build:pages`: 成功。
+
+### 残課題
+
+- 現在の微差分フレームは基盤検証用であり、本番絵ではない。
+- 近接、弓、魔法、魔王専用攻撃の差分は、本番用2から4フレーム素材へ置き換える。
+
 ## 2026-06-26 捕獲準備UI
 
 ### 目的
@@ -11,8 +38,9 @@
 - 情報タブに `捕獲準備` を追加し、次ステージの捕獲対象、捕獲難度、ダウン猶予、運搬役数、現在のダウン猶予ボーナスを表示するようにした。
 - 捕獲価値の高い敵を、捕獲難度と身代金価値から上位表示するようにした。
 - 捕獲準備の対象に、身代金、眷属化先、養分効果を表示し、どの敵を捕ると何が嬉しいかを防衛前に読めるようにした。
+- `希少狙い` チップに空きがあり、攻撃可能な配下が未装備の場合は、捕獲準備から直接その配下へ `希少狙い` を渡せるようにした。
 - `牢屋搬送` チップに空きがあり、運搬可能な配下が未装備の場合は、捕獲準備から直接その配下へ `牢屋搬送` を渡せるようにした。
-- Playwrightで、賢者ステージ前に捕獲準備が表示され、ゴブリンへ `牢屋搬送` を再装備できることを固定した。
+- Playwrightで、賢者ステージ前に捕獲準備が表示され、ゴブリンへ `希少狙い` と `牢屋搬送` を再装備できることを固定した。
 
 ### スクリーンショット
 

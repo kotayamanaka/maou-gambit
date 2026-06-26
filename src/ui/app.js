@@ -256,9 +256,15 @@ function capturePrepPanel(game) {
   const assignableCarrier = carriers
     .filter((unit) => !unit.chips.includes('carryDowned'))
     .sort((a, b) => (b.spd ?? 0) - (a.spd ?? 0))[0];
-  const assignedCarry = assignedChipCounts(game);
+  const assignedChips = assignedChipCounts(game);
   const carryStock = game.chipBag?.carryDowned ?? 0;
-  const availableCarry = carryStock - (assignedCarry.carryDowned ?? 0);
+  const availableCarry = carryStock - (assignedChips.carryDowned ?? 0);
+  const rareStock = game.chipBag?.focusRare ?? 0;
+  const availableRare = rareStock - (assignedChips.focusRare ?? 0);
+  const rareHunters = game.allies.filter((unit) => unit.chips.includes('focusRare'));
+  const assignableHunter = game.allies
+    .filter((unit) => !unit.chips.includes('focusRare') && (unit.range ?? 1) >= 1)
+    .sort((a, b) => ((b.atk ?? 0) + (b.spd ?? 0) * 2) - ((a.atk ?? 0) + (a.spd ?? 0) * 2))[0];
   const targetText = bestTargets.map((enemy) => `${enemy.name} 捕獲${enemy.capture?.difficulty ?? 1} 残${enemy.capture?.ttl ?? 10}s`).join(' / ');
   const valueText = bestTargets.map((enemy) => {
     const convert = allyTemplates[enemy.convertTo]?.name ?? '不可';
@@ -268,15 +274,18 @@ function capturePrepPanel(game) {
   const carrierText = carriers.length
     ? `${readyCarriers.length}/${carriers.length}体`
     : '運搬可なし';
+  const hunterText = rareStock > 0 ? `${rareHunters.length}/${rareStock}枚` : '未所持';
   const bonus = game.captureTtlBonus ?? 0;
   return `<div class="capture-prep">
     <b>捕獲準備</b>
     <div class="capture-prep-grid">
       <span>狙い<em>${targetText}</em></span>
       <span class="capture-prep-value">価値<em>${valueText}</em></span>
+      <span>狙い役<em>${hunterText}</em></span>
       <span>搬送役<em>${carrierText}</em></span>
       <span>猶予<em>+${bonus}s</em></span>
     </div>
+    ${assignableHunter && availableRare > 0 ? `<button class="capture-prep-action" data-capture-prep-chip="focusRare" data-capture-prep-unit="${assignableHunter.uid}">${assignableHunter.name}に希少狙い</button>` : ''}
     ${assignableCarrier && availableCarry > 0 ? `<button class="capture-prep-action" data-capture-prep-chip="carryDowned" data-capture-prep-unit="${assignableCarrier.uid}">${assignableCarrier.name}に牢屋搬送</button>` : ''}
   </div>`;
 }

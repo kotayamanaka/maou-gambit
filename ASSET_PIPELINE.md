@@ -107,6 +107,7 @@ assets/generated/
 - 出力: `walk-<direction>-0..2.png` と `attack-<direction>-0..1.png`。元PNGは上書きしない。
 - 透明背景を維持し、ドット絵の拡縮/移動はNEAREST前提。walkは軽い上下/左右差分、attackは踏み込み方向への数px移動と軽い明度差分に留める。
 - スクリプト実行時に、実在する `walk`/`attack` フレームだけを `src/data/spriteAnimations.js` へ書き出す。手作業でユニット一覧を更新せず、フレームがないユニットは `spriteSetFor` の単一PNG fallback を使う。
+- 新しい本番フレームを追加した場合も、`spriteAnimations.js` を直接手編集せず、このスクリプトか同等のマニフェスト生成処理で実在ファイルから再接続する。
 - `scripts/make_sprite_animation_audit.py` で `screenshots/sprite-animation-audit.png` を作成し、walk/attackのフレーム差分を一覧検収する。
 
 ## キャラ動作
