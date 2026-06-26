@@ -176,10 +176,16 @@ test('corridors use orthogonal door segments and build slots', async ({ page }) 
     window.__MAOU_COMMIT__((game) => {
       game.stageIndex = 1;
       game.uiPanel = 'build';
+      game.selectedBuildRoom = 'treasure';
+      game.selectedBuildDoor = 'east';
+      game.selectedBuildSlot = 'north';
     });
   });
   await expect(page.locator('.build-slot[data-build-slot="north"]')).toBeVisible();
   await expect(page.locator('.build-slot[data-build-slot="north"]')).toContainText('北');
+  await expect(page.locator('[data-build-preview-room="treasure"]')).toBeVisible();
+  await expect(page.locator('[data-build-preview-room="treasure"]')).toContainText('宝物庫');
+  await expect(page.locator('.corridor-path.build-preview.floor')).toHaveCount(1);
   await assertNoDocumentScroll(page);
 });
 
@@ -989,8 +995,10 @@ test('upgrade management supports selling, building, room upgrades, and research
   await page.locator('[data-build-anchor="atrium"]').click();
   await page.locator('[data-build-door="east"]').click();
   await expect(page.locator('[data-build-door="east"]')).toHaveClass(/on/);
-  await page.locator('[data-build-slot="north"]').click();
+  await page.locator('.build-layout [data-build-slot="north"]').click();
   await expect(page.locator('[data-build-room="treasure"]')).toHaveClass(/decision-card/);
+  await page.locator('[data-build-room="treasure"]').focus();
+  await expect(page.locator('[data-build-preview-room="treasure"]')).toBeVisible();
   await expect(page.locator('.build-layout')).toContainText('北');
   await page.locator('[data-build-room="treasure"]').click();
   await page.locator('[data-upgrade-room="atrium"]').click();

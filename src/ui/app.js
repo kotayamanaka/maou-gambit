@@ -290,6 +290,10 @@ function roomManagementPanel(game) {
   const anchor = game.selectedBuildFrom ?? 'atrium';
   const selectedDoor = game.selectedBuildDoor ?? 'north';
   const selectedSlot = game.selectedBuildSlot ?? buildSlots.find((slot) => !slotTaken(game, slot.id))?.id;
+  const buildableRooms = rooms.filter((room) => !isRoomBuilt(game, room.id) && room.buildCost);
+  const selectedBuildRoom = buildableRooms.some((room) => room.id === game.selectedBuildRoom)
+    ? game.selectedBuildRoom
+    : buildableRooms[0]?.id;
   const anchorButtons = rooms
     .filter((room) => isRoomBuilt(game, room.id) && canConnectRoom(game, room.id))
     .map((room) => `<button class="mini compact-card ${anchor === room.id ? 'on' : ''}" data-build-anchor="${room.id}">
@@ -314,9 +318,8 @@ function roomManagementPanel(game) {
     })
     .join('');
   const selectedRelation = selectedSlot ? buildSlotRelation(game, selectedSlot, anchor) : null;
-  const buildButtons = rooms
-    .filter((room) => !isRoomBuilt(game, room.id) && room.buildCost)
-    .map((room) => `<button class="mini decision-card" data-build-room="${room.id}" draggable="true" ${((game.gold ?? 0) < room.buildCost || !selectedSlot || slotTaken(game, selectedSlot) || !canConnectRoom(game, anchor) || !canConnectRoom(game, room.id)) ? 'disabled' : ''}>
+  const buildButtons = buildableRooms
+    .map((room) => `<button class="mini decision-card ${selectedBuildRoom === room.id ? 'on' : ''}" data-build-room="${room.id}" draggable="true" ${((game.gold ?? 0) < room.buildCost || !selectedSlot || slotTaken(game, selectedSlot) || !canConnectRoom(game, anchor) || !canConnectRoom(game, room.id)) ? 'disabled' : ''}>
       <span class="choice-top">${room.name}<em>G${room.buildCost}</em></span>
       <small>${roomById[anchor]?.name ?? anchor}${doorSideLabel(selectedDoor)}から ${selectedRelation ? selectedRelation.direction : '配置点未選択'}へ</small>
       <span class="decision-meta">${roomEffectText(room) || `容量${room.capacity ?? 0}`}</span>
@@ -956,9 +959,26 @@ export function renderApp(root, game, commit) {
     consumeCaptured(state, button.dataset.captured, button.dataset.upgrade, button.dataset.target);
     state.selectedCapturedId = state.captured[0]?.uid ?? null;
   })));
-  root.querySelectorAll('[data-build-room]').forEach((button) => button.addEventListener('click', () => commit((state) => {
-    buildRoom(state, button.dataset.buildRoom, state.selectedBuildFrom, state.selectedBuildSlot, state.selectedBuildDoor);
-  })));
+  let buildPreviewTimer = null;
+  root.querySelectorAll('[data-build-room]').forEach((button) => {
+    const previewNow = () => {
+      const roomId = button.dataset.buildRoom;
+      if (game.selectedBuildRoom === roomId) return;
+      commit((state) => {
+        state.selectedBuildRoom = roomId;
+      });
+    };
+    const previewSoon = () => {
+      if (buildPreviewTimer) window.clearTimeout(buildPreviewTimer);
+      buildPreviewTimer = window.setTimeout(previewNow, 90);
+    };
+    button.addEventListener('pointerenter', previewSoon);
+    button.addEventListener('focus', previewNow);
+    button.addEventListener('click', () => commit((state) => {
+      state.selectedBuildRoom = button.dataset.buildRoom;
+      buildRoom(state, button.dataset.buildRoom, state.selectedBuildFrom, state.selectedBuildSlot, state.selectedBuildDoor);
+    }));
+  });
   root.querySelectorAll('[data-build-anchor]').forEach((button) => button.addEventListener('click', () => commit((state) => {
     state.selectedBuildFrom = button.dataset.buildAnchor;
   })));

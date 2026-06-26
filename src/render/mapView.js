@@ -1,4 +1,4 @@
-import { buildSlotRelation, buildSlots, connectionDoorSide, doorPoint, roomViews, rooms, slotTaken, worldSize } from '../data/rooms.js';
+import { autoDoorSide, buildSlotRelation, buildSlots, connectionDoorSide, doorPoint, roomViews, rooms, slotTaken, worldSize } from '../data/rooms.js';
 import { roomObjects } from '../data/objects.js';
 import { isRoomBuilt, roomCapacity } from '../systems/placement.js';
 import { statusIconList } from '../systems/status.js';
@@ -118,7 +118,8 @@ export function renderMap(game, mode = 'setup') {
     </button>`;
   }).join('');
 
-  const slotNodes = mode === 'setup' && game.uiPanel === 'build'
+  const buildingMode = ['setup', 'upgrade'].includes(mode) && game.uiPanel === 'build';
+  const slotNodes = buildingMode
     ? buildSlots.map((slot) => {
       const used = slotTaken(game, slot.id);
       const selected = game.selectedBuildSlot === slot.id;
@@ -130,9 +131,7 @@ export function renderMap(game, mode = 'setup') {
     }).join('')
     : '';
 
-  function doorPair(from, to) {
-    const fromSide = connectionDoorSide(game, from, to);
-    const toSide = connectionDoorSide(game, to, from);
+  function doorPairFromSides(from, to, fromSide, toSide) {
     const fromPoint = doorPoint(from, fromSide);
     const toPoint = doorPoint(to, toSide);
     return {
@@ -140,6 +139,15 @@ export function renderMap(game, mode = 'setup') {
       to: toPoint,
       axis: ['east', 'west'].includes(fromSide) ? 'x' : 'y'
     };
+  }
+
+  function doorPair(from, to) {
+    return doorPairFromSides(
+      from,
+      to,
+      connectionDoorSide(game, from, to),
+      connectionDoorSide(game, to, from)
+    );
   }
 
   function pathPoints(doors) {
@@ -161,6 +169,36 @@ export function renderMap(game, mode = 'setup') {
   function pathData(points) {
     return points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`).join(' ');
   }
+
+  const previewSlot = buildSlots.find((slot) => slot.id === game.selectedBuildSlot);
+  const previewTemplate = rooms.find((room) => room.id === game.selectedBuildRoom && !isRoomBuilt(game, room.id))
+    ?? rooms.find((room) => !isRoomBuilt(game, room.id) && room.buildCost);
+  const previewFrom = roomById[game.selectedBuildFrom ?? 'atrium'];
+  const previewRoom = buildingMode && previewSlot && previewTemplate && previewFrom && !slotTaken(game, previewSlot.id)
+    ? { ...previewTemplate, x: previewSlot.x, y: previewSlot.y }
+    : null;
+  const previewDoors = previewRoom
+    ? doorPairFromSides(
+      previewFrom,
+      previewRoom,
+      game.selectedBuildDoor ?? autoDoorSide(previewFrom, previewRoom),
+      autoDoorSide(previewRoom, previewFrom)
+    )
+    : null;
+  const previewPath = previewDoors
+    ? `<path class="corridor-path build-preview under" d="${pathData(pathPoints(previewDoors))}" />`
+      + `<path class="corridor-path build-preview floor" d="${pathData(pathPoints(previewDoors))}" />`
+    : '';
+  const previewDoorsHtml = previewDoors
+    ? `<span class="room-door preview-door" style="left:${previewDoors.from.x}px;top:${previewDoors.from.y}px"></span><span class="room-door preview-door" style="left:${previewDoors.to.x}px;top:${previewDoors.to.y}px"></span>`
+    : '';
+  const previewNode = previewRoom
+    ? `<div class="room ${previewTemplate.type} build-preview-room" data-build-preview-room="${previewTemplate.id}" style="left:${previewRoom.x - previewRoom.w / 2}px;top:${previewRoom.y - previewRoom.h / 2}px;width:${previewRoom.w}px;height:${previewRoom.h}px">
+      <span class="room-name">${previewTemplate.name}</span>
+      <span class="room-cap">予定</span>
+      <small>G${previewTemplate.buildCost}</small>
+    </div>`
+    : '';
 
   const corridorPaths = corridors.map(([a, b]) => {
     const from = roomById[a];
@@ -207,9 +245,9 @@ export function renderMap(game, mode = 'setup') {
               <image href="${corridorTile}" width="128" height="128" preserveAspectRatio="none" />
             </pattern>
           </defs>
-          ${corridorPaths}
+          ${corridorPaths}${previewPath}
         </svg>
-        ${corridorDoors}${slotNodes}${nodes}<div class="actor-layer">${actors.join('')}</div>${effects}
+        ${corridorDoors}${previewDoorsHtml}${previewNode}${slotNodes}${nodes}<div class="actor-layer">${actors.join('')}</div>${effects}
       </div>
       <div class="map-controls" aria-label="マップ操作">
         <button data-mapaction="zoomIn" title="拡大">＋</button>

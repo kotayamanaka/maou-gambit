@@ -102,6 +102,7 @@ export function createGame() {
     selectedBuildFrom: 'atrium',
     selectedBuildDoor: 'north',
     selectedBuildSlot: 'north',
+    selectedBuildRoom: 'hallA',
     roomConnectionDoors: {},
     roomObjects: {},
     allies,
